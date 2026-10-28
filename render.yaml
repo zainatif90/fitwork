@@ -1,6 +1,14 @@
-# Render Blueprint for the FitWork API (Dashboard -> New -> Blueprint -> pick this repo).
+# Render Blueprint for FitWork (Dashboard -> New -> Blueprint -> pick this repo).
+# Creates: the API (Docker) + a free Redis-compatible Key Value store for cache / rate limits.
 # Secrets are marked sync: false, so Render asks for them in the dashboard; they are never stored in git.
 services:
+  - type: keyvalue
+    name: fitwork-redis
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []          # internal connections only (from the API service)
+
   - type: web
     name: fitwork-api
     runtime: docker
@@ -14,11 +22,14 @@ services:
         value: production
       - key: DATABASE_URL        # Neon connection string, postgresql+psycopg://...?sslmode=require
         sync: false
-      - key: REDIS_URL           # Upstash, rediss://default:...@...upstash.io:6379
-        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: fitwork-redis
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: FRONTEND_URL        # https://<your-app>.vercel.app
+      - key: FRONTEND_URL        # https://<your-app>.vercel.app (set after the Vercel deploy)
         sync: false
       - key: CORS_ORIGINS        # same as FRONTEND_URL
         sync: false

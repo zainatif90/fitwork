@@ -3,12 +3,12 @@
 | Part | Service | Why |
 |---|---|---|
 | Database | **Neon** (Postgres 16 + pgvector) | free, supports `CREATE EXTENSION vector` |
-| Cache | **Upstash Redis** | free, works over TLS (`rediss://`) |
+| Cache | **Render Key Value** (Redis-compatible, free) | created by the same blueprint, internal-only, no extra account (Upstash works too: just paste its `rediss://` URL as `REDIS_URL`) |
 | API | **Render** (Docker, free web service) | builds `backend/Dockerfile`; measured RAM 286 MiB < 512 MiB limit |
 | Web app | **Vercel** | serves the React build and proxies `/api/*` to Render (same origin → cookies work) |
 | LLM | Google **Gemini** API key | proposals (optional: without it users get the template draft) |
 
-Architecture: `browser → https://<app>.vercel.app` → (Vercel rewrite `/api/*`) → `https://<api>.onrender.com/api/*` → Neon + Upstash.
+Architecture: `browser → https://<app>.vercel.app` → (Vercel rewrite `/api/*`) → `https://<api>.onrender.com/api/*` → Neon + Render Key Value.
 
 ---
 ## A. Things only you can do (accounts) — about 15 minutes
@@ -25,43 +25,38 @@ Use the same email for all; "Sign up with GitHub" is fastest where offered.
    It looks like `postgresql://user:password@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require`.
 4. Give that string to Claude (see "How to send secrets" below).
 
-### A3. Upstash (Redis)
-1. https://console.upstash.com → **Sign up**.
-2. **Create Database** → name `fitwork`, type **Regional**, region **eu-central-1 (Frankfurt)**, TLS **on**.
-3. In the database page, under **Connect**, copy the **`rediss://...`** URL (Redis protocol, not REST).
-
-### A4. Gemini API key (for AI proposals)
+### A3. Gemini API key (for AI proposals)
 1. https://aistudio.google.com/apikey → **Create API key** → copy it.
 
 ### How to send secrets to Claude
-Create the file `deploy.env` in the project folder (it is git-ignored) with:
+Open the file `deploy.env` in the project folder (already created, git-ignored) and paste the values after the `=`:
 ```
 NEON_URL=postgresql://...
-UPSTASH_URL=rediss://...
 GEMINI_KEY=...
 ```
-Then tell Claude "deploy.env ready". Claude reads it locally; it is never committed.
+Save, then tell Claude "deploy.env ready". Claude reads it locally; it is never committed.
 
 ---
 ## B. Claude does (from your PC, no clicks needed)
 1. Runs Alembic migrations on Neon (enables pgvector, creates all tables).
 2. Loads the 494-job seed CSV and fetches live Freelancer.com jobs into Neon (embeddings computed locally).
 3. Creates the demo accounts in Neon and rewrites `DEMO.md` with the production password.
-4. Tests the Upstash connection and the Gemini key.
+4. Tests the Gemini key with one real proposal.
 5. Creates the private GitHub repo and pushes (you approve a one-time GitHub login in the browser).
 
 ---
 ## C. Render (API) — you click, ~5 minutes
 1. https://dashboard.render.com → **Sign up with GitHub** → allow access to the `fitwork` repo.
-2. **New +** → **Blueprint** → pick the `fitwork` repo → Render reads `render.yaml`.
+2. **New +** → **Blueprint** → pick the `fitwork` repo → Render reads `render.yaml`
+   (it will create two things: `fitwork-api` and `fitwork-redis`).
 3. It asks for the secret values — paste:
    | Key | Value |
    |---|---|
    | `DATABASE_URL` | the Neon string, but starting with **`postgresql+psycopg://`** instead of `postgresql://` (Claude gives you the exact line) |
-   | `REDIS_URL` | the Upstash `rediss://...` URL |
-   | `FRONTEND_URL` | leave `https://example.com` for now — updated in step E |
+   | `FRONTEND_URL` | `https://example.com` for now — updated in step E |
    | `CORS_ORIGINS` | same as FRONTEND_URL |
    | `LLM_API_KEY` | the Gemini key |
+   (`REDIS_URL` and `JWT_SECRET` are filled in automatically.)
 4. **Apply**. The first build takes ~5–8 minutes. When it shows **Live**, copy the URL (`https://fitwork-api-xxxx.onrender.com`) and send it to Claude.
 
 ## D. Claude does
