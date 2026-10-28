@@ -1,5 +1,6 @@
 # Render Blueprint for FitWork (Dashboard -> New -> Blueprint -> pick this repo -> Apply).
-# Creates: the API (Docker) + a free Redis-compatible Key Value store for cache / rate limits.
+# Creates: one web service that serves the React app AND the API (Docker), plus a free
+# Redis-compatible Key Value store for cache / rate limits.
 # Render only asks for DATABASE_URL (Neon) and LLM_API_KEY; everything else is filled in here.
 # On first start the API loads the seed jobs and the demo accounts by itself (BOOTSTRAP_DATA).
 services:
@@ -11,7 +12,7 @@ services:
     ipAllowList: []          # internal connections only (from the API service)
 
   - type: web
-    name: fitwork-api-zain2026   # -> https://fitwork-api-zain2026.onrender.com (used in frontend/vercel.json)
+    name: fitwork-api-zain2026   # -> https://fitwork-api-zain2026.onrender.com (website + API)
     runtime: docker
     dockerContext: .
     dockerfilePath: ./backend/Dockerfile
@@ -33,9 +34,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        value: https://fitwork-zain2026.vercel.app
+        value: https://fitwork-api-zain2026.onrender.com
       - key: CORS_ORIGINS
-        value: https://fitwork-zain2026.vercel.app
+        value: https://fitwork-api-zain2026.onrender.com
       - key: LLM_PROVIDER
         value: gemini
       - key: LLM_MODEL

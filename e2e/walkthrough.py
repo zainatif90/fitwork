@@ -5,6 +5,7 @@ Run:         e2e\.venv\Scripts\python e2e\walkthrough.py     (screenshots go to 
 It creates test users with random emails; delete them afterwards if you like.
 """
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -13,7 +14,7 @@ from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
 
-BASE = "http://localhost:5173"
+BASE = os.getenv("FITWORK_URL", "http://localhost:5173")  # e.g. the live Render URL
 OUT = Path(__file__).parent / "shots"
 OUT.mkdir(exist_ok=True)
 RUN = uuid.uuid4().hex[:6]

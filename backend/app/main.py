@@ -7,10 +7,12 @@ API docs:             http://localhost:8000/api/docs
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.routers import admin, agency, auth, jobs, matches, profile, proposals, skill_gap, skills
@@ -66,10 +68,19 @@ async def security_headers(request: Request, call_next):  # type: ignore[no-unty
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    if not request.url.path.startswith("/api/docs"):
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith("/api/docs"):
         # The API only returns JSON, so it never needs to load scripts, styles or frames.
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         response.headers["Cache-Control"] = "no-store"  # never cache personal data in shared caches
+    elif not path.startswith("/api/"):
+        # The React web app (served from the same origin in production): only our own scripts,
+        # our own API, and Google Fonts are allowed.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
+            "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        )
     if settings.is_production:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
@@ -97,3 +108,20 @@ app.include_router(admin.router, prefix=API_PREFIX)
 @app.get("/api/health", tags=["health"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+# ---- Web app (production): the built React files are served by this same server ----------
+# One origin for the website and the API means no proxy and no cross-site cookie problems.
+# In development the Vite dev server serves the web app instead, so this folder does not exist.
+_dist = Path(settings.FRONTEND_DIST)
+if (_dist / "index.html").exists():
+    app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def web_app(full_path: str) -> FileResponse:
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")  # unknown API route stays a JSON 404
+        file = (_dist / full_path).resolve()
+        if full_path and file.is_file() and _dist.resolve() in file.parents:
+            return FileResponse(file)  # e.g. /favicon.svg
+        return FileResponse(_dist / "index.html")  # every other path is a React Router page

@@ -2,54 +2,41 @@
 
 | Part | Service | Notes |
 |---|---|---|
-| Database | **Neon** (Postgres 16 + pgvector) | free, never expires; migrations run automatically on API start |
-| Cache | **Render Key Value** (Redis-compatible) | created by the same blueprint, internal-only |
-| API | **Render** free web service (Docker) | `render.yaml` blueprint; measured RAM 226–286 MiB < 512 MiB |
-| Web app | **Vercel** | serves the React build, proxies `/api/*` to Render (same origin → login cookie works) |
+| Database | **Neon** (Postgres 16 + pgvector, Frankfurt) | free, never expires; already created and loaded (989 real jobs + demo accounts) |
+| Cache | **Render Key Value** (Redis-compatible) | created by the blueprint, internal-only |
+| Website + API | **Render** free web service (Docker) | ONE container serves the React app and the API from the same address |
 | LLM | Google **Gemini** API key | optional — without it proposals use the labelled template |
 
-Fixed addresses (already written into the config files):
-- Web app: **https://fitwork-zain2026.vercel.app**
-- API: **https://fitwork-api-zain2026.onrender.com** (health: `/api/health`, docs: `/api/docs`)
+Live address (already written into the config): **https://fitwork-api-zain2026.onrender.com**
+(website at `/`, API at `/api`, API docs at `/api/docs`)
 
-On its **first start** the API sets itself up: runs the database migrations, loads the 494 real seed jobs,
-creates the demo accounts (DEMO.md), and the scheduler starts fetching live Freelancer.com jobs every 30 minutes.
-(Tested locally against an empty database: 494 jobs + 4 demo accounts, restart-safe.)
+Why one container instead of Vercel + Render: the website and the API share one origin, so the login cookie
+works without a proxy, there is one deploy instead of two, and nothing else to configure. Locally the Vite dev
+server still serves the website (`npm run dev`); in production `backend/Dockerfile` builds the React app in a
+first stage and FastAPI serves the built files (`FRONTEND_DIST`). Verified before deploying: the Playwright
+walk-through passed 11/11 with 0 JavaScript errors against the production container.
+
+On every start the API runs the database migrations; with `BOOTSTRAP_DATA=true` it also loads the seed jobs and
+demo accounts if they are missing (they are already in Neon, so this is a safety net). The scheduler then fetches
+live Freelancer.com jobs every 30 minutes.
 
 ---
-## Your steps (about 10 minutes, all "Sign in with GitHub")
+## Status
+- [x] GitHub: private repo github.com/zainatif90/fitwork (pushed)
+- [x] Neon: project `fitwork` (PG 16, Frankfurt) created, migrated, 989 jobs + 4 demo accounts loaded
+- [ ] Render: blueprint (you, ~2 minutes of clicks, then a 5–10 minute build)
 
-### 1. GitHub login for the push
-Claude shows an 8-character code → open https://github.com/login/device → enter the code → **Authorize**.
-Claude then creates the **private** repo `fitwork` and pushes the code.
-
-### 2. Neon (database)
-1. https://console.neon.tech/signup → **Continue with GitHub**.
-2. Create project: name `fitwork`, Postgres **16**, region **AWS Europe Central 1 (Frankfurt)** → **Create**.
-3. **Connect** → copy the connection string (starts with `postgresql://`, keep it for step 3).
-
-### 3. Render (API + Redis)
+## Render steps (you)
 1. https://dashboard.render.com/register → **GitHub**.
-2. **New +** → **Blueprint** → connect GitHub → select the `fitwork` repo → **Connect**.
-3. Render shows two resources (`fitwork-redis`, `fitwork-api-zain2026`) and asks for 2 values:
-   - `DATABASE_URL` → paste the Neon string exactly as copied
-   - `LLM_API_KEY` → your Gemini key from https://aistudio.google.com/apikey (or type `none`)
-4. **Apply**. The first build takes ~5–10 minutes. Done when the service shows **Live**.
+2. **New +** → **Blueprint** → connect GitHub (allow the `fitwork` repo) → select **fitwork** → **Connect**.
+3. Render shows `fitwork-redis` and `fitwork-api-zain2026` and asks for 2 values:
+   - `DATABASE_URL` → paste the Neon connection string (Claude puts it on your clipboard)
+   - `LLM_API_KEY` → a Gemini key from https://aistudio.google.com/apikey, or `none`
+4. **Apply**. When the service shows **Live**, tell Claude "done" — Claude tests the live site end to end.
 
-### 4. Vercel (web app)
-1. https://vercel.com/signup → **Continue with GitHub**.
-2. **Add New… → Project** → **Import** `fitwork`.
-3. **Project Name:** `fitwork-zain2026` (this gives the fixed address above).
-4. **Root Directory:** click *Edit* → choose `frontend`. Framework is detected as **Vite**.
-5. **Deploy** (~1 minute).
-
-Tell Claude "done" — Claude runs the full end-to-end test against the live site.
-
----
 ## If something differs
-- **Render gave a different URL** (name taken): tell Claude the URL; it updates `frontend/vercel.json` and pushes.
-- **Vercel gave a different URL:** in Render → `fitwork-api-zain2026` → Environment, set `FRONTEND_URL` and
-  `CORS_ORIGINS` to it (only used in the email-verification link; invite links use the browser's own address).
+- **Render gave a different URL** (name taken): in Render → Environment set `FRONTEND_URL` and `CORS_ORIGINS` to it
+  (only used in the email-verification link; invite links use the browser's own address).
 - **Gemini key added later:** Render → Environment → `LLM_API_KEY` → Save (redeploys automatically).
 
 ## Free-tier notes (say these honestly in the viva)
@@ -61,10 +48,11 @@ Tell Claude "done" — Claude runs the full end-to-end test against the live sit
 - Neon free pauses the database when idle; the first query after a pause adds 1–2 seconds.
 
 ## Updating later
-`git push` → Render and Vercel redeploy automatically; migrations run on every API start.
+`git push` → Render rebuilds and redeploys automatically; migrations run on every start.
 
 ## Local production test (what was verified)
 ```powershell
-docker build -f backend/Dockerfile -t fitwork-api:local .
-docker run -p 8001:8000 -e ENV=production -e JWT_SECRET=<random> -e DATABASE_URL=postgresql://... -e BOOTSTRAP_DATA=true -e DEMO_PASSWORD=<pw> fitwork-api:local
+docker build -f backend/Dockerfile -t fitwork:local .
+docker run -p 8001:8000 -e ENV=production -e JWT_SECRET=<random> -e DATABASE_URL=postgresql://... -e BOOTSTRAP_DATA=true -e DEMO_PASSWORD=<pw> fitwork:local
+# open http://localhost:8001  (website + API)
 ```

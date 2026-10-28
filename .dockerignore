@@ -1,9 +1,10 @@
-# Build context is the repo root (render.yaml dockerContext: .); only backend/ and data/ are used.
+# Build context is the repo root (render.yaml dockerContext: .); backend/, data/ and frontend/ are used.
 .git/
-frontend/
 e2e/
 loadtest/
 docker/
+frontend/node_modules/
+frontend/dist/
 backend/.venv/
 backend/.cache/
 backend/tests/

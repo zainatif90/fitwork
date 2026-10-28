@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     SEED_CSV_PATH: str = str(REPO_ROOT / "data" / "jobs_seed.csv")
     DEMO_PASSWORD: str = ""  # empty = do not create demo accounts
 
+    # Built React app (npm run build). If it exists, the API server also serves the website.
+    FRONTEND_DIST: str = str(REPO_ROOT / "frontend" / "dist")
+
     # --- Auth ---
     JWT_SECRET: str = Field(default="", description="Required. Long random string.")
     JWT_ALGORITHM: str = "HS256"
