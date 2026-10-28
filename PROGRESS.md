@@ -1,0 +1,30 @@
+# FitWork Progress
+
+Deadline: 19 November 2026
+
+## Target timeline
+| Dates | Work |
+|---|---|
+| 28 Oct - 6 Nov | Prompts 1-4: auth, profile, jobs ingestion, matching + dashboard |
+| 7 Nov - 12 Nov | Prompts 5-7: proposals, agency mode, skill gap |
+| 13 Nov - 16 Nov | Prompts 8-9: testing/security, deployment |
+| 17 Nov - 19 Nov | SRS update (Prompt 10), viva prep, buffer |
+
+## Done
+- [x] Prompt 0: CLAUDE.md created with audited decisions (fastembed, cookie/proxy auth, freshness rules, score calibration)
+
+## Environment setup (28 Oct)
+- [x] Installed: Node.js v24.22.1 (npm 11.19.1), Git 2.56.0, Python 3.11.9 (3.14 kept), Docker 29.9.2, WSL 3.0.3
+- [x] Git identity: Muhammad Zain <zainatif90@gmail.com>
+- [x] PC restarted, Docker engine running
+
+## Next
+- [x] Prompt 1: project skeleton + authentication (15 tests passing; proxy + cookie flow smoke-tested)
+- [ ] Prompt 2: profile wizard
+- [ ] Prompt 3: job ingestion
+- [ ] Prompt 4: matching engine + dashboard
+- [ ] Prompt 5: AI proposals
+- [ ] Prompt 6: agency mode
+- [ ] Prompt 7: skill gap radar
+- [ ] Prompt 8: testing, security, real results
+- [ ] Prompt 9: deployment

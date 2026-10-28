@@ -1,0 +1,34 @@
+# Local development services for FitWork.
+# Postgres uses the official pgvector image so the `vector` extension is available.
+# Start:  docker compose up -d      Stop:  docker compose down
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: fitwork-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fitwork}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fitwork_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-fitwork}
+    ports:
+      - "5433:5432"   # host 5433 -> container 5432 (avoids clashing with any local Postgres)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Creates the separate fitwork_test database used by pytest
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fitwork}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: fitwork-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:

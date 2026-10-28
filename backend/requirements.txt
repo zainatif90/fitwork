@@ -1,0 +1,30 @@
+# Web framework
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.32
+
+# Database
+sqlalchemy>=2.0.36,<2.1
+alembic>=1.14
+psycopg[binary]>=3.2
+pgvector>=0.3.6
+
+# Validation / settings
+pydantic>=2.9,<3
+pydantic-settings>=2.6
+email-validator>=2.2
+
+# Auth
+pyjwt>=2.10
+bcrypt>=4.2
+
+# Cache, HTTP, scheduling
+redis>=5.2
+httpx>=0.28
+apscheduler>=3.10,<4
+
+# NLP (ONNX version of all-MiniLM-L6-v2, CPU only)
+fastembed>=0.4
+numpy>=1.26
+
+# Tests
+pytest>=8.3

@@ -1,0 +1,91 @@
+"""
+Shared pytest setup.
+
+Safety: before the app is imported we point DATABASE_URL at the separate `fitwork_test`
+database and REDIS_URL at Redis DB 15, so tests can never touch development data.
+The test schema is rebuilt from the Alembic migrations once per test run, and every
+table is emptied after each test.
+"""
+import os
+from collections.abc import Iterator
+from pathlib import Path
+
+from dotenv import dotenv_values
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+_env = {**dotenv_values(BACKEND_DIR.parent / ".env"), **os.environ}
+os.environ["DATABASE_URL"] = _env.get(
+    "TEST_DATABASE_URL", "postgresql+psycopg://fitwork:fitwork_dev_pw@localhost:5433/fitwork_test"
+)
+os.environ["REDIS_URL"] = "redis://localhost:6379/15"
+os.environ["ENV"] = "test"
+os.environ["SCHEDULER_ENABLED"] = "false"
+assert "fitwork_test" in os.environ["DATABASE_URL"], "Refusing to run tests against a non-test database"
+
+import pytest  # noqa: E402
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
+
+from app.core.database import SessionLocal, engine  # noqa: E402
+from app.core.redis_client import redis_client  # noqa: E402
+from app.main import app  # noqa: E402
+
+# Tables filled by migrations (reference data) that must survive between tests
+KEEP_TABLES = {"alembic_version", "skills"}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def migrated_database() -> Iterator[None]:
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+    cfg = Config(str(BACKEND_DIR / "alembic.ini"))
+    cfg.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
+    command.upgrade(cfg, "head")
+    yield
+
+
+@pytest.fixture(autouse=True)
+def clean_state() -> Iterator[None]:
+    redis_client.flushdb()
+    yield
+    with engine.begin() as conn:
+        tables = conn.execute(
+            text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+        ).scalars()
+        to_clear = [t for t in tables if t not in KEEP_TABLES]
+        if to_clear:
+            conn.execute(text(f"TRUNCATE {', '.join(to_clear)} RESTART IDENTITY CASCADE"))
+    redis_client.flushdb()
+
+
+@pytest.fixture
+def client() -> Iterator[TestClient]:
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture
+def db() -> Iterator[Session]:
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def register(client: TestClient, email: str = "sara@example.com", password: str = "Secret123",
+             role: str = "freelancer", full_name: str = "Sara Khan") -> dict:
+    """Register a user and return the JSON body (contains access_token and user)."""
+    res = client.post("/api/auth/register", json={
+        "email": email, "password": password, "role": role, "full_name": full_name,
+    })
+    assert res.status_code == 201, res.text
+    return res.json()
+
+
+def auth_header(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
