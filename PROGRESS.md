@@ -21,7 +21,7 @@ Deadline: 19 November 2026
 ## Next
 - [x] Prompt 1: project skeleton + authentication (15 tests passing; proxy + cookie flow smoke-tested)
 - [x] Prompt 2: profile wizard (fastembed embeddings, 300+ seeded skills, 34 tests passing)
-- [ ] Prompt 3: job ingestion
+- [x] Prompt 3: job ingestion (Freelancer.com API + 494 real seed jobs + manual paste; 1,486 active jobs embedded; 49 tests)
 - [ ] Prompt 4: matching engine + dashboard
 - [ ] Prompt 5: AI proposals
 - [ ] Prompt 6: agency mode
