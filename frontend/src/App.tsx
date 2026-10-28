@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "./components/AppLayout";
 import { GuestRoute, ProtectedRoute } from "./components/ProtectedRoute";
+import AcceptInvite from "./pages/AcceptInvite";
+import Agency from "./pages/Agency";
 import Dashboard from "./pages/Dashboard";
 import JobDetail from "./pages/JobDetail";
 import Login from "./pages/Login";
@@ -18,13 +20,14 @@ export default function App() {
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
       <Route path="/verify" element={<VerifyEmail />} />
+      <Route path="/invite/:token" element={<ProtectedRoute><AcceptInvite /></ProtectedRoute>} />
       <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="jobs/:id" element={<JobDetail />} />
         <Route path="skill-gap" element={<Placeholder title="Skill Gap Radar" />} />
-        <Route path="agency" element={<Placeholder title="Agency" />} />
+        <Route path="agency" element={<Agency />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

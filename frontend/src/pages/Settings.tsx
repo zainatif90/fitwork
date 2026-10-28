@@ -2,6 +2,7 @@ import { ExternalLink, Pencil } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { AgencySettings } from "../components/AgencySettings";
 import { Badge, Card, FullPageSpinner, PageHeader } from "../components/ui";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -84,6 +85,7 @@ export default function Settings({ extra }: { extra?: ReactNode }) {
             <p className="mt-3 text-sm text-slate-500">You haven't set up your profile yet.</p>
           )}
         </Card>
+        {user?.role === "agency_owner" && <AgencySettings />}
         {extra}
       </div>
     </>

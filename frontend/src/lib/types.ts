@@ -99,6 +99,72 @@ export interface JobDetail {
   feedback: Outcome | null;
 }
 
+export interface AgencyMemberRow {
+  id: string;
+  user_id: string | null;
+  email: string;
+  name: string | null;
+  status: "invited" | "active";
+  invited_at: string;
+  joined_at: string | null;
+}
+
+export interface Agency {
+  id: string;
+  name: string;
+  role: "owner" | "member";
+  owner_name: string;
+  members: AgencyMemberRow[];
+}
+
+export interface MemberScore {
+  member_id: string;
+  name: string;
+  score: number;
+  reason: string;
+  matched_skills: string[];
+}
+
+export interface RoutingRecommendation {
+  job: JobSummary;
+  recommended: MemberScore;
+  alternatives: MemberScore[];
+  low_team_fit: boolean;
+  missing_skills: string[];
+  rerouted_after_decline: boolean;
+}
+
+export type AssignmentStatus = "recommended" | "assigned" | "declined" | "applied" | "won" | "lost";
+
+export interface Assignment {
+  id: string;
+  job: JobSummary;
+  member_id: string;
+  member_name: string;
+  status: AssignmentStatus;
+  score: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamMemberStats {
+  member_id: string;
+  name: string;
+  email: string;
+  top_skills: string[];
+  has_profile: boolean;
+  active_assignments: number;
+  win_rate_30d: number | null;
+  decided_30d: number;
+  routed_today: number;
+}
+
+export interface TeamStats {
+  members: TeamMemberStats[];
+  win_rate_series: Array<{ week: string } & Record<string, number | null | string>>;
+  has_outcomes: boolean;
+}
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;

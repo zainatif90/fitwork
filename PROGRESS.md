@@ -24,7 +24,7 @@ Deadline: 19 November 2026
 - [x] Prompt 3: job ingestion (Freelancer.com API + 494 real seed jobs + manual paste; 1,486 active jobs embedded; 49 tests)
 - [x] Prompt 4: matching engine + dashboard (69 tests; /matches p50 64 ms uncached / 4.7 ms cached on 1,486 real jobs; cosine calibration evidence via app.scripts.cosine_distribution)
 - [x] Prompt 5: AI proposals (Gemini/OpenAI via env, template fallback, 20/day limit; 75 tests). NEEDS USER: LLM_API_KEY in .env
-- [ ] Prompt 6: agency mode
+- [x] Prompt 6: agency mode (invites, routing via matching service, decline re-route, role checks, win-rate chart; 84 tests)
 - [ ] Prompt 7: skill gap radar
 - [ ] Prompt 8: testing, security, real results
 - [ ] Prompt 9: deployment
