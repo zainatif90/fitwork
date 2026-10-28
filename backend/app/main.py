@@ -13,7 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.routers import auth
+from app.routers import auth, profile, skills
+from app.services import embeddings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("fitwork")
@@ -22,6 +23,10 @@ log = logging.getLogger("fitwork")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("FitWork API starting (env=%s)", settings.ENV)
+    try:
+        embeddings.warm_up()  # load the NLP model once, before the first request
+    except Exception:
+        log.exception("Embedding model failed to load; profiles will be saved as 'pending'")
     yield
     log.info("FitWork API stopped")
 
@@ -65,6 +70,8 @@ async def unhandled_error(request: Request, exc: Exception) -> JSONResponse:
 
 API_PREFIX = "/api"
 app.include_router(auth.router, prefix=API_PREFIX)
+app.include_router(profile.router, prefix=API_PREFIX)
+app.include_router(skills.router, prefix=API_PREFIX)
 
 
 @app.get("/api/health", tags=["health"])

@@ -1,4 +1,4 @@
-# FitWork Progress
+﻿# FitWork Progress
 
 Deadline: 19 November 2026
 
@@ -20,7 +20,7 @@ Deadline: 19 November 2026
 
 ## Next
 - [x] Prompt 1: project skeleton + authentication (15 tests passing; proxy + cookie flow smoke-tested)
-- [ ] Prompt 2: profile wizard
+- [x] Prompt 2: profile wizard (fastembed embeddings, 300+ seeded skills, 34 tests passing)
 - [ ] Prompt 3: job ingestion
 - [ ] Prompt 4: matching engine + dashboard
 - [ ] Prompt 5: AI proposals
