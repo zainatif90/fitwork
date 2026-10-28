@@ -1,4 +1,4 @@
-﻿"""
+"""
 FitWork FastAPI application.
 
 Run (from /backend):  .venv\\Scripts\\uvicorn app.main:app --reload --port 8000
@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.routers import admin, auth, jobs, matches, profile, skills
+from app.routers import admin, auth, jobs, matches, profile, proposals, skills
 from app.services import embeddings
 from app.services.scheduler import start_scheduler, stop_scheduler
 
@@ -77,6 +77,7 @@ app.include_router(profile.router, prefix=API_PREFIX)
 app.include_router(skills.router, prefix=API_PREFIX)
 app.include_router(jobs.router, prefix=API_PREFIX)
 app.include_router(matches.router, prefix=API_PREFIX)
+app.include_router(proposals.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
 
 
