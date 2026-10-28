@@ -33,3 +33,6 @@ loadtest/results/
 # E2E
 e2e/.venv/
 e2e/shots/
+
+# Deployment secrets (never commit)
+deploy.env

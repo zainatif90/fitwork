@@ -27,4 +27,4 @@ Deadline: 19 November 2026
 - [x] Prompt 6: agency mode (invites, routing via matching service, decline re-route, role checks, win-rate chart; 84 tests)
 - [x] Prompt 7: skill gap radar (re-embed per candidate skill, vectorised re-scoring; ~220 ms on 1,486 jobs; 90 tests)
 - [x] Prompt 8: testing, security, real results (131 tests, Locust 50 users 0 failures, E2E 11/11, TEST_RESULTS.md)
-- [ ] Prompt 9: deployment
+- [~] Prompt 9: deployment - files ready & verified locally (Docker image 286 MiB RAM in production mode, demo accounts script). WAITING ON USER: DEPLOYMENT.md section A (GitHub, Neon, Upstash, Gemini key -> deploy.env)
