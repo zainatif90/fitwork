@@ -8,9 +8,9 @@ import Dashboard from "./pages/Dashboard";
 import JobDetail from "./pages/JobDetail";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
-import Placeholder from "./pages/Placeholder";
 import Register from "./pages/Register";
 import Settings from "./pages/Settings";
+import SkillGap from "./pages/SkillGap";
 import VerifyEmail from "./pages/VerifyEmail";
 
 export default function App() {
@@ -26,7 +26,7 @@ export default function App() {
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="jobs/:id" element={<JobDetail />} />
-        <Route path="skill-gap" element={<Placeholder title="Skill Gap Radar" />} />
+        <Route path="skill-gap" element={<SkillGap />} />
         <Route path="agency" element={<Agency />} />
         <Route path="settings" element={<Settings />} />
       </Route>
