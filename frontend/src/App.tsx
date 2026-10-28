@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { GuestRoute, ProtectedRoute } from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
+import JobDetail from "./pages/JobDetail";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Placeholder from "./pages/Placeholder";
@@ -21,6 +22,7 @@ export default function App() {
 
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
+        <Route path="jobs/:id" element={<JobDetail />} />
         <Route path="skill-gap" element={<Placeholder title="Skill Gap Radar" />} />
         <Route path="agency" element={<Placeholder title="Agency" />} />
         <Route path="settings" element={<Settings />} />
