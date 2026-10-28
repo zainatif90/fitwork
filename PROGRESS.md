@@ -27,4 +27,4 @@ Deadline: 19 November 2026
 - [x] Prompt 6: agency mode (invites, routing via matching service, decline re-route, role checks, win-rate chart; 84 tests)
 - [x] Prompt 7: skill gap radar (re-embed per candidate skill, vectorised re-scoring; ~220 ms on 1,486 jobs; 90 tests)
 - [x] Prompt 8: testing, security, real results (131 tests, Locust 50 users 0 failures, E2E 11/11, TEST_RESULTS.md)
-- [~] Prompt 9: deployment - self-bootstrapping image verified on an empty DB (494 jobs + 4 demo accounts, 226 MiB). Fixed URLs: fitwork-zain2026.vercel.app / fitwork-api-zain2026.onrender.com. WAITING ON USER: GitHub device login, Neon, Render blueprint, Vercel import (DEPLOYMENT.md)
+- [~] Prompt 9: deployment - self-bootstrapping image verified on an empty DB (494 jobs + 4 demo accounts, 226 MiB). Fixed URLs: fitwork-zain2026.vercel.app / fitwork-api-zain2026.onrender.com. Code pushed to PRIVATE repo github.com/zainatif90/fitwork (28 Oct). WAITING ON USER: Neon project, Render blueprint, Vercel import (DEPLOYMENT.md)
