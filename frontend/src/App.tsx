@@ -1,17 +1,21 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "./components/AppLayout";
 import { GuestRoute, ProtectedRoute } from "./components/ProtectedRoute";
+import { FullPageSpinner } from "./components/ui";
 import AcceptInvite from "./pages/AcceptInvite";
-import Agency from "./pages/Agency";
 import Dashboard from "./pages/Dashboard";
 import JobDetail from "./pages/JobDetail";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Register from "./pages/Register";
 import Settings from "./pages/Settings";
-import SkillGap from "./pages/SkillGap";
 import VerifyEmail from "./pages/VerifyEmail";
+
+// The chart pages pull in Recharts (large), so they are loaded only when opened.
+const Agency = lazy(() => import("./pages/Agency"));
+const SkillGap = lazy(() => import("./pages/SkillGap"));
 
 export default function App() {
   return (
@@ -26,8 +30,8 @@ export default function App() {
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="jobs/:id" element={<JobDetail />} />
-        <Route path="skill-gap" element={<SkillGap />} />
-        <Route path="agency" element={<Agency />} />
+        <Route path="skill-gap" element={<Suspense fallback={<FullPageSpinner />}><SkillGap /></Suspense>} />
+        <Route path="agency" element={<Suspense fallback={<FullPageSpinner />}><Agency /></Suspense>} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

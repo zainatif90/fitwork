@@ -34,11 +34,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("FitWork API stopped")
 
 
+# Interactive API docs are handy in development but are switched off in production
+# (set ENABLE_API_DOCS=true to keep them, e.g. for the viva demo).
+_docs = not settings.is_production or settings.ENABLE_API_DOCS
+
 app = FastAPI(
     title="FitWork API",
     version="1.0.0",
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json",
+    docs_url="/api/docs" if _docs else None,
+    redoc_url=None,
+    openapi_url="/api/openapi.json" if _docs else None,
     lifespan=lifespan,
 )
 
@@ -59,6 +64,10 @@ async def security_headers(request: Request, call_next):  # type: ignore[no-unty
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if not request.url.path.startswith("/api/docs"):
+        # The API only returns JSON, so it never needs to load scripts, styles or frames.
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+        response.headers["Cache-Control"] = "no-store"  # never cache personal data in shared caches
     if settings.is_production:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response

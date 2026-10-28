@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     # --- General ---
     ENV: str = "development"  # development | production | test
+    ENABLE_API_DOCS: bool = False  # docs are always on outside production
     FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: str = "http://localhost:5173"  # comma separated
 

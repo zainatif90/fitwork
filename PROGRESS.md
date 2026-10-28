@@ -26,5 +26,5 @@ Deadline: 19 November 2026
 - [x] Prompt 5: AI proposals (Gemini/OpenAI via env, template fallback, 20/day limit; 75 tests). NEEDS USER: LLM_API_KEY in .env
 - [x] Prompt 6: agency mode (invites, routing via matching service, decline re-route, role checks, win-rate chart; 84 tests)
 - [x] Prompt 7: skill gap radar (re-embed per candidate skill, vectorised re-scoring; ~220 ms on 1,486 jobs; 90 tests)
-- [ ] Prompt 8: testing, security, real results
+- [x] Prompt 8: testing, security, real results (131 tests, Locust 50 users 0 failures, E2E 11/11, TEST_RESULTS.md)
 - [ ] Prompt 9: deployment

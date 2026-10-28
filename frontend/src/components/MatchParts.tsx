@@ -51,7 +51,7 @@ export function JobCard({ match, rank }: { match: Match; rank: number }) {
   const { job } = match;
   return (
     <Card className="group p-5 transition hover:border-brand-200 hover:shadow-md">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">{rank}</span>
@@ -61,15 +61,15 @@ export function JobCard({ match, rank }: { match: Match; rank: number }) {
               <span className="inline-flex items-center gap-1"><MessageSquare className="h-3 w-3" />{job.proposals_count} proposals</span>
             )}
           </div>
-          <Link to={`/app/jobs/${job.id}`} className="text-base font-semibold text-slate-900 group-hover:text-brand-700">
+          <Link to={`/app/jobs/${job.id}`} className="block text-base font-semibold text-slate-900 group-hover:text-brand-700">
             {job.title}
           </Link>
-          <p className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-slate-700">
+          <p className="mt-1 flex items-center gap-1 text-sm font-medium text-slate-700">
             <DollarSign className="h-3.5 w-3.5 text-slate-400" />
             {formatBudget(job)}
           </p>
         </div>
-        <div className="text-right">
+        <div className="w-full sm:w-auto sm:text-right">
           <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Match Score</p>
           <ScoreBar score={match.score} />
         </div>

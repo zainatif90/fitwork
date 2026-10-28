@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 import { useAuth } from "../lib/auth";
@@ -18,12 +18,20 @@ export function ProtectedRoute({ children, roles }: { children: ReactNode; roles
   return <>{children}</>;
 }
 
-/** For login/register pages: logged-in users go straight to the app. */
+/**
+ * For login/register pages: users who were ALREADY logged in when they opened the page go
+ * straight to the app. Users who log in or register on this page are navigated by the page
+ * itself (e.g. register -> /onboarding); redirecting here as well would race with that.
+ */
 export function GuestRoute({ children }: { children: ReactNode }) {
   const { status } = useAuth();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
+  const authedOnArrival = useRef<boolean | null>(null);
+  if (status !== "loading" && authedOnArrival.current === null) {
+    authedOnArrival.current = status === "authenticated";
+  }
   if (status === "loading") return <FullPageSpinner />;
-  if (status === "authenticated") return <Navigate to={from ?? "/app"} replace />;
+  if (authedOnArrival.current) return <Navigate to={from ?? "/app"} replace />;
   return <>{children}</>;
 }

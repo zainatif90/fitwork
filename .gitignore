@@ -29,3 +29,7 @@ Thumbs.db
 
 # Load test output
 loadtest/results/
+
+# E2E
+e2e/.venv/
+e2e/shots/
