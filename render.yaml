@@ -1,6 +1,7 @@
-# Render Blueprint for FitWork (Dashboard -> New -> Blueprint -> pick this repo).
+# Render Blueprint for FitWork (Dashboard -> New -> Blueprint -> pick this repo -> Apply).
 # Creates: the API (Docker) + a free Redis-compatible Key Value store for cache / rate limits.
-# Secrets are marked sync: false, so Render asks for them in the dashboard; they are never stored in git.
+# Render only asks for DATABASE_URL (Neon) and LLM_API_KEY; everything else is filled in here.
+# On first start the API loads the seed jobs and the demo accounts by itself (BOOTSTRAP_DATA).
 services:
   - type: keyvalue
     name: fitwork-redis
@@ -10,17 +11,19 @@ services:
     ipAllowList: []          # internal connections only (from the API service)
 
   - type: web
-    name: fitwork-api
+    name: fitwork-api-zain2026   # -> https://fitwork-api-zain2026.onrender.com (used in frontend/vercel.json)
     runtime: docker
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
     plan: free
     region: frankfurt
     healthCheckPath: /api/health
     envVars:
       - key: ENV
         value: production
-      - key: DATABASE_URL        # Neon connection string, postgresql+psycopg://...?sslmode=require
+      - key: DATABASE_URL        # paste the Neon connection string exactly as Neon shows it
+        sync: false
+      - key: LLM_API_KEY         # Gemini key (type "none" to skip: proposals then use the template)
         sync: false
       - key: REDIS_URL
         fromService:
@@ -29,17 +32,19 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: FRONTEND_URL        # https://<your-app>.vercel.app (set after the Vercel deploy)
-        sync: false
-      - key: CORS_ORIGINS        # same as FRONTEND_URL
-        sync: false
+      - key: FRONTEND_URL
+        value: https://fitwork-zain2026.vercel.app
+      - key: CORS_ORIGINS
+        value: https://fitwork-zain2026.vercel.app
       - key: LLM_PROVIDER
         value: gemini
       - key: LLM_MODEL
         value: gemini-2.5-flash
-      - key: LLM_API_KEY
-        sync: false
       - key: SCHEDULER_ENABLED
         value: "true"
       - key: ENABLE_API_DOCS
         value: "true"
+      - key: BOOTSTRAP_DATA
+        value: "true"
+      - key: DEMO_PASSWORD       # demo personas only (see DEMO.md); the repo is private
+        value: Demo-JQhJBMoH4Z7

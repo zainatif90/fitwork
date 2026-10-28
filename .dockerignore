@@ -1,0 +1,13 @@
+# Build context is the repo root (render.yaml dockerContext: .); only backend/ and data/ are used.
+.git/
+frontend/
+e2e/
+loadtest/
+docker/
+backend/.venv/
+backend/.cache/
+backend/tests/
+**/__pycache__/
+**/*.pyc
+.env
+deploy.env

@@ -42,8 +42,8 @@ def agency_of_member(db: Session, user: User) -> tuple[Agency, AgencyMember]:
     return row[0], row[1]
 
 
-def invite_member(db: Session, agency: Agency, owner: User, email: str) -> tuple[AgencyMember, str]:
-    """Create (or refresh) an invite. Returns the member row and the one-time invite link."""
+def invite_member(db: Session, agency: Agency, owner: User, email: str) -> tuple[AgencyMember, str, str]:
+    """Create (or refresh) an invite. Returns the member row, the one-time token and the invite link."""
     email = email.lower()
     if email == owner.email:
         raise HTTPException(status_code=400, detail="You cannot invite yourself")
@@ -65,7 +65,7 @@ def invite_member(db: Session, agency: Agency, owner: User, email: str) -> tuple
     link = f"{settings.FRONTEND_URL}/invite/{token}"
     log.info("Agency invite for %s: %s", email, link)
     print(f"\n[DEV EMAIL] Agency invite for {email}: {link}\n", flush=True)
-    return member, link
+    return member, token, link
 
 
 def find_invite(db: Session, token: str) -> tuple[AgencyMember, Agency]:

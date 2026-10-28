@@ -48,7 +48,8 @@ class AgencyOut(BaseModel):
 
 class InviteOut(BaseModel):
     member: MemberRow
-    invite_link: str
+    invite_link: str   # built from FRONTEND_URL (used in the dev email log)
+    invite_token: str  # the browser builds the link from its own address, so it is right on any domain
 
 
 class InviteInfoOut(BaseModel):

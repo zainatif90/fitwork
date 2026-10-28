@@ -30,7 +30,7 @@ class LLMClient:
         self.timeout = timeout or settings.LLM_TIMEOUT_SEC
 
     def generate(self, system: str, prompt: str) -> str:
-        if not self.api_key:
+        if not self.api_key or self.api_key.strip().lower() == "none":
             raise LLMError("LLM_API_KEY is not set")
         try:
             if self.provider == "gemini":

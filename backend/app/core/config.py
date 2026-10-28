@@ -6,9 +6,12 @@ so no secret is ever written in the code. Tunable numbers (Match Score weights,
 thresholds, cache times) also live here so there is exactly one place to change them.
 """
 from functools import lru_cache
+from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
@@ -28,6 +31,20 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+psycopg://fitwork:fitwork_dev_pw@localhost:5433/fitwork"
     TEST_DATABASE_URL: str = "postgresql+psycopg://fitwork:fitwork_dev_pw@localhost:5433/fitwork_test"
     REDIS_URL: str = "redis://localhost:6379/0"
+
+    @field_validator("DATABASE_URL", "TEST_DATABASE_URL")
+    @classmethod
+    def use_psycopg_driver(cls, v: str) -> str:
+        """Accept the plain URL that Neon/Render show (postgresql://...) and tell SQLAlchemy to use psycopg 3."""
+        for prefix in ("postgresql://", "postgres://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
+
+    # --- First-start setup (production): load the seed jobs and demo accounts if missing ---
+    BOOTSTRAP_DATA: bool = False
+    SEED_CSV_PATH: str = str(REPO_ROOT / "data" / "jobs_seed.csv")
+    DEMO_PASSWORD: str = ""  # empty = do not create demo accounts
 
     # --- Auth ---
     JWT_SECRET: str = Field(default="", description="Required. Long random string.")

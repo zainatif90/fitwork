@@ -41,8 +41,8 @@ export function AgencySettings() {
     setError(null);
     setBusy(true);
     try {
-      const res = await api<{ member: AgencyMemberRow; invite_link: string }>("/agency/invite", { method: "POST", body: { email } });
-      setLastLink({ email: res.member.email, link: res.invite_link });
+      const res = await api<{ member: AgencyMemberRow; invite_token: string }>("/agency/invite", { method: "POST", body: { email } });
+      setLastLink({ email: res.member.email, link: `${window.location.origin}/invite/${res.invite_token}` });
       setEmail("");
       setAgency(await api<Agency>("/agency/me"));
     } catch (err) {

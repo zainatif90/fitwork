@@ -1,6 +1,6 @@
 # FitWork demo accounts
 
-All accounts use the same password: **`Demo-c5hNPeSJOG7`**
+All accounts use the same password: **`Demo-JQhJBMoH4Z7`**
 (Demo personas only — not real people. Emails are pre-verified and every profile is complete.)
 
 | Role | Name | Email | Main skills |

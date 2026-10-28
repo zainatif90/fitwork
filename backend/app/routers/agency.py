@@ -78,9 +78,9 @@ def rename_agency(data: AgencyRenameIn, user: User = Depends(owner_only), db: Se
 @router.post("/invite", response_model=InviteOut, status_code=status.HTTP_201_CREATED)
 def invite(data: InviteIn, user: User = Depends(owner_only), db: Session = Depends(get_db)) -> dict:
     agency = agency_service.get_or_create_agency(db, user)
-    member, link = agency_service.invite_member(db, agency, user, data.email)
+    member, token, link = agency_service.invite_member(db, agency, user, data.email)
     row = next(m for m in agency_service.list_members(db, agency) if m["id"] == str(member.id))
-    return {"member": MemberRow(**row), "invite_link": link}
+    return {"member": MemberRow(**row), "invite_link": link, "invite_token": token}
 
 
 @router.get("/invite/{token}", response_model=InviteInfoOut)

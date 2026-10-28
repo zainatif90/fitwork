@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.core.security import hash_password
@@ -61,42 +62,46 @@ def make_password() -> str:
 def main() -> None:
     password = os.getenv("DEMO_PASSWORD") or make_password()
     db = SessionLocal()
-    users: dict[str, User] = {}
     try:
-        for acc in ACCOUNTS:
-            user = db.scalar(select(User).where(User.email == acc["email"]))
-            if user is None:
-                user = User(email=acc["email"], full_name=acc["full_name"], role=acc["role"])
-                db.add(user)
-            user.full_name = acc["full_name"]
-            user.role = acc["role"]
-            user.password_hash = hash_password(password)
-            user.is_verified = True
-            db.commit()
-            db.refresh(user)
-            save_profile(db, user.id, ProfileIn(**acc["profile"]))
-            users[acc["key"]] = user
-
-        owner = users["owner"]
-        agency = db.scalar(select(Agency).where(Agency.owner_id == owner.id))
-        if agency is None:
-            agency = Agency(owner_id=owner.id, name=AGENCY_NAME)
-            db.add(agency)
-            db.commit()
-            db.refresh(agency)
-        for key in ("member", "member2"):
-            u = users[key]
-            row = db.scalar(select(AgencyMember).where(AgencyMember.user_id == u.id))
-            if row is None:
-                db.add(AgencyMember(agency_id=agency.id, user_id=u.id, email=u.email, status="active",
-                                    joined_at=datetime.now(timezone.utc)))
-        owner.is_admin = True  # the demo owner can trigger an ingestion run
-        db.commit()
+        ensure_demo_accounts(db, password)
     finally:
         db.close()
-
     write_demo_md(password)
     print("Demo accounts ready. Password:", password)
+
+
+def ensure_demo_accounts(db: Session, password: str) -> None:
+    """Create or refresh every demo account, its profile, and the demo agency (idempotent)."""
+    users: dict[str, User] = {}
+    for acc in ACCOUNTS:
+        user = db.scalar(select(User).where(User.email == acc["email"]))
+        if user is None:
+            user = User(email=acc["email"], full_name=acc["full_name"], role=acc["role"])
+            db.add(user)
+        user.full_name = acc["full_name"]
+        user.role = acc["role"]
+        user.password_hash = hash_password(password)
+        user.is_verified = True
+        db.commit()
+        db.refresh(user)
+        save_profile(db, user.id, ProfileIn(**acc["profile"]))
+        users[acc["key"]] = user
+
+    owner = users["owner"]
+    agency = db.scalar(select(Agency).where(Agency.owner_id == owner.id))
+    if agency is None:
+        agency = Agency(owner_id=owner.id, name=AGENCY_NAME)
+        db.add(agency)
+        db.commit()
+        db.refresh(agency)
+    for key in ("member", "member2"):
+        u = users[key]
+        row = db.scalar(select(AgencyMember).where(AgencyMember.user_id == u.id))
+        if row is None:
+            db.add(AgencyMember(agency_id=agency.id, user_id=u.id, email=u.email, status="active",
+                                joined_at=datetime.now(timezone.utc)))
+    owner.is_admin = True  # the demo owner can trigger an ingestion run
+    db.commit()
 
 
 def write_demo_md(password: str) -> None:

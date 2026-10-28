@@ -1,17 +1,20 @@
 # FitWork API image (CPU only, no PyTorch: the NLP model runs on ONNX Runtime via fastembed).
+# Build from the REPO ROOT so the seed dataset can be included:  docker build -f backend/Dockerfile .
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    EMBEDDING_CACHE_DIR=/app/.cache/fastembed
+    EMBEDDING_CACHE_DIR=/app/.cache/fastembed \
+    SEED_CSV_PATH=/app/data/jobs_seed.csv
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY . .
+COPY backend/ .
+COPY data/jobs_seed.csv /app/data/jobs_seed.csv
 
 # Download the all-MiniLM-L6-v2 ONNX model at build time, so a cold start does not download it.
 RUN python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2', cache_dir='/app/.cache/fastembed')"

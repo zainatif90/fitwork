@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.routers import admin, agency, auth, jobs, matches, profile, proposals, skill_gap, skills
 from app.services import embeddings
+from app.services.bootstrap import start_bootstrap
 from app.services.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -28,6 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         embeddings.warm_up()  # load the NLP model once, before the first request
     except Exception:
         log.exception("Embedding model failed to load; profiles will be saved as 'pending'")
+    start_bootstrap()  # production first start: seed jobs + demo accounts (only if missing)
     start_scheduler()
     yield
     stop_scheduler()
