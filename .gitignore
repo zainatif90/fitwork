@@ -36,3 +36,7 @@ e2e/shots/
 
 # Deployment secrets (never commit)
 deploy.env
+
+# Firebase CLI
+firebase-debug.log
+.firebase/
