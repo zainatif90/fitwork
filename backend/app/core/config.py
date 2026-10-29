@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     SEED_CSV_PATH: str = str(REPO_ROOT / "data" / "jobs_seed.csv")
     DEMO_PASSWORD: str = ""  # empty = do not create demo accounts
 
+    # Who may show the web app inside a frame. "'none'" everywhere except Hugging Face Spaces,
+    # whose Space page embeds the app (set to https://huggingface.co there).
+    FRAME_ANCESTORS: str = "'none'"
+
     # Built React app (npm run build). If it exists, the API server also serves the website.
     FRONTEND_DIST: str = str(REPO_ROOT / "frontend" / "dist")
 
