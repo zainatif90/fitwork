@@ -34,7 +34,8 @@ from app.schemas.auth import LoginIn, MessageOut, RegisterIn, TokenOut, UserOut
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-REFRESH_COOKIE = "fitwork_refresh"
+# Firebase Hosting only forwards a cookie named "__session" to Cloud Run, so the name is configurable.
+REFRESH_COOKIE = settings.REFRESH_COOKIE_NAME
 
 
 def _set_refresh_cookie(response: Response, user_id: str) -> None:

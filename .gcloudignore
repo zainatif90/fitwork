@@ -1,0 +1,14 @@
+# Files NOT uploaded to Google Cloud Build (keeps the upload small and secrets local)
+.git/
+.gitignore
+**/node_modules/
+**/.venv/
+**/__pycache__/
+backend/.cache/
+backend/tests/
+frontend/dist/
+e2e/
+loadtest/
+.env
+deploy.env
+*.pyc

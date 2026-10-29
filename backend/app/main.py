@@ -103,6 +103,7 @@ app.include_router(proposals.router, prefix=API_PREFIX)
 app.include_router(agency.router, prefix=API_PREFIX)
 app.include_router(skill_gap.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
+app.include_router(admin.internal_router, prefix=API_PREFIX)
 
 
 @app.get("/api/health", tags=["health"])

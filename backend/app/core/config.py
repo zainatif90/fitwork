@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # --- Database / cache ---
     DATABASE_URL: str = "postgresql+psycopg://fitwork:fitwork_dev_pw@localhost:5433/fitwork"
     TEST_DATABASE_URL: str = "postgresql+psycopg://fitwork:fitwork_dev_pw@localhost:5433/fitwork_test"
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = "redis://localhost:6379/0"  # or "memory" for the built-in single-instance store
 
     @field_validator("DATABASE_URL", "TEST_DATABASE_URL")
     @classmethod
@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     VERIFY_TOKEN_HOURS: int = 48
     BCRYPT_ROUNDS: int = 12
     LOGIN_RATE_LIMIT_PER_MIN: int = 5
+    REFRESH_COOKIE_NAME: str = "fitwork_refresh"  # "__session" behind Firebase Hosting
 
     # --- NLP ---
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -71,6 +72,7 @@ class Settings(BaseSettings):
     FREELANCER_REQUEST_DELAY_SEC: float = 1.5
     SCHEDULER_ENABLED: bool = True
     INGEST_INTERVAL_MIN: int = 30
+    CRON_SECRET: str = ""  # shared secret for POST /api/internal/ingest (Cloud Scheduler); empty = disabled
     LIVE_JOB_MAX_AGE_HOURS: int = 72
 
     # --- Match Score (heuristic, tunable; see CLAUDE.md) ---
