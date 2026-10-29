@@ -1,0 +1,22 @@
+# Every 30 minutes: ask the live app to fetch new Freelancer.com jobs (and hide jobs older than 72 h).
+# Render's free plan sleeps when idle, so the app's own timer is not reliable; this wakes it and runs the fetch.
+# The endpoint is protected by the CRON_SECRET repository secret (same value as on Render).
+name: Fetch jobs
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Trigger ingestion
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          curl --fail-with-body --retry 3 --retry-delay 30 --max-time 300 \
+            -X POST "$APP_URL/api/internal/ingest" -H "X-Cron-Secret: $CRON_SECRET"
