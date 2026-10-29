@@ -9,6 +9,11 @@
 # Run by hand:   powershell -ExecutionPolicy Bypass -File deploy\start-fitwork.ps1
 # It also runs automatically at Windows login (shortcut in the Startup folder).
 
+param(
+    # Also create a shortcut in the Windows Startup folder so FitWork starts at every login.
+    [switch]$InstallAutostart
+)
+
 $ErrorActionPreference = "Stop"
 $Repo = Split-Path -Parent $PSScriptRoot
 $Dir = "C:\Users\PSBA\FitWork"
@@ -78,4 +83,17 @@ Log "FitWork is running on port $Port"
 Set-Content -Path (Join-Path $Dir "current-url.txt") -Value $url
 $python = Join-Path $Repo "backend\.venv\Scripts\python.exe"
 & $python (Join-Path $Repo "deploy\update_redirect.py") $url 2>&1 | ForEach-Object { Log "redirect: $_" }
+if ($InstallAutostart) {
+    $startup = [Environment]::GetFolderPath("Startup")
+    $shell = New-Object -ComObject WScript.Shell
+    $lnk = $shell.CreateShortcut((Join-Path $startup "FitWork.lnk"))
+    $lnk.TargetPath = "powershell.exe"
+    $lnk.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    $lnk.WindowStyle = 7  # minimized
+    $lnk.Save()
+    Log "Autostart installed: FitWork starts at every Windows login (remove: delete FitWork.lnk in $startup)"
+}
 Log "Done. Public address: $url"
+Write-Output ""
+Write-Output "FitWork is LIVE:  $url"
+Write-Output "Fixed address:    https://zain369-fitwork.static.hf.space"
