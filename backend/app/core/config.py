@@ -41,10 +41,9 @@ class Settings(BaseSettings):
                 return "postgresql+psycopg://" + v[len(prefix):]
         return v
 
-    # --- First-start setup (production): load the seed jobs and demo accounts if missing ---
+    # --- First-start setup (production): load the seed jobs if missing ---
     BOOTSTRAP_DATA: bool = False
     SEED_CSV_PATH: str = str(REPO_ROOT / "data" / "jobs_seed.csv")
-    DEMO_PASSWORD: str = ""  # empty = do not create demo accounts
 
     # Who may show the web app inside a frame. "'none'" everywhere except Hugging Face Spaces,
     # whose Space page embeds the app (set to https://huggingface.co there).
@@ -62,6 +61,15 @@ class Settings(BaseSettings):
     BCRYPT_ROUNDS: int = 12
     LOGIN_RATE_LIMIT_PER_MIN: int = 5
     REFRESH_COOKIE_NAME: str = "fitwork_refresh"  # "__session" behind Firebase Hosting
+    RESET_TOKEN_MINUTES: int = 60
+    RESET_REQUESTS_PER_HOUR: int = 3
+
+    # --- Email (SMTP). Empty = emails are printed to the console (development) ---
+    SMTP_HOST: str = ""       # e.g. smtp.gmail.com
+    SMTP_PORT: int = 587      # 587 = STARTTLS, 465 = SSL
+    SMTP_USER: str = ""       # e.g. your Gmail address
+    SMTP_PASSWORD: str = ""   # Gmail App Password (16 characters), never your normal password
+    EMAIL_FROM: str = ""      # defaults to SMTP_USER
 
     # --- NLP ---
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"

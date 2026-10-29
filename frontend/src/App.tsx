@@ -6,10 +6,12 @@ import { GuestRoute, ProtectedRoute } from "./components/ProtectedRoute";
 import { FullPageSpinner } from "./components/ui";
 import AcceptInvite from "./pages/AcceptInvite";
 import Dashboard from "./pages/Dashboard";
+import ForgotPassword from "./pages/ForgotPassword";
 import JobDetail from "./pages/JobDetail";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
 import VerifyEmail from "./pages/VerifyEmail";
 
@@ -24,6 +26,8 @@ export default function App() {
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
       <Route path="/verify" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/invite/:token" element={<ProtectedRoute><AcceptInvite /></ProtectedRoute>} />
       <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 

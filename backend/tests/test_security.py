@@ -14,6 +14,8 @@ PUBLIC = {
     ("POST", "/api/auth/refresh"),   # uses the httpOnly refresh cookie instead
     ("POST", "/api/auth/logout"),
     ("GET", "/api/auth/verify"),     # uses the signed token in the link
+    ("POST", "/api/auth/forgot-password"),  # rate limited, same answer for every email
+    ("POST", "/api/auth/reset-password"),   # needs the signed single-use token from the email
     ("GET", "/api/health"),
 }
 

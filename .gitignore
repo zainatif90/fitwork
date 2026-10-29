@@ -40,3 +40,6 @@ deploy.env
 # Firebase CLI
 firebase-debug.log
 .firebase/
+
+# Local marker written by deploy/huggingface_deploy.py
+deploy/.jwt_secret_set

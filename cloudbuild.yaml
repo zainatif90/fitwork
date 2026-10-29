@@ -1,8 +1,0 @@
-# Google Cloud Build: builds backend/Dockerfile from the repo root and stores the image in Artifact Registry.
-# Run:  gcloud builds submit --config cloudbuild.yaml .
-steps:
-  - name: gcr.io/cloud-builders/docker
-    args: ["build", "-f", "backend/Dockerfile", "-t", "europe-west1-docker.pkg.dev/$PROJECT_ID/fitwork/api:latest", "."]
-images:
-  - europe-west1-docker.pkg.dev/$PROJECT_ID/fitwork/api:latest
-timeout: 1800s

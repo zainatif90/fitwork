@@ -5,6 +5,12 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
+def check_password_strength(v: str) -> str:
+    if not any(c.isalpha() for c in v) or not any(c.isdigit() for c in v):
+        raise ValueError("Password must contain at least one letter and one number")
+    return v
+
+
 class RegisterIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=72)  # bcrypt only uses the first 72 bytes
@@ -24,9 +30,7 @@ class RegisterIn(BaseModel):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if not any(c.isalpha() for c in v) or not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one letter and one number")
-        return v
+        return check_password_strength(v)
 
 
 class LoginIn(BaseModel):
@@ -56,3 +60,17 @@ class TokenOut(BaseModel):
 
 class MessageOut(BaseModel):
     message: str
+
+
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    token: str = Field(min_length=20, max_length=2000)
+    password: str = Field(min_length=8, max_length=72)
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return check_password_strength(v)

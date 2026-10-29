@@ -7,7 +7,7 @@ The database is Neon (free). Cache / rate limits use the built-in in-memory stor
 Usage (from the repo root, with the backend venv):
     $env:HF_TOKEN="hf_..."            # Hugging Face -> Settings -> Access Tokens -> Write token
     $env:NEON_URL="postgresql://..."  # Neon connection string
-    $env:DEMO_PASSWORD="..."          # same as DEMO.md
+    optional: $env:LLM_API_KEY (Gemini), $env:SMTP_USER + $env:SMTP_PASSWORD (Gmail App Password)
     backend\\.venv\\Scripts\\python.exe deploy\\huggingface_deploy.py
 
 Secrets go into the Space's encrypted secret store, never into the uploaded files.
@@ -74,12 +74,17 @@ def stage_files(dest: Path) -> Path:
     return out
 
 
+def _has_secret(api: HfApi, repo_id: str, key: str) -> bool:
+    """True if the Space already has this secret (its value is never readable, only its name)."""
+    marker = ROOT / "deploy" / ".jwt_secret_set"
+    return marker.exists() and marker.read_text().strip() == repo_id
+
+
 def main() -> None:
     token = os.environ.get("HF_TOKEN", "").strip()
     neon = os.environ.get("NEON_URL", "").strip()
-    demo_pw = os.environ.get("DEMO_PASSWORD", "").strip()
-    if not (token and neon and demo_pw):
-        sys.exit("Set HF_TOKEN, NEON_URL and DEMO_PASSWORD first.")
+    if not (token and neon):
+        sys.exit("Set HF_TOKEN and NEON_URL first.")
 
     api = HfApi(token=token)
     user = api.whoami()["name"]
@@ -90,13 +95,20 @@ def main() -> None:
     api.create_repo(repo_id, repo_type="space", space_sdk="docker", exist_ok=True, private=False)
 
     # Encrypted secrets (not visible in the Space files) and plain settings
-    for key, value in {
-        "DATABASE_URL": neon,
-        "JWT_SECRET": os.environ.get("JWT_SECRET") or secrets.token_urlsafe(48),
-        "DEMO_PASSWORD": demo_pw,
-        "LLM_API_KEY": os.environ.get("LLM_API_KEY", "none"),
-    }.items():
+    # On redeploys only overwrite what was explicitly given: keeping JWT_SECRET stable means
+    # users stay logged in, and a Gemini key added earlier is not replaced by "none".
+    first_deploy = not _has_secret(api, repo_id, "JWT_SECRET")
+    secret_values = {"DATABASE_URL": neon}
+    if os.environ.get("LLM_API_KEY") or first_deploy:
+        secret_values["LLM_API_KEY"] = os.environ.get("LLM_API_KEY", "none")
+    if os.environ.get("JWT_SECRET") or first_deploy:
+        secret_values["JWT_SECRET"] = os.environ.get("JWT_SECRET") or secrets.token_urlsafe(48)
+    if os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"):
+        secret_values["SMTP_USER"] = os.environ["SMTP_USER"]
+        secret_values["SMTP_PASSWORD"] = os.environ["SMTP_PASSWORD"]
+    for key, value in secret_values.items():
         api.add_space_secret(repo_id, key, value)
+    (ROOT / "deploy" / ".jwt_secret_set").write_text(repo_id)  # local marker, git-ignored
     for key, value in {
         "ENV": "production",
         "REDIS_URL": "memory",
@@ -108,6 +120,8 @@ def main() -> None:
         "FRONTEND_URL": host,
         "CORS_ORIGINS": host,
         "FRAME_ANCESTORS": "https://huggingface.co",
+        "SMTP_HOST": "smtp.gmail.com",
+        "SMTP_PORT": "587",
     }.items():
         api.add_space_variable(repo_id, key, value)
     print("Secrets and settings saved.")

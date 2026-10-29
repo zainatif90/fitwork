@@ -98,7 +98,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     throw new ApiError(0, "Cannot reach the server. Check your connection.");
   }
 
-  const isAuthRoute = path.startsWith("/auth/login") || path.startsWith("/auth/register");
+  const isAuthRoute = ["/auth/login", "/auth/register", "/auth/forgot-password", "/auth/reset-password"].some((p) => path.startsWith(p));
   if (res.status === 401 && retry && !isAuthRoute) {
     const refreshed = await refreshSession();
     if (refreshed) return api<T>(path, { ...opts, retry: false });

@@ -19,6 +19,8 @@ FitWork is a web platform that collects freelance job listings and matches them 
 - LLM: provider chosen by env var (`LLM_PROVIDER` = gemini | openai), used only for proposal generation
 - Auth: JWT access token (24h) + refresh token (7d), bcrypt password hashing with cost 12
 - Local dev: docker-compose for Postgres (pgvector/pgvector:pg16 image) and Redis 7
+- Production (100% free): Hugging Face Docker Space (one container serves website + API, REDIS_URL=memory),
+  Neon Postgres 16 + pgvector (Frankfurt). Deploy: deploy/huggingface_deploy.py
 
 ## Auth and token storage (decided)
 - All backend routes are under the `/api` prefix.
@@ -27,7 +29,10 @@ FitWork is a web platform that collects freelance job listings and matches them 
 - Access token: kept in memory only (JS variable), sent as `Authorization: Bearer`.
 - Refresh token: httpOnly, Secure (in prod), SameSite=Lax cookie, path `/api/auth`.
 - On page load the app calls `/api/auth/refresh` to get a new access token. If refresh fails -> logout.
-- Unverified users can log in but see a "verify your email" banner. Demo accounts are pre-verified.
+- Unverified users can log in but see a "verify your email" banner.
+- Real emails (verification, password reset, agency invites) go through SMTP (Gmail App Password in production);
+  without SMTP settings they are printed to the console (development).
+- No demo accounts in production: real users register themselves.
 
 ## Scope decisions (important)
 - Job sources: Freelancer.com public API + CSV seed dataset + manual job paste. Upwork only if API access is approved.

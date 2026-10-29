@@ -23,13 +23,25 @@ from app.core.redis_client import hit_rate_limit
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    create_reset_token,
     create_verify_token,
     decode_token,
+    decode_token_payload,
     hash_password,
+    password_fingerprint,
     verify_password,
 )
 from app.models.user import User
-from app.schemas.auth import LoginIn, MessageOut, RegisterIn, TokenOut, UserOut
+from app.schemas.auth import (
+    ForgotPasswordIn,
+    LoginIn,
+    MessageOut,
+    RegisterIn,
+    ResetPasswordIn,
+    TokenOut,
+    UserOut,
+)
+from app.services import email
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -38,10 +50,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 REFRESH_COOKIE = settings.REFRESH_COOKIE_NAME
 
 
-def _set_refresh_cookie(response: Response, user_id: str) -> None:
+def _set_refresh_cookie(response: Response, user: User) -> None:
     response.set_cookie(
         key=REFRESH_COOKIE,
-        value=create_refresh_token(user_id),
+        value=create_refresh_token(str(user.id), user.password_hash),
         max_age=settings.REFRESH_TOKEN_DAYS * 24 * 3600,
         httponly=True,                    # JavaScript cannot read it (protects against XSS theft)
         secure=settings.is_production,    # HTTPS only in production
@@ -51,16 +63,14 @@ def _set_refresh_cookie(response: Response, user_id: str) -> None:
 
 
 def _token_response(response: Response, user: User) -> TokenOut:
-    _set_refresh_cookie(response, str(user.id))
+    _set_refresh_cookie(response, user)
     return TokenOut(access_token=create_access_token(str(user.id)), user=UserOut.model_validate(user))
 
 
 def send_verification_email(user: User) -> None:
-    """In development we print the link to the console instead of sending a real email."""
-    token = create_verify_token(str(user.id))
-    link = f"{settings.FRONTEND_URL}/verify?token={token}"
-    log.info("Email verification link for %s: %s", user.email, link)
-    print(f"\n[DEV EMAIL] Verify {user.email}: {link}\n", flush=True)
+    """Email the verification link (printed to the console in development, see services/email.py)."""
+    link = f"{settings.FRONTEND_URL}/verify?token={create_verify_token(str(user.id))}"
+    email.send_verification(user.email, user.full_name.split()[0], link)
 
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
@@ -112,9 +122,10 @@ def refresh(
     db: Session = Depends(get_db),
     refresh_token: str | None = Cookie(default=None, alias=REFRESH_COOKIE),
 ) -> TokenOut:
-    user_id = decode_token(refresh_token, "refresh") if refresh_token else None
-    user = db.get(User, uuid.UUID(user_id)) if user_id else None
-    if user is None:
+    payload = decode_token_payload(refresh_token, "refresh") if refresh_token else None
+    user = db.get(User, uuid.UUID(payload["sub"])) if payload else None
+    # The token remembers which password it was issued for: after a password reset it stops working.
+    if user is None or payload.get("pwd") != password_fingerprint(user.password_hash):  # type: ignore[union-attr]
         response.delete_cookie(REFRESH_COOKIE, path="/api/auth")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please log in again")
     # Rotate: a fresh refresh cookie is issued every time.
@@ -148,5 +159,37 @@ def verify_email(token: str, db: Session = Depends(get_db)) -> MessageOut:
 def resend_verification(user: User = Depends(get_current_user)) -> MessageOut:
     if user.is_verified:
         return MessageOut(message="Email already verified")
+    if hit_rate_limit(f"rl:verify:{user.id}", 3, 3600):
+        raise HTTPException(status_code=429, detail="Too many emails. Please try again in an hour.")
     send_verification_email(user)
     return MessageOut(message="Verification link sent")
+
+
+FORGOT_MESSAGE = "If an account exists for that email, we have sent a link to reset the password."
+
+
+@router.post("/forgot-password", response_model=MessageOut)
+def forgot_password(data: ForgotPasswordIn, request: Request, db: Session = Depends(get_db)) -> MessageOut:
+    """Always answers the same way, so nobody can use this form to find out which emails are registered."""
+    email_addr = data.email.lower()
+    client_ip = request.client.host if request.client else "unknown"
+    if hit_rate_limit(f"rl:forgot:{client_ip}:{email_addr}", settings.RESET_REQUESTS_PER_HOUR, 3600):
+        raise HTTPException(status_code=429, detail="Too many requests. Please try again in an hour.")
+    user = db.scalar(select(User).where(User.email == email_addr))
+    if user is not None:
+        token = create_reset_token(str(user.id), user.password_hash)
+        email.send_password_reset(user.email, user.full_name.split()[0], f"{settings.FRONTEND_URL}/reset-password?token={token}")
+    return MessageOut(message=FORGOT_MESSAGE)
+
+
+@router.post("/reset-password", response_model=MessageOut)
+def reset_password(data: ResetPasswordIn, db: Session = Depends(get_db)) -> MessageOut:
+    payload = decode_token_payload(data.token, "reset")
+    user = db.get(User, uuid.UUID(payload["sub"])) if payload else None
+    # The link only works for the password it was created for, so it can be used once.
+    if user is None or payload.get("pwd") != password_fingerprint(user.password_hash):  # type: ignore[union-attr]
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has already been used")
+    user.password_hash = hash_password(data.password)
+    user.is_verified = True  # they proved they can read this mailbox
+    db.commit()
+    return MessageOut(message="Password changed. You can now log in with your new password.")

@@ -14,6 +14,7 @@ from app.core.security import new_random_token
 from app.models.agency import Agency, AgencyMember, Assignment
 from app.models.profile import Profile
 from app.models.user import User
+from app.services import email as email_service
 
 log = logging.getLogger(__name__)
 
@@ -63,8 +64,7 @@ def invite_member(db: Session, agency: Agency, owner: User, email: str) -> tuple
     db.refresh(member)
 
     link = f"{settings.FRONTEND_URL}/invite/{token}"
-    log.info("Agency invite for %s: %s", email, link)
-    print(f"\n[DEV EMAIL] Agency invite for {email}: {link}\n", flush=True)
+    email_service.send_agency_invite(email, agency.name, owner.full_name, link)
     return member, token, link
 
 
