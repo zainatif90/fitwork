@@ -46,8 +46,18 @@ from app.services import email
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Firebase Hosting only forwards a cookie named "__session" to Cloud Run, so the name is configurable.
 REFRESH_COOKIE = settings.REFRESH_COOKIE_NAME
+_CROSS_SITE = settings.COOKIE_SAMESITE == "none"
+# The cookie options must be identical when setting and deleting, or the browser keeps the old cookie.
+COOKIE_OPTIONS = {
+    "path": "/api/auth",                             # only sent to auth routes
+    "httponly": True,                                # JavaScript cannot read it (protects against XSS theft)
+    "secure": settings.is_production or _CROSS_SITE,  # HTTPS only (always required with SameSite=None)
+    "samesite": settings.COOKIE_SAMESITE,            # "lax" = not sent on cross-site POSTs (CSRF protection)
+    # Website and API on different domains (Firebase + Azure): a partitioned cookie is kept only for
+    # our website, so it works where browsers block ordinary third-party cookies.
+    "partitioned": settings.COOKIE_PARTITIONED,
+}
 
 
 def _set_refresh_cookie(response: Response, user: User) -> None:
@@ -55,10 +65,7 @@ def _set_refresh_cookie(response: Response, user: User) -> None:
         key=REFRESH_COOKIE,
         value=create_refresh_token(str(user.id), user.password_hash),
         max_age=settings.REFRESH_TOKEN_DAYS * 24 * 3600,
-        httponly=True,                    # JavaScript cannot read it (protects against XSS theft)
-        secure=settings.is_production,    # HTTPS only in production
-        samesite="lax",                   # not sent on cross-site POSTs (CSRF protection)
-        path="/api/auth",                 # only sent to auth routes
+        **COOKIE_OPTIONS,
     )
 
 
@@ -126,7 +133,7 @@ def refresh(
     user = db.get(User, uuid.UUID(payload["sub"])) if payload else None
     # The token remembers which password it was issued for: after a password reset it stops working.
     if user is None or payload.get("pwd") != password_fingerprint(user.password_hash):  # type: ignore[union-attr]
-        response.delete_cookie(REFRESH_COOKIE, path="/api/auth")
+        response.delete_cookie(REFRESH_COOKIE, **COOKIE_OPTIONS)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please log in again")
     # Rotate: a fresh refresh cookie is issued every time.
     return _token_response(response, user)
@@ -134,7 +141,7 @@ def refresh(
 
 @router.post("/logout", response_model=MessageOut)
 def logout(response: Response) -> MessageOut:
-    response.delete_cookie(REFRESH_COOKIE, path="/api/auth")
+    response.delete_cookie(REFRESH_COOKIE, **COOKIE_OPTIONS)
     return MessageOut(message="Logged out")
 
 

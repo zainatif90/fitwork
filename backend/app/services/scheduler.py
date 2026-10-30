@@ -7,6 +7,7 @@ Background scheduler (APScheduler) that fetches Freelancer.com jobs every 30 min
 """
 import logging
 
+import httpx
 import redis
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -53,25 +54,42 @@ def scheduled_ingestion() -> None:
             pass
 
 
+def keep_awake() -> None:
+    """
+    Free hosting plans (e.g. Render free) put the app to sleep after 15 minutes without visitors.
+    Visiting our own public address every few minutes counts as a visitor, so the site never sleeps
+    (one always-on free service fits inside Render's 750 free hours per month).
+    """
+    try:
+        httpx.get(f"{settings.KEEPALIVE_URL.rstrip('/')}/api/health", timeout=30)
+    except httpx.HTTPError as exc:
+        log.warning("Keep-awake request failed: %s", exc)
+
+
 def start_scheduler() -> None:
     global _scheduler
-    if not settings.SCHEDULER_ENABLED:
+    if not settings.SCHEDULER_ENABLED and not settings.KEEPALIVE_URL:
         log.info("Scheduler disabled (SCHEDULER_ENABLED=false)")
         return
     from datetime import datetime, timedelta, timezone
 
     _scheduler = BackgroundScheduler(timezone="UTC")
-    _scheduler.add_job(
-        scheduled_ingestion,
-        "interval",
-        minutes=settings.INGEST_INTERVAL_MIN,
-        next_run_time=datetime.now(timezone.utc) + timedelta(seconds=10),  # first run shortly after startup
-        id="freelancer_ingestion",
-        max_instances=1,
-        coalesce=True,
-    )
+    if settings.SCHEDULER_ENABLED:
+        _scheduler.add_job(
+            scheduled_ingestion,
+            "interval",
+            minutes=settings.INGEST_INTERVAL_MIN,
+            next_run_time=datetime.now(timezone.utc) + timedelta(seconds=10),  # first run shortly after startup
+            id="freelancer_ingestion",
+            max_instances=1,
+            coalesce=True,
+        )
+        log.info("Scheduler: Freelancer.com fetch every %d min", settings.INGEST_INTERVAL_MIN)
+    if settings.KEEPALIVE_URL:
+        _scheduler.add_job(keep_awake, "interval", minutes=settings.KEEPALIVE_INTERVAL_MIN,
+                           id="keep_awake", max_instances=1, coalesce=True)
+        log.info("Scheduler: keep-awake ping every %d min", settings.KEEPALIVE_INTERVAL_MIN)
     _scheduler.start()
-    log.info("Scheduler started: Freelancer.com fetch every %d min", settings.INGEST_INTERVAL_MIN)
 
 
 def stop_scheduler() -> None:

@@ -60,7 +60,11 @@ class Settings(BaseSettings):
     VERIFY_TOKEN_HOURS: int = 48
     BCRYPT_ROUNDS: int = 12
     LOGIN_RATE_LIMIT_PER_MIN: int = 5
-    REFRESH_COOKIE_NAME: str = "fitwork_refresh"  # "__session" behind Firebase Hosting
+    REFRESH_COOKIE_NAME: str = "fitwork_refresh"
+    # Same address for website + API (local dev): "lax". Website on another domain than the API
+    # (Firebase Hosting + Azure): "none" + partitioned, so the browser still sends the refresh cookie.
+    COOKIE_SAMESITE: str = "lax"
+    COOKIE_PARTITIONED: bool = False
     RESET_TOKEN_MINUTES: int = 60
     RESET_REQUESTS_PER_HOUR: int = 3
 
@@ -85,6 +89,8 @@ class Settings(BaseSettings):
     SCHEDULER_ENABLED: bool = True
     INGEST_INTERVAL_MIN: int = 30
     CRON_SECRET: str = ""  # shared secret for POST /api/internal/ingest (Cloud Scheduler); empty = disabled
+    KEEPALIVE_URL: str = ""  # our own public address; pinged so free hosting never puts the app to sleep
+    KEEPALIVE_INTERVAL_MIN: int = 10
     LIVE_JOB_MAX_AGE_HOURS: int = 72
 
     # --- Match Score (heuristic, tunable; see CLAUDE.md) ---

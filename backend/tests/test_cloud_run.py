@@ -53,3 +53,26 @@ def test_cron_endpoint_runs_ingestion(client: TestClient, monkeypatch: pytest.Mo
     res = client.post("/api/internal/ingest", headers={"X-Cron-Secret": "s3cret-value"})
     assert res.status_code == 200
     assert res.json()["inserted"] == 2
+
+
+def test_keep_awake_pings_own_health_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services import scheduler
+
+    called: list[str] = []
+    monkeypatch.setattr(settings, "KEEPALIVE_URL", "https://fitwork.example.com/")
+    monkeypatch.setattr(scheduler.httpx, "get", lambda url, timeout: called.append(url))
+    scheduler.keep_awake()
+    assert called == ["https://fitwork.example.com/api/health"]
+
+
+def test_keep_awake_survives_network_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    import httpx
+
+    from app.services import scheduler
+
+    def boom(url: str, timeout: int) -> None:
+        raise httpx.ConnectError("offline")
+
+    monkeypatch.setattr(settings, "KEEPALIVE_URL", "https://fitwork.example.com")
+    monkeypatch.setattr(scheduler.httpx, "get", boom)
+    scheduler.keep_awake()  # must not raise
