@@ -36,7 +36,7 @@ export interface SkillOption {
   category: string;
 }
 
-export type JobSource = "freelancer" | "upwork" | "csv" | "manual" | "synthetic";
+export type JobSource = "freelancer" | "upwork" | "himalayas" | "remotive" | "jobicy" | "csv" | "manual" | "synthetic";
 
 export interface Breakdown {
   semantic: number;

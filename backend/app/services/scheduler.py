@@ -6,6 +6,7 @@ Background scheduler (APScheduler) that fetches Freelancer.com jobs every 30 min
 - A "last run" key prevents re-fetching on every dev auto-reload.
 """
 import logging
+import threading
 
 import httpx
 import redis
@@ -21,6 +22,8 @@ LOCK_KEY = "ingest:lock"
 LAST_RUN_KEY = "ingest:last_run"
 
 _scheduler: BackgroundScheduler | None = None
+# Fetches take turns: two runs embedding jobs at once could exceed a 512 MB free server.
+_run_lock = threading.Lock()
 
 
 def scheduled_ingestion() -> None:
@@ -39,7 +42,8 @@ def scheduled_ingestion() -> None:
 
     db = SessionLocal()
     try:
-        run_freelancer_ingestion(db)
+        with _run_lock:
+            run_freelancer_ingestion(db)
         try:
             redis_client.setex(LAST_RUN_KEY, settings.INGEST_INTERVAL_MIN * 60 - 30, "1")
         except redis.RedisError:
@@ -52,6 +56,20 @@ def scheduled_ingestion() -> None:
             redis_client.delete(LOCK_KEY)
         except redis.RedisError:
             pass
+
+
+def scheduled_board_ingestion(source: str) -> None:
+    """Fetch contract/freelance jobs from one remote job board (Himalayas, Remotive, Jobicy)."""
+    from app.services.ingestion import run_job_board_ingestion
+
+    db = SessionLocal()
+    try:
+        with _run_lock:
+            run_job_board_ingestion(db, source)
+    except Exception:
+        log.exception("Job board ingestion failed for %s", source)
+    finally:
+        db.close()
 
 
 def keep_awake() -> None:
@@ -85,6 +103,17 @@ def start_scheduler() -> None:
             coalesce=True,
         )
         log.info("Scheduler: Freelancer.com fetch every %d min", settings.INGEST_INTERVAL_MIN)
+        if settings.JOB_BOARDS_ENABLED:
+            boards = {"himalayas": (settings.HIMALAYAS_INTERVAL_MIN, 4),  # (interval, first run after N min)
+                      "remotive": (settings.REMOTIVE_INTERVAL_MIN, 7),
+                      "jobicy": (settings.JOBICY_INTERVAL_MIN, 9)}
+            for source, (every, first) in boards.items():
+                _scheduler.add_job(
+                    scheduled_board_ingestion, "interval", args=[source], minutes=every,
+                    next_run_time=datetime.now(timezone.utc) + timedelta(minutes=first),
+                    id=f"{source}_ingestion", max_instances=1, coalesce=True,
+                )
+                log.info("Scheduler: %s fetch every %d min", source, every)
     if settings.KEEPALIVE_URL:
         _scheduler.add_job(keep_awake, "interval", minutes=settings.KEEPALIVE_INTERVAL_MIN,
                            id="keep_awake", max_instances=1, coalesce=True)

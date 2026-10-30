@@ -11,6 +11,9 @@ export function PlatformBadge({ source, url }: { source: JobSource; url: string 
   const styles: Record<JobSource, string> = {
     freelancer: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",
     upwork: "bg-green-50 text-green-700 ring-1 ring-green-200",
+    himalayas: "bg-teal-50 text-teal-700 ring-1 ring-teal-200",
+    remotive: "bg-orange-50 text-orange-700 ring-1 ring-orange-200",
+    jobicy: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
     csv: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
     manual: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
     synthetic: "bg-slate-100 text-slate-500",

@@ -96,7 +96,12 @@ class Settings(BaseSettings):
     CRON_SECRET: str = ""  # shared secret for POST /api/internal/ingest (Cloud Scheduler); empty = disabled
     KEEPALIVE_URL: str = ""  # our own public address; pinged so free hosting never puts the app to sleep
     KEEPALIVE_INTERVAL_MIN: int = 10
-    LIVE_JOB_MAX_AGE_HOURS: int = 72
+    LIVE_JOB_MAX_AGE_HOURS: int = 72  # Freelancer.com; per-source limits in app/models/job.py
+    # Remote job boards with open APIs (contract/freelance roles only). Remotive asks for few requests a day.
+    JOB_BOARDS_ENABLED: bool = True
+    HIMALAYAS_INTERVAL_MIN: int = 120
+    REMOTIVE_INTERVAL_MIN: int = 360
+    JOBICY_INTERVAL_MIN: int = 360
 
     # --- Match Score (heuristic, tunable; see CLAUDE.md) ---
     W_SEM: float = 0.70

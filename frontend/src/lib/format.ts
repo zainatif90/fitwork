@@ -24,6 +24,9 @@ export function timeAgo(iso: string): string {
 export function platformLabel(source: JobSource, url: string | null): string {
   if (source === "freelancer") return "Freelancer.com";
   if (source === "upwork") return "Upwork";
+  if (source === "himalayas") return "Himalayas";
+  if (source === "remotive") return "Remotive";
+  if (source === "jobicy") return "Jobicy";
   if (source === "manual") return "Added by you";
   if (source === "csv" && url?.includes("freelancer.com")) return "Freelancer.com · seed";
   if (source === "csv") return "Seed dataset";
@@ -32,7 +35,10 @@ export function platformLabel(source: JobSource, url: string | null): string {
 
 export function sourceName(source: JobSource | null): string {
   if (!source) return "—";
-  return { freelancer: "Freelancer.com", upwork: "Upwork", csv: "Seed dataset", manual: "Manual", synthetic: "Synthetic" }[source];
+  return {
+    freelancer: "Freelancer.com", upwork: "Upwork", himalayas: "Himalayas", remotive: "Remotive", jobicy: "Jobicy",
+    csv: "Seed dataset", manual: "Manual", synthetic: "Synthetic",
+  }[source];
 }
 
 /** Score colour bands: green >= 75, yellow 50-74, red < 50. */

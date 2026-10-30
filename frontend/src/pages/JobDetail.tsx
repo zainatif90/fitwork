@@ -129,7 +129,7 @@ export default function JobDetail() {
                 <BreakdownRow label="Budget fit" value={match.breakdown.budget_fit} weight={match.breakdown.weights.budget_fit}
                   note={match.breakdown.budget_known ? "Compared with your hourly rate" : "Budget unknown — neutral value"} />
                 <BreakdownRow label="Recency" value={match.breakdown.recency} weight={match.breakdown.weights.recency}
-                  note={job.source === "freelancer" || job.source === "upwork" ? "Newer jobs get fewer competing proposals" : "Not a live job — neutral value"} />
+                  note={["freelancer", "upwork", "himalayas", "remotive", "jobicy"].includes(job.source) ? "Newer jobs get fewer competing applicants" : "Not a live job — neutral value"} />
               </div>
             </Card>
           ) : (

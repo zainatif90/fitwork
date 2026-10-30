@@ -13,7 +13,7 @@ from sqlalchemy import select, tuple_, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.job import LIVE_SOURCES, Job
+from app.models.job import SOURCE_MAX_AGE_HOURS, Job
 from app.services import embeddings
 from app.services.skill_utils import extract_skills, known_skill_names
 from app.services.sources.base import JobData
@@ -100,16 +100,21 @@ def upsert_jobs(db: Session, items: list[JobData], created_by=None) -> tuple[lis
 
 
 def deactivate_stale_jobs(db: Session, now: datetime | None = None) -> int:
-    """Live-source jobs older than 72h are hidden. CSV and manual jobs never expire (see CLAUDE.md)."""
+    """
+    Hide live-source jobs that are too old for their source (Freelancer.com: 72 h,
+    job boards: 21 days). CSV and manual jobs never expire (see CLAUDE.md).
+    """
     now = now or datetime.now(timezone.utc)
-    cutoff = now - timedelta(hours=settings.LIVE_JOB_MAX_AGE_HOURS)
-    result = db.execute(
-        update(Job)
-        .where(Job.is_active.is_(True), Job.source.in_(LIVE_SOURCES), Job.posted_at < cutoff)
-        .values(is_active=False)
-    )
+    hidden = 0
+    for source, hours in SOURCE_MAX_AGE_HOURS.items():
+        result = db.execute(
+            update(Job)
+            .where(Job.is_active.is_(True), Job.source == source, Job.posted_at < now - timedelta(hours=hours))
+            .values(is_active=False)
+        )
+        hidden += result.rowcount or 0
     db.commit()
-    return result.rowcount or 0
+    return hidden
 
 
 def ingest_items(db: Session, source: str, items: list[JobData], started: float) -> IngestStats:
@@ -132,3 +137,11 @@ def run_freelancer_ingestion(db: Session, pages: int | None = None, start_offset
         start_offset=start_offset,
     )
     return ingest_items(db, "freelancer", items, started)
+
+
+def run_job_board_ingestion(db: Session, source: str) -> IngestStats:
+    """Fetch contract/freelance jobs from one remote job board (himalayas | remotive | jobicy)."""
+    from app.services.sources.job_boards import FETCHERS
+
+    started = time.perf_counter()
+    return ingest_items(db, source, FETCHERS[source](), started)

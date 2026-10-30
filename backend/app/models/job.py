@@ -9,8 +9,18 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.config import settings
 from app.core.database import Base
 
-JOB_SOURCES = ("freelancer", "upwork", "csv", "manual", "synthetic")
-LIVE_SOURCES = ("freelancer", "upwork")  # these expire after 72h; csv/manual never auto-expire
+JOB_SOURCES = ("freelancer", "upwork", "himalayas", "remotive", "jobicy", "csv", "manual", "synthetic")
+
+# Live sources expire automatically; csv/manual jobs never do (see CLAUDE.md).
+# Freelancer.com projects are bid on within days; job-board contract roles stay open for weeks.
+SOURCE_MAX_AGE_HOURS = {
+    "freelancer": 72,
+    "upwork": 72,
+    "himalayas": 21 * 24,
+    "remotive": 21 * 24,
+    "jobicy": 21 * 24,
+}
+LIVE_SOURCES = tuple(SOURCE_MAX_AGE_HOURS)
 
 
 class Job(Base):

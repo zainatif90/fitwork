@@ -26,7 +26,19 @@ Fetched every 30 minutes by the scheduler (`app/services/scheduler.py`), or on d
 `python -m app.scripts.fetch_jobs --pages N` / `POST /api/admin/ingest/run`. Stored with `source = freelancer`
 and marked inactive 72 hours after posting.
 
-## 3. Manual paste
+## 3. Remote job boards with open APIs (contract / freelance roles only)
+| Board | Endpoint | Refresh | Their terms we follow |
+|---|---|---|---|
+| **Himalayas** | `https://himalayas.app/jobs/api/search?employment_type=Contractor` | every 2 h (100 newest) | credit Himalayas, link to the original posting |
+| **Remotive** | `https://remotive.com/api/remote-jobs` (only `freelance`/`contract`) | every 6 h | credit Remotive, link back; few requests per day |
+| **Jobicy** | `https://jobicy.com/api/v2/remote-jobs` (only `Contract`) | every 6 h | credit Jobicy, all "apply" links go to the original job URL |
+
+Every job shows the board's name as its badge and "Open on platform" goes to the original posting.
+Pay is converted to USD per hour only when the board states the period (hourly / yearly ÷ 2080 h / monthly);
+non-USD or unclear salaries are left empty (neutral budget fit). These roles expire 21 days after posting.
+Code: `backend/app/services/sources/job_boards.py`, checked 30 Oct 2026 (Himalayas listed 18,502 contractor jobs).
+
+## 4. Manual paste
 Users can paste any job they found themselves (`POST /api/jobs/manual`). These are private to that user.
 
 ## CSV column format (for adding your own dataset)
@@ -47,8 +59,12 @@ Users can paste any job they found themselves (`POST /api/jobs/manual`). These a
 If you add a public dataset (e.g. from Kaggle), convert it to these columns, keep its licence, and add a
 section here naming the dataset, its URL, its licence and the date you downloaded it.
 
-## Not used
-- **LinkedIn, Fiverr:** no public job-listing API; scraping is against their terms of service → Future Work.
-- **Upwork:** requires approved API access; only added if approval arrives.
+## Not used (checked 30 Oct 2026)
+- **Upwork:** the public RSS feed is closed (HTTP 403) and the API needs an approved key (HTTP 401 without one);
+  can be added when Upwork approves an API application.
+- **Fiverr:** buyers browse sellers' gigs; buyer requests are only visible inside Fiverr and there is no public
+  job API (scraping is against its terms).
+- **LinkedIn, PeoplePerHour, Guru:** no public job-listing API; scraping is against their terms → Future Work.
+  Users can still score any of these jobs with **Paste a job**.
 - **Synthetic jobs:** only ever used for load testing, stored with `source = synthetic`, and labelled as such in
   TEST_RESULTS.md.

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from app.core.config import settings
-from app.models.job import LIVE_SOURCES
+from app.models.job import LIVE_SOURCES, SOURCE_MAX_AGE_HOURS
 from app.services.skill_utils import canonical_set, canonical_skill
 
 NEUTRAL = 0.5  # used when we cannot judge (unknown budget, non-live job date)
@@ -64,17 +64,22 @@ def budget_fit(budget_type: str, budget_min: float | None, budget_max: float | N
 
 
 def recency_score(source: str, posted_at: datetime, now: datetime | None = None) -> float:
-    """Live jobs: 1.0 when under 6 hours old, falling to 0 at 72 hours. Seed/manual jobs: neutral 0.5."""
-    if source not in LIVE_SOURCES:
+    """
+    Live jobs: 1.0 while fresh, falling linearly to 0 when the job expires for its source.
+    Fresh = the first 1/12 of the source's lifetime: Freelancer.com 6 h of 72 h,
+    job boards 42 h of 21 days. Seed/manual jobs: neutral 0.5 (their dates are not live).
+    """
+    if source not in SOURCE_MAX_AGE_HOURS:
         return NEUTRAL
     now = now or datetime.now(timezone.utc)
     age_h = max(0.0, (now - posted_at).total_seconds() / 3600)
-    if age_h <= 6:
+    max_age = SOURCE_MAX_AGE_HOURS[source]
+    fresh = max_age / 12
+    if age_h <= fresh:
         return 1.0
-    max_age = settings.LIVE_JOB_MAX_AGE_HOURS
     if age_h >= max_age:
         return 0.0
-    return 1.0 - (age_h - 6) / (max_age - 6)
+    return 1.0 - (age_h - fresh) / (max_age - fresh)
 
 
 def combine(semantic: float, budget: float, recency: float) -> int:
