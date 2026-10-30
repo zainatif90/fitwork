@@ -1,5 +1,7 @@
 # FitWork
 
+**Live:** https://fitwork-zain2026.web.app  (API: https://fitwork-api-zain2026.onrender.com/api/docs)
+
 FitWork collects freelance job listings and matches them to a freelancer's skill profile using NLP
 embeddings. It shows the top 5 jobs with an explainable **Match Score**, drafts proposals with an LLM,
 routes jobs to the best teammate in **Agency Mode**, and shows a **Skill Gap Radar**.

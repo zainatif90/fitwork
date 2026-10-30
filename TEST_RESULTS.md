@@ -90,6 +90,23 @@ agency settings) and as a member (job queue).
 | 3 | 11 / 11 | 0 |
 | 4 (after layout fixes) | 11 / 11 | 0 |
 
+## 5c. Live production checks (30 October 2026)
+Website https://fitwork-zain2026.web.app (Firebase Hosting) + API https://fitwork-api-zain2026.onrender.com
+(Render free plan, 512 MB) + Neon database (1,610 active real jobs at the time of the test).
+
+| Check | Result |
+|---|---|
+| Register from the website's origin (CORS with credentials) | 201; `access-control-allow-origin: https://fitwork-zain2026.web.app` |
+| Refresh cookie attributes | `HttpOnly; Secure; SameSite=None; Partitioned; Path=/api/auth` |
+| Stay logged in (`/auth/refresh` with the cookie) | 200 |
+| `/api/matches` on the free server (uncached) | 5 matches, top score 91, computed in 398 ms |
+| `/api/skill-gap` on the free server | 1,610 jobs analysed in 3.7 s |
+| Scheduled Freelancer.com fetch on the free server | 298 fetched, no restart, 9.3 s |
+| Full browser walk-through (Playwright) against the live website | **11 / 11 steps, 0 JavaScript errors** |
+| Worst-case memory, reproduced locally with a 512 MB limit (494 + 298 jobs embedded) | peak 329 MB (was 511 MB → killed before the fix) |
+
+Test accounts created by these checks were deleted afterwards.
+
 ## 6. Security checklist
 | Check | Status | Evidence |
 |---|---|---|
@@ -118,6 +135,8 @@ agency settings) and as a member (job queue).
 | 8 | Large JS bundle (> 500 kB) | Vite build warning | Lazy-load chart pages; main bundle 261 kB (81 kB gzip) |
 | 9 | After sign-up the user sometimes landed on the dashboard instead of the profile wizard (two redirects raced) | E2E walk-through failed on one run | Guest pages only redirect users who were already logged in on arrival |
 | 10 | Job card: budget shown on the same line as short titles; score squeezed titles on mobile | E2E screenshots | Block-level title; card header stacks on small screens |
+| 11 | Production server crashed (out of memory) while embedding new jobs on the free 512 MB plan | Render logs showed restarts; reproduced with `docker run -m 512m` (OOMKilled at 511 MB) | Batches of 4, one ONNX thread, `MALLOC_ARENA_MAX=2`, `malloc_trim` after each run → peak 329 MB |
+| 12 | Registering on the live site returned 500: Python 3.11 cannot write the `Partitioned` cookie attribute | Live API check; server log `ValueError: Partitioned cookies are only supported in Python 3.14` | Cookie header written by hand; new test with the cross-site settings |
 
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.
