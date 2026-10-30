@@ -141,6 +141,8 @@ Test accounts created by these checks were deleted afterwards.
 | 12 | Registering on the live site returned 500: Python 3.11 cannot write the `Partitioned` cookie attribute | Live API check; server log `ValueError: Partitioned cookies are only supported in Python 3.14` | Cookie header written by hand; new test with the cross-site settings |
 | 13 | Gemini `gemini-2.5-flash` refused new API keys; full "thinking" made drafts take > 30 s | Live key test (HTTP 404 "no longer available to new users"; timeouts) | Switched to `gemini-3.5-flash` with `thinkingLevel=minimal` (≈ 3–12 s) |
 | 14 | AI miscopied the portfolio link (`https://github.zainatif90`) | Live proposal check | `fix_links()` corrects near-miss links to the real one and removes invented links; new test |
+| 15 | Himalayas batch failed to save: 20 of 85 job IDs were longer than the 100-character column | Live database check (0 Himalayas jobs) + server log `StringDataRightTruncation` | `fit_to_columns()`: too-long IDs become a stable SHA-256 fingerprint (all sources); new test |
+| 16 | Himalayas returned the same jobs on every page (its search ignores `offset`) | 85 fetched but only 17 new; compared pages | Paging with `page=1,2,3`; live: 92 unique Himalayas jobs |
 
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.
