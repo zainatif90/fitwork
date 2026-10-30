@@ -11,6 +11,7 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from difflib import SequenceMatcher
 
 from sqlalchemy.orm import Session
 
@@ -119,6 +120,30 @@ def clean_output(text: str) -> str:
     return text.strip()
 
 
+_URL = re.compile(r"(?:https?://|www\.)[^\s<>()\"']+", re.IGNORECASE)
+
+
+def fix_links(text: str, allowed: list[str]) -> str:
+    """
+    Make every link in the draft one of the user's real portfolio links.
+    LLMs sometimes miscopy URLs (seen live: "https://github.com/x" written as "https://github.x"),
+    and a broken link in a proposal looks bad to clients. A link that is not exactly one of the
+    user's links is replaced by the closest real one, or removed if nothing is close.
+    """
+    def replace(match: re.Match[str]) -> str:
+        found = match.group(0)
+        tail = ""
+        while found and found[-1] in ".,;:!?":
+            found, tail = found[:-1], found[-1] + tail  # keep sentence punctuation outside the link
+        if found in allowed:
+            return found + tail
+        best = max(allowed, key=lambda u: SequenceMatcher(None, found.lower(), u.lower()).ratio(), default=None)
+        if best and SequenceMatcher(None, found.lower(), best.lower()).ratio() >= 0.6:
+            return best + tail
+        return tail  # an invented link is dropped
+    return _URL.sub(replace, text)
+
+
 def _rate_limit_key(user_id: object) -> str:
     return f"rl:proposals:{user_id}:{datetime.now(timezone.utc):%Y-%m-%d}"
 
@@ -149,6 +174,7 @@ def draft_proposal(job: Job, profile: Profile, user: User, tone: str, length: st
     client = client or LLMClient()
     try:
         content = clean_output(client.generate(SYSTEM_PROMPT, build_prompt(job, profile, user, tone, length)))
+        content = fix_links(content, list(profile.portfolio_urls or []))
         return Draft(content=content, is_fallback=False, provider=client.provider, model=client.model)
     except LLMError as exc:
         log.warning("LLM unavailable, using template proposal: %s", exc)

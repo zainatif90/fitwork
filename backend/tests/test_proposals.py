@@ -150,3 +150,15 @@ def test_gemini_request_uses_low_thinking(monkeypatch: pytest.MonkeyPatch) -> No
     assert text == "Hello client"
     assert sent["url"].endswith("/models/gemini-3.5-flash:generateContent")
     assert sent["body"]["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "minimal"}
+
+
+def test_fix_links_repairs_miscopied_portfolio_link() -> None:
+    """Seen live: the model wrote 'https://github.zainatif90' for 'https://github.com/zainatif90'."""
+    from app.services.proposals import fix_links
+
+    real = ["https://github.com/zainatif90"]
+    assert fix_links("See my work: https://github.zainatif90.", real) == "See my work: https://github.com/zainatif90."
+    assert fix_links("Code: https://github.com/zainatif90", real) == "Code: https://github.com/zainatif90"
+    # A link that has nothing to do with the user's links is removed, not invented
+    assert fix_links("Portfolio: https://made-up-site.io/me, thanks", real) == "Portfolio: , thanks"
+    assert fix_links("Visit www.example.org now", []) == "Visit  now"
