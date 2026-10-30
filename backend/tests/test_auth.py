@@ -139,3 +139,19 @@ def test_security_headers_present(client: TestClient) -> None:
     res = client.get("/api/health")
     assert res.headers["X-Content-Type-Options"] == "nosniff"
     assert res.headers["X-Frame-Options"] == "DENY"
+
+
+def test_partitioned_cross_site_cookie(client: TestClient, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Website and API on different domains: the refresh cookie must be SameSite=None; Secure; Partitioned."""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "COOKIE_SAMESITE", "none")
+    monkeypatch.setattr(settings, "COOKIE_PARTITIONED", True)
+    res = client.post("/api/auth/register", json={"email": "cross@example.com", "password": "Secret123",
+                                                  "full_name": "Cross Site"})
+    assert res.status_code == 201
+    cookie = res.headers["set-cookie"]
+    for part in ("fitwork_refresh=ey", "Path=/api/auth", "HttpOnly", "Secure", "SameSite=None", "Partitioned"):
+        assert part in cookie
+    out = client.post("/api/auth/logout")
+    assert "Max-Age=0" in out.headers["set-cookie"] and "Partitioned" in out.headers["set-cookie"]

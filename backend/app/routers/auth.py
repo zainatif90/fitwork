@@ -47,26 +47,37 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 REFRESH_COOKIE = settings.REFRESH_COOKIE_NAME
-_CROSS_SITE = settings.COOKIE_SAMESITE == "none"
-# The cookie options must be identical when setting and deleting, or the browser keeps the old cookie.
-COOKIE_OPTIONS = {
-    "path": "/api/auth",                             # only sent to auth routes
-    "httponly": True,                                # JavaScript cannot read it (protects against XSS theft)
-    "secure": settings.is_production or _CROSS_SITE,  # HTTPS only (always required with SameSite=None)
-    "samesite": settings.COOKIE_SAMESITE,            # "lax" = not sent on cross-site POSTs (CSRF protection)
-    # Website and API on different domains (Firebase + Azure): a partitioned cookie is kept only for
-    # our website, so it works where browsers block ordinary third-party cookies.
-    "partitioned": settings.COOKIE_PARTITIONED,
-}
+COOKIE_PATH = "/api/auth"  # the cookie is only sent to auth routes
+
+
+def _write_refresh_cookie(response: Response, value: str, max_age: int) -> None:
+    """
+    Set (max_age > 0) or delete (max_age = 0) the refresh cookie.
+    Options must be identical when setting and deleting, or the browser keeps the old cookie.
+    """
+    cross_site = settings.COOKIE_SAMESITE == "none"
+    secure = settings.is_production or cross_site  # HTTPS only (always required with SameSite=None)
+    if settings.COOKIE_PARTITIONED:
+        # Website and API on different domains (Firebase + Render): a "partitioned" cookie is stored
+        # only for our website, so it works where browsers block ordinary third-party cookies.
+        # Python 3.11's cookie library cannot write this attribute, so the header is built by hand.
+        parts = [f"{REFRESH_COOKIE}={value}", f"Max-Age={max_age}", f"Path={COOKIE_PATH}", "HttpOnly",
+                 "Secure", f"SameSite={settings.COOKIE_SAMESITE.capitalize()}", "Partitioned"]
+        if max_age == 0:
+            parts.insert(2, "Expires=Thu, 01 Jan 1970 00:00:00 GMT")
+        response.headers.append("set-cookie", "; ".join(parts))
+    else:
+        response.set_cookie(
+            key=REFRESH_COOKIE, value=value, max_age=max_age, path=COOKIE_PATH,
+            httponly=True,                     # JavaScript cannot read it (protects against XSS theft)
+            secure=secure,
+            samesite=settings.COOKIE_SAMESITE,  # "lax" = not sent on cross-site POSTs (CSRF protection)
+        )
 
 
 def _set_refresh_cookie(response: Response, user: User) -> None:
-    response.set_cookie(
-        key=REFRESH_COOKIE,
-        value=create_refresh_token(str(user.id), user.password_hash),
-        max_age=settings.REFRESH_TOKEN_DAYS * 24 * 3600,
-        **COOKIE_OPTIONS,
-    )
+    _write_refresh_cookie(response, create_refresh_token(str(user.id), user.password_hash),
+                          settings.REFRESH_TOKEN_DAYS * 24 * 3600)
 
 
 def _token_response(response: Response, user: User) -> TokenOut:
@@ -133,7 +144,7 @@ def refresh(
     user = db.get(User, uuid.UUID(payload["sub"])) if payload else None
     # The token remembers which password it was issued for: after a password reset it stops working.
     if user is None or payload.get("pwd") != password_fingerprint(user.password_hash):  # type: ignore[union-attr]
-        response.delete_cookie(REFRESH_COOKIE, **COOKIE_OPTIONS)
+        _write_refresh_cookie(response, "", 0)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please log in again")
     # Rotate: a fresh refresh cookie is issued every time.
     return _token_response(response, user)
@@ -141,7 +152,7 @@ def refresh(
 
 @router.post("/logout", response_model=MessageOut)
 def logout(response: Response) -> MessageOut:
-    response.delete_cookie(REFRESH_COOKIE, **COOKIE_OPTIONS)
+    _write_refresh_cookie(response, "", 0)
     return MessageOut(message="Logged out")
 
 
