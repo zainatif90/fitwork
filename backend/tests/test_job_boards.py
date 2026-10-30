@@ -101,15 +101,16 @@ def test_fetch_himalayas_pages_and_filters_contractor(monkeypatch: pytest.Monkey
 
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append(dict(request.url.params))
-        offset = int(request.url.params["offset"])
-        jobs = [{**HIMALAYAS, "guid": f"g{offset + i}"} for i in range(20)] if offset < 40 else []
+        page = int(request.url.params["page"])
+        jobs = [{**HIMALAYAS, "guid": f"g{page}-{i}"} for i in range(20)] if page <= 2 else []
         return httpx.Response(200, json={"jobs": jobs})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     jobs = fetch_himalayas(pages=5, client=client)
     assert len(jobs) == 40
     assert seen[0]["employment_type"] == "Contractor"
-    assert [p["offset"] for p in seen] == ["0", "20", "40"]  # stops at the first empty page
+    assert [p["page"] for p in seen] == ["1", "2", "3"]  # pages 1,2,3; stops at the first empty page
+    assert len({j.external_id for j in jobs}) == 40           # no page fetched twice
 
 
 def test_board_jobs_expire_after_21_days_freelancer_after_72h(db: Session) -> None:
@@ -133,3 +134,22 @@ def test_recency_scales_with_source_lifetime() -> None:
     assert scoring.recency_score("himalayas", now - timedelta(days=21), now) == 0.0
     mid = scoring.recency_score("remotive", now - timedelta(hours=42 + (504 - 42) / 2), now)
     assert mid == pytest.approx(0.5)
+
+
+def test_long_external_ids_are_fingerprinted_and_stay_stable(db: Session) -> None:
+    """Seen live: 20 of 85 Himalayas IDs were longer than the 100-character column, failing the whole batch."""
+    long_guid = "https://himalayas.app/companies/some-company/jobs/" + "very-long-job-title-" * 4
+    assert len(long_guid) > 100
+
+    def item():  # type: ignore[no-untyped-def]
+        j = normalize_himalayas({**HIMALAYAS, "guid": long_guid, "applicationLink": long_guid})
+        assert j is not None
+        return j
+
+    saved, inserted, _ = upsert_jobs(db, [item(), normalize_himalayas(HIMALAYAS)])
+    assert inserted == 2
+    stored = {j.external_id for j in saved}
+    assert any(e.startswith("sha256:") and len(e) <= 100 for e in stored)
+    _, inserted_again, updated = upsert_jobs(db, [item()])   # next fetch: same job, same ID -> update
+    assert (inserted_again, updated) == (0, 1)
+    assert saved[0].url == long_guid  # the link to the original posting is kept in full

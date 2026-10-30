@@ -120,9 +120,10 @@ def normalize_himalayas(j: dict[str, Any]) -> JobData | None:
 
 def fetch_himalayas(pages: int = 5, client: httpx.Client | None = None) -> list[JobData]:
     jobs: list[JobData] = []
-    for page in range(pages):
+    for page in range(1, pages + 1):
+        # The search endpoint pages with page=1,2,3... ("offset" is ignored: checked 30 Oct 2026)
         data = _get("https://himalayas.app/jobs/api/search",
-                    {"employment_type": "Contractor", "limit": 20, "offset": page * 20, "sort": "recent"}, client)
+                    {"employment_type": "Contractor", "limit": 20, "page": page, "sort": "recent"}, client)
         items = (data or {}).get("jobs") or []
         jobs += [job for job in (normalize_himalayas(i) for i in items) if job]
         if not items:

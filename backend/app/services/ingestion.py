@@ -4,6 +4,7 @@ Job ingestion pipeline:  fetch -> normalize -> deduplicate -> extract skills -> 
 The same `upsert_jobs` function is used by every source (Freelancer.com, CSV, manual paste),
 so all jobs end up in exactly the same shape in the database.
 """
+import hashlib
 import logging
 import time
 from dataclasses import asdict, dataclass
@@ -40,15 +41,33 @@ def _text_fields(j: Job | JobData) -> tuple:
     return (j.title, j.description, tuple(j.skills))
 
 
+def fit_to_columns(item: JobData) -> None:
+    """
+    Make one job fit the database column sizes, so a single unusual job can never make a whole
+    batch fail (seen live: Himalayas uses job URLs up to 122 characters as IDs; the column holds 100).
+    A too-long ID becomes its SHA-256 fingerprint: still unique and identical on every fetch.
+    """
+    if len(item.external_id) > 100:
+        item.external_id = "sha256:" + hashlib.sha256(item.external_id.encode()).hexdigest()[:64]
+    item.title = item.title[:300]
+    if item.url and len(item.url) > 500:
+        item.url = item.url[:500]
+    if item.client_country:
+        item.client_country = item.client_country[:80]
+    item.skills = [s[:80] for s in item.skills]
+
+
 def upsert_jobs(db: Session, items: list[JobData], created_by=None) -> tuple[list[Job], int, int]:  # type: ignore[no-untyped-def]
     """
     Insert new jobs and update existing ones (same source + external_id).
     Embeddings are only (re)computed for new jobs or jobs whose text changed.
     Returns (saved_jobs, inserted_count, updated_count).
     """
-    # 1. Remove duplicates inside this batch (the API can return the same project twice across pages)
+    # 1. Fit the database columns, then remove duplicates inside this batch
+    #    (the API can return the same project twice across pages)
     unique: dict[tuple[str, str], JobData] = {}
     for item in items:
+        fit_to_columns(item)
         unique[(item.source, item.external_id)] = item
     if not unique:
         return [], 0, 0
