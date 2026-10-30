@@ -94,6 +94,8 @@ def upsert_jobs(db: Session, items: list[JobData], created_by=None) -> tuple[lis
             job.embedding = vec.tolist()
 
     db.commit()
+    if to_embed:
+        embeddings.release_memory()  # keep the server's memory low between runs
     return saved, inserted, updated
 
 

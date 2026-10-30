@@ -29,7 +29,11 @@ def _get_model():  # type: ignore[no-untyped-def]
                 from fastembed import TextEmbedding
 
                 log.info("Loading embedding model %s ...", settings.EMBEDDING_MODEL)
-                _model = TextEmbedding(settings.EMBEDDING_MODEL, cache_dir=settings.EMBEDDING_CACHE_DIR)
+                _model = TextEmbedding(
+                    settings.EMBEDDING_MODEL,
+                    cache_dir=settings.EMBEDDING_CACHE_DIR,
+                    threads=settings.EMBEDDING_THREADS or None,  # None = all CPU cores
+                )
                 log.info("Embedding model ready")
     return _model
 
@@ -45,13 +49,30 @@ def normalize(vectors: np.ndarray) -> np.ndarray:
     return vectors / norms
 
 
-def embed_texts(texts: Sequence[str], batch_size: int = 64) -> np.ndarray:
+def embed_texts(texts: Sequence[str], batch_size: int | None = None) -> np.ndarray:
     """Embed many texts at once. Returns an array of shape (len(texts), 384), each row length 1."""
     if not texts:
         return np.zeros((0, settings.EMBEDDING_DIM), dtype=np.float32)
     model = _get_model()
-    vectors = np.array(list(model.embed(list(texts), batch_size=batch_size)), dtype=np.float32)
+    # Small batches keep memory low: the model's attention needs memory that grows with
+    # batch size x text length², which crashed a 512 MB free server at batch size 64.
+    batch = batch_size or settings.EMBEDDING_BATCH_SIZE
+    vectors = np.array(list(model.embed(list(texts), batch_size=batch)), dtype=np.float32)
     return normalize(vectors)
+
+
+def release_memory() -> None:
+    """
+    Give freed memory back to the operating system after a large embedding run.
+    Python/glibc normally keep freed memory for reuse, which slowly fills a 512 MB server.
+    Only available on Linux (the production container); a no-op elsewhere.
+    """
+    try:
+        import ctypes
+
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (OSError, AttributeError):
+        pass
 
 
 def embed_text(text: str) -> list[float]:

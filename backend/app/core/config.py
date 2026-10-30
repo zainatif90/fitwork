@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
     EMBEDDING_DIM: int = 384
     EMBEDDING_CACHE_DIR: str = ".cache/fastembed"
+    EMBEDDING_BATCH_SIZE: int = 4   # texts per model call (memory grows with batch size)
+    EMBEDDING_THREADS: int = 0      # 0 = all CPU cores; 1 in the Docker image (less memory on small servers)
 
     # --- Job ingestion ---
     FREELANCER_API_BASE: str = "https://www.freelancer.com/api"

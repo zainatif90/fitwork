@@ -14,7 +14,8 @@ from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
 
-BASE = os.getenv("FITWORK_URL", "http://localhost:5173")  # e.g. the live Render URL
+BASE = os.getenv("FITWORK_URL", "http://localhost:5173")  # website address
+API = os.getenv("FITWORK_API", BASE + "/api")             # API address (differs when the website is on Firebase)
 OUT = Path(__file__).parent / "shots"
 OUT.mkdir(exist_ok=True)
 RUN = uuid.uuid4().hex[:6]
@@ -22,7 +23,7 @@ errors: list[str] = []
 
 
 def api(method: str, path: str, body: dict | None = None, token: str | None = None) -> dict:
-    req = urllib.request.Request(f"{BASE}/api{path}", method=method, data=json.dumps(body).encode() if body else None)
+    req = urllib.request.Request(f"{API}{path}", method=method, data=json.dumps(body).encode() if body else None)
     req.add_header("Content-Type", "application/json")
     if token:
         req.add_header("Authorization", f"Bearer {token}")

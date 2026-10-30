@@ -17,7 +17,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     EMBEDDING_CACHE_DIR=/app/.cache/fastembed \
     SEED_CSV_PATH=/app/data/jobs_seed.csv \
-    FRONTEND_DIST=/app/static
+    FRONTEND_DIST=/app/static \
+    EMBEDDING_THREADS=1 \
+    MALLOC_ARENA_MAX=2
+# EMBEDDING_THREADS=1 and MALLOC_ARENA_MAX=2 keep memory under the 512 MB of free hosting plans.
 
 WORKDIR /app
 
