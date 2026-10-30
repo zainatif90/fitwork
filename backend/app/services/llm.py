@@ -50,13 +50,19 @@ class LLMClient:
 
     def _gemini(self, system: str, prompt: str) -> str:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        # Newer Gemini models "think" before answering. A short cover letter does not need that, and
+        # full thinking took over 30 s; "minimal" answers in about 6 s with the same quality.
+        # Thinking tokens also count against maxOutputTokens, so leave room for them.
+        generation = {"temperature": 0.7, "maxOutputTokens": 2048}
+        if settings.LLM_THINKING_LEVEL:
+            generation["thinkingConfig"] = {"thinkingLevel": settings.LLM_THINKING_LEVEL}
         res = httpx.post(
             url,
             headers={"x-goog-api-key": self.api_key},
             json={
                 "systemInstruction": {"parts": [{"text": system}]},
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024},
+                "generationConfig": generation,
             },
             timeout=self.timeout,
         )

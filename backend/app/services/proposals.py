@@ -78,7 +78,7 @@ Portfolio links:
 3. Show you understood the client's need: refer to 1-2 specifics from the job description.
 4. If portfolio links are given, you may mention one of them exactly as written.
 5. Tone: {TONE_GUIDE[tone]}
-6. Length: about {LENGTH_WORDS[length]} words.
+6. Length: about {LENGTH_WORDS[length]} words (between {round(LENGTH_WORDS[length] * 0.85)} and {round(LENGTH_WORDS[length] * 1.15)} words).
 7. End with ONE short, specific question to the client, then sign off with "{first_name}".
 8. Plain text only: no markdown, no headings, no placeholders like [Name] or [X years].
 """

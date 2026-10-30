@@ -126,3 +126,27 @@ def test_history(client: TestClient, job_id: str, token: str, captured: dict) ->
     assert res.status_code == 200 and len(res.json()) == 1
     other = register(client, email="nosy@example.com")["access_token"]
     assert client.get("/api/proposals", headers=auth_header(other)).json() == []  # cannot see others' drafts
+
+
+def test_gemini_request_uses_low_thinking(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Gemini 3.x thinks before answering; FitWork asks for minimal thinking so drafts arrive in seconds."""
+    sent: dict = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self) -> dict:
+            return {"candidates": [{"content": {"parts": [{"text": "Hello client"}]}}]}
+
+    def fake_post(url: str, headers: dict, json: dict, timeout: float) -> FakeResponse:
+        sent.update(url=url, body=json)
+        return FakeResponse()
+
+    from app.services import llm
+
+    monkeypatch.setattr(llm.httpx, "post", fake_post)
+    monkeypatch.setattr(settings, "LLM_THINKING_LEVEL", "minimal")
+    text = LLMClient(provider="gemini", api_key="k", model="gemini-3.5-flash").generate("system", "prompt")
+    assert text == "Hello client"
+    assert sent["url"].endswith("/models/gemini-3.5-flash:generateContent")
+    assert sent["body"]["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "minimal"}

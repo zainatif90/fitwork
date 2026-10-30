@@ -117,7 +117,8 @@ class Settings(BaseSettings):
     # --- LLM (proposals only) ---
     LLM_PROVIDER: str = "gemini"  # gemini | openai
     LLM_API_KEY: str = ""
-    LLM_MODEL: str = "gemini-2.5-flash"
+    LLM_MODEL: str = "gemini-3.5-flash"  # gemini-2.5-flash is closed to new API keys (Oct 2026)
+    LLM_THINKING_LEVEL: str = "minimal"  # minimal | low | high, empty = model default (Gemini 3.x)
     LLM_TIMEOUT_SEC: float = 30.0
     PROPOSALS_PER_DAY: int = 20
 
