@@ -105,6 +105,7 @@ Website https://fitwork-zain2026.web.app (Firebase Hosting) + API https://fitwor
 | Full browser walk-through (Playwright) against the live website | **11 / 11 steps, 0 JavaScript errors** |
 | Worst-case memory, reproduced locally with a 512 MB limit (494 + 298 jobs embedded) | peak 329 MB (was 511 MB → killed before the fix) |
 | Real email from the live site (register → verification email via the Apps Script mailer) | server log "Email sent to …: Verify your FitWork email"; mailer refuses a wrong secret |
+| Real AI proposal on the live site (Gemini `gemini-3.5-flash`, thinking minimal) | not a fallback; 171–178 words for "standard"; 3 s; portfolio link correct after the link fix |
 
 Test accounts created by these checks were deleted afterwards.
 
@@ -138,6 +139,8 @@ Test accounts created by these checks were deleted afterwards.
 | 10 | Job card: budget shown on the same line as short titles; score squeezed titles on mobile | E2E screenshots | Block-level title; card header stacks on small screens |
 | 11 | Production server crashed (out of memory) while embedding new jobs on the free 512 MB plan | Render logs showed restarts; reproduced with `docker run -m 512m` (OOMKilled at 511 MB) | Batches of 4, one ONNX thread, `MALLOC_ARENA_MAX=2`, `malloc_trim` after each run → peak 329 MB |
 | 12 | Registering on the live site returned 500: Python 3.11 cannot write the `Partitioned` cookie attribute | Live API check; server log `ValueError: Partitioned cookies are only supported in Python 3.14` | Cookie header written by hand; new test with the cross-site settings |
+| 13 | Gemini `gemini-2.5-flash` refused new API keys; full "thinking" made drafts take > 30 s | Live key test (HTTP 404 "no longer available to new users"; timeouts) | Switched to `gemini-3.5-flash` with `thinkingLevel=minimal` (≈ 3–12 s) |
+| 14 | AI miscopied the portfolio link (`https://github.zainatif90`) | Live proposal check | `fix_links()` corrects near-miss links to the real one and removes invented links; new test |
 
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.

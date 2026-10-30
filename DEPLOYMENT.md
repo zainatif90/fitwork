@@ -41,7 +41,8 @@ Migrations run automatically on every backend start (`alembic upgrade head`).
 (`none` until a Gemini key is added), optional `SMTP_*` for real emails.
 
 ## Optional upgrades (free)
-- **Real AI proposals:** create a key at https://aistudio.google.com/apikey and set `LLM_API_KEY` on Render.
+- **Real AI proposals: DONE.** Gemini API key from Google AI Studio (free tier, no billing) in `LLM_API_KEY`;
+  `LLM_MODEL=gemini-3.5-flash`, `LLM_THINKING_LEVEL=minimal`. Verified live on 30 Oct 2026.
 - **Real emails: DONE.** Render's free plan blocks SMTP ports (25/465/587), so emails go over HTTPS to a Google
   Apps Script web app in the owner's Google account ("FitWork Mailer", code in `deploy/fitwork_mailer.gs`), which
   sends them from zainatif90@gmail.com (free, 100 emails/day). Render settings: `EMAIL_WEBHOOK_URL` (the web app's
