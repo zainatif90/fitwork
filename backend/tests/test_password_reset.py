@@ -94,3 +94,41 @@ def test_dev_mode_prints_instead_of_sending(monkeypatch: pytest.MonkeyPatch, cap
     monkeypatch.setattr(settings, "SMTP_HOST", "")
     email_service.send_email("x@example.com", "Hello", "Body text", "<p>Body</p>")
     assert "[DEV EMAIL] To x@example.com: Hello" in capsys.readouterr().out
+
+
+def test_webhook_email_sends_secret_and_message(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Production path: emails go over HTTPS to the Apps Script web app (SMTP ports are blocked on free hosts)."""
+    sent: dict = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self) -> dict:
+            return {"ok": True}
+
+    def fake_post(url: str, json: dict, timeout: int, follow_redirects: bool) -> FakeResponse:
+        sent.update(url=url, body=json, follow=follow_redirects)
+        return FakeResponse()
+
+    monkeypatch.setattr(settings, "EMAIL_WEBHOOK_URL", "https://script.google.com/macros/s/abc/exec")
+    monkeypatch.setattr(settings, "EMAIL_WEBHOOK_SECRET", "top-secret")
+    monkeypatch.setattr(email_service.httpx, "post", fake_post)
+    email_service._send_via_webhook("a@example.com", "Hi", "text body", "<p>html</p>")
+    assert sent["url"].endswith("/exec") and sent["follow"] is True
+    assert sent["body"] == {"secret": "top-secret", "to": "a@example.com", "subject": "Hi",
+                            "text": "text body", "html": "<p>html</p>"}
+
+
+def test_webhook_email_failure_is_logged_not_raised(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    class Refused:
+        status_code = 200
+
+        def json(self) -> dict:
+            return {"ok": False, "error": "forbidden"}
+
+    monkeypatch.setattr(settings, "EMAIL_WEBHOOK_URL", "https://script.google.com/macros/s/abc/exec")
+    monkeypatch.setattr(email_service.httpx, "post", lambda *a, **k: Refused())
+    # Alembic's logging setup (run by the test fixtures) disables existing loggers; switch this one back on
+    monkeypatch.setattr(email_service.log, "disabled", False)
+    email_service._send_via_webhook("a@example.com", "Hi", "t", "<p>h</p>")  # must not raise
+    assert "Email to a@example.com failed" in caplog.text

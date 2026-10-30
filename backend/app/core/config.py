@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""       # e.g. your Gmail address
     SMTP_PASSWORD: str = ""   # Gmail App Password (16 characters), never your normal password
     EMAIL_FROM: str = ""      # defaults to SMTP_USER
+    # Email over HTTPS (Google Apps Script web app) for hosts that block SMTP ports; takes priority over SMTP
+    EMAIL_WEBHOOK_URL: str = ""
+    EMAIL_WEBHOOK_SECRET: str = ""
 
     # --- NLP ---
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"

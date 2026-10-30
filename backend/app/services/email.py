@@ -1,11 +1,14 @@
 """
-Email sending (verification links, password reset, agency invites).
+Email sending (verification links, password reset, agency invites). Three ways, in this order:
 
-Uses plain SMTP, so any provider works. The free option used in production is Gmail SMTP
-with an App Password (smtp.gmail.com:587, STARTTLS, up to ~500 emails/day).
-If SMTP is not configured (local development), the email is printed to the console instead.
+1. EMAIL_WEBHOOK_URL (production): a Google Apps Script web app in the owner's Google account.
+   FitWork POSTs {secret, to, subject, text, html} over HTTPS and Google sends the email from
+   the owner's Gmail (free, 100 emails/day). Used because free hosting plans such as Render's
+   block the SMTP ports (25/465/587), while HTTPS (443) is allowed.
+2. SMTP (any provider, e.g. Gmail SMTP with an App Password) where SMTP ports are open.
+3. Nothing configured (development): the email is printed to the console.
 
-Emails are sent in a background thread so a slow mail server never slows down the API response.
+Emails are sent in a background thread so a slow mail service never slows down the API response.
 """
 import logging
 import smtplib
@@ -13,9 +16,27 @@ import ssl
 import threading
 from email.message import EmailMessage
 
+import httpx
+
 from app.core.config import settings
 
 log = logging.getLogger(__name__)
+
+
+def _send_via_webhook(to: str, subject: str, text: str, html: str) -> None:
+    try:
+        res = httpx.post(
+            settings.EMAIL_WEBHOOK_URL,
+            json={"secret": settings.EMAIL_WEBHOOK_SECRET, "to": to, "subject": subject, "text": text, "html": html},
+            timeout=30,
+            follow_redirects=True,  # Apps Script answers through a redirect to googleusercontent.com
+        )
+        result = res.json()
+        if not result.get("ok"):
+            raise RuntimeError(result.get("error", f"HTTP {res.status_code}"))
+        log.info("Email sent to %s: %s", to, subject)
+    except Exception:
+        log.exception("Email to %s failed", to)
 
 
 def smtp_configured() -> bool:
@@ -50,6 +71,9 @@ def _send_now(msg: EmailMessage) -> None:
 
 
 def send_email(to: str, subject: str, text: str, html: str) -> None:
+    if settings.EMAIL_WEBHOOK_URL:
+        threading.Thread(target=_send_via_webhook, args=(to, subject, text, html), daemon=True).start()
+        return
     if not smtp_configured():
         # Development: show the email in the server console instead of sending it.
         log.info("[DEV EMAIL] To %s: %s\n%s", to, subject, text)
