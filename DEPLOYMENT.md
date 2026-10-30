@@ -42,8 +42,10 @@ Migrations run automatically on every backend start (`alembic upgrade head`).
 
 ## Optional upgrades (free)
 - **Real AI proposals:** create a key at https://aistudio.google.com/apikey and set `LLM_API_KEY` on Render.
-- **Real emails:** Gmail App Password (https://myaccount.google.com/apppasswords) → set `SMTP_HOST=smtp.gmail.com`,
-  `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASSWORD` on Render. Until then verification/reset links are written to the log.
+- **Real emails: DONE.** Render's free plan blocks SMTP ports (25/465/587), so emails go over HTTPS to a Google
+  Apps Script web app in the owner's Google account ("FitWork Mailer", code in `deploy/fitwork_mailer.gs`), which
+  sends them from zainatif90@gmail.com (free, 100 emails/day). Render settings: `EMAIL_WEBHOOK_URL` (the web app's
+  `/exec` URL) and `EMAIL_WEBHOOK_SECRET` (must equal `SECRET` in the script). Verified live on 30 Oct 2026.
 
 ## Local production test
 ```powershell

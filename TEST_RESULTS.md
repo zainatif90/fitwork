@@ -104,6 +104,7 @@ Website https://fitwork-zain2026.web.app (Firebase Hosting) + API https://fitwor
 | Scheduled Freelancer.com fetch on the free server | 298 fetched, no restart, 9.3 s |
 | Full browser walk-through (Playwright) against the live website | **11 / 11 steps, 0 JavaScript errors** |
 | Worst-case memory, reproduced locally with a 512 MB limit (494 + 298 jobs embedded) | peak 329 MB (was 511 MB → killed before the fix) |
+| Real email from the live site (register → verification email via the Apps Script mailer) | server log "Email sent to …: Verify your FitWork email"; mailer refuses a wrong secret |
 
 Test accounts created by these checks were deleted afterwards.
 
