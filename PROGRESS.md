@@ -35,3 +35,4 @@ Deadline: 19 November 2026
 - [x] 1 Nov: tasteful animations on every page (page/section stagger, score rings, count-up, skeletons, drawer/dialog motion); E2E 11/11.
 - [x] 1 Nov: bold motion v2: drifting aurora glows, rotating headline word, animated gradient text, button shine, rainbow border on best match, scroll reveals, 3D tilt, source marquee.
 - [x] 1 Nov: vivid theme + 3D: dark animated sidebar, gradient canvas, glass cards, banner headers on every page, 3D gyroscope orbs, 3D card deck, 3D press buttons, tilt glare.
+- [x] 1 Nov: smoother motion (frame-based tilt, no glass blur, lighter glows) and a 3D Skill Gap radar (pillars on a turning holographic floor).

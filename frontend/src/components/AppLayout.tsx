@@ -6,7 +6,6 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { Role } from "../lib/types";
-import { Aurora } from "./Motion";
 import { Logo } from "./ui";
 
 const roleLabel: Record<Role, string> = {
@@ -63,7 +62,8 @@ export function AppLayout() {
 
   const sidebar = (
     <div className="bg-hero relative flex h-full flex-col overflow-hidden text-white">
-      <Aurora />
+      <div className="pointer-events-none absolute -left-20 top-1/3 h-72 w-72 rounded-full bg-violet-600/30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-fuchsia-600/20 blur-3xl" />
       <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" />
       <div className="relative flex h-16 items-center justify-between px-5">
         <NavLink to="/" aria-label="FitWork home"><Logo light /></NavLink>
@@ -82,7 +82,7 @@ export function AppLayout() {
             className={({ isActive }) =>
               clsx(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                isActive ? "bg-gradient-animated shine text-white shadow-glow ring-1 ring-white/20" : "text-slate-300 hover:translate-x-1 hover:bg-white/10 hover:text-white",
+                isActive ? "bg-brand-gradient shine text-white shadow-glow ring-1 ring-white/20" : "text-slate-300 hover:translate-x-1 hover:bg-white/10 hover:text-white",
               )
             }
           >
@@ -93,7 +93,7 @@ export function AppLayout() {
       </nav>
       <div className="relative border-t border-white/10 p-3">
         <div className="flex items-center gap-3 rounded-xl bg-white/5 px-2 py-2 ring-1 ring-white/10 backdrop-blur">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-animated text-sm font-bold text-white ring-2 ring-white/30">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-sm font-bold text-white ring-2 ring-white/30">
             {user?.full_name.slice(0, 1).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">

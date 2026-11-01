@@ -113,7 +113,7 @@ export default function Dashboard() {
             { label: "Top source", value: sourceName(data?.stats.top_source ?? null), hint: "for your top 5" },
           ].map((s) => (
             <Tilt key={s.label} max={14}>
-            <div className="animate-pop-in h-full rounded-2xl border border-white/15 bg-white/[0.08] p-3 shadow-xl backdrop-blur transition hover:bg-white/[0.14] sm:p-4">
+            <div className="animate-pop-in h-full rounded-2xl border border-white/15 bg-white/[0.08] p-3 shadow-xl transition hover:bg-white/[0.14] sm:p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
               <p className={`mt-1 truncate font-display font-bold ${typeof s.value === "string" ? "text-base sm:text-xl" : "text-lg sm:text-2xl"}`}
                 title={typeof s.value === "string" ? s.value : undefined}>{s.value}</p>

@@ -136,10 +136,10 @@ export default function Landing() {
                 reason="Partly fits: adding Shopify would raise this score" />
             </div>
             </Tilt>
-            <div className="animate-float absolute -right-3 -top-6 hidden rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-xs text-white shadow-xl backdrop-blur sm:block">
+            <div className="animate-float absolute -right-3 -top-6 hidden rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-xs text-white shadow-xl sm:block">
               <span className="text-emerald-400">✓</span> AI proposal ready
             </div>
-            <div className="animate-float absolute -bottom-6 -left-4 hidden rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-xs text-white shadow-xl backdrop-blur [animation-delay:1.5s] sm:block">
+            <div className="animate-float absolute -bottom-6 -left-4 hidden rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-xs text-white shadow-xl [animation-delay:1.5s] sm:block">
               Skill gap: <span className="font-semibold text-fuchsia-300">+ Next.js</span>
             </div>
             <p className="mt-10 text-center text-[11px] text-slate-500">Example preview</p>

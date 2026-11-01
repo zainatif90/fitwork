@@ -3,9 +3,9 @@ import clsx from "clsx";
 import { ChevronDown, ExternalLink, GraduationCap, Radar as RadarIcon, RefreshCw, TrendingUp, UserCog } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Legend, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Tilt } from "../components/Motion";
+import { Radar3D } from "../components/Radar3D";
 import { Alert, Button, Card, EmptyState, PageHeader } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { timeAgo } from "../lib/format";
@@ -32,9 +32,6 @@ interface SkillGapData {
   generated_at: string;
 }
 
-// Validated categorical slots 1 and 2 (see dataviz palette)
-const DEMAND_COLOR = "#6366f1";
-const YOU_COLOR = "#ec4899";
 
 function learnLinks(skill: string) {
   const q = encodeURIComponent(skill);
@@ -48,7 +45,7 @@ function learnLinks(skill: string) {
 function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocked: number }) {
   const [open, setOpen] = useState(rank === 1);
   return (
-    <Tilt max={3}><div className="rounded-2xl border border-white/70 bg-white/70 shadow-soft ring-1 ring-brand-100/60 backdrop-blur transition duration-200 hover:shadow-lift">
+    <Tilt max={3}><div className="rounded-2xl border border-white/70 bg-white/90 shadow-soft ring-1 ring-brand-100/60 transition duration-200 hover:shadow-lift">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-4 p-4 text-left" aria-expanded={open}>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white shadow-glow">{rank}</span>
         <div className="min-w-0 flex-1">
@@ -175,23 +172,21 @@ export default function SkillGap() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card className="min-w-0 p-5">
           <h2 className="font-semibold text-slate-900">You vs your field</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Top {data.radar.length} skills requested by jobs similar to yours. Demand is scaled so the most requested skill = 100.</p>
-          <div className="mt-2 h-80">
-            <ResponsiveContainer>
-              <RadarChart data={data.radar} outerRadius="72%">
-                <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis dataKey="skill" tick={{ fill: "#475569", fontSize: 11 }} />
-                <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="Market demand" dataKey="market_demand" stroke={DEMAND_COLOR} strokeWidth={2} fill={DEMAND_COLOR} fillOpacity={0.15} animationDuration={900} />
-                <Radar name="Your coverage" dataKey="your_coverage" stroke={YOU_COLOR} strokeWidth={2} fill={YOU_COLOR} fillOpacity={0.1} animationDuration={900} animationBegin={250} />
-                <Tooltip
-                  formatter={(value, name, item) =>
-                    name === "Market demand" ? [`${(item.payload as { jobs: number }).jobs} jobs`, name] : [Number(value) === 100 ? "You have it" : "Missing", name]}
-                  contentStyle={{ borderRadius: 8, borderColor: "#e2e8f0", fontSize: 12, color: "#0f172a" }}
-                />
-                <Legend iconType="plainline" formatter={(v) => <span className="text-xs text-slate-600">{v}</span>} />
-              </RadarChart>
-            </ResponsiveContainer>
+          <p className="mt-0.5 text-xs text-slate-500">Top {data.radar.length} skills requested by jobs similar to yours. Taller pillar = asked for more often (the number is the job count).</p>
+          {/* 3D radar: each pillar = one skill; height = how often jobs in your field ask for it */}
+          <div className="relative mt-2 overflow-hidden rounded-2xl bg-hero">
+            <div className="bg-grid pointer-events-none absolute inset-0 opacity-70" />
+            {data.radar.length >= 3 ? (
+              <Radar3D data={data.radar} />
+            ) : (
+              <p className="relative px-6 py-16 text-center text-sm text-slate-300">Not enough skills in your field to draw the radar yet.</p>
+            )}
+            <div className="relative flex flex-wrap justify-center gap-4 pb-4 text-xs text-slate-300">
+              <span className="inline-flex items-center gap-1.5"><span className="h-3 w-1.5 rounded-full bg-gradient-to-t from-brand-600 to-fuchsia-300" /> Skill you're missing</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-3 w-1.5 rounded-full bg-gradient-to-t from-emerald-500 to-teal-200" /> Skill you have</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 bg-pink-500" /> Your coverage</span>
+              <span className="text-slate-400">Move your mouse over it to turn it</span>
+            </div>
           </div>
           {data.your_skills.length > 0 && (
             <div className="mt-4 border-t border-slate-100 pt-4">

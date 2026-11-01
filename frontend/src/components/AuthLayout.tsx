@@ -30,7 +30,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
           </h2>
 
           {/* Product preview (illustrative example, not real data) */}
-          <div className="animate-float mt-8 max-w-sm rounded-2xl border border-white/10 bg-white/[0.07] p-4 shadow-2xl backdrop-blur-md">
+          <div className="animate-float mt-8 max-w-sm rounded-2xl border border-white/10 bg-white/[0.07] p-4 shadow-2xl">
             <div className="flex items-center gap-4">
               <div className="rounded-full bg-white p-1"><ScoreRing score={92} size={56} label={false} /></div>
               <div className="min-w-0">

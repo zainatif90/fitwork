@@ -1,5 +1,5 @@
 /** Reusable motion pieces: drifting colour glows, scroll reveal, rotating words, 3D tilt. */
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
 /** Three big blurred colour blobs that slowly drift (place inside a `relative overflow-hidden` box). */
 export function Aurora() {
@@ -49,22 +49,33 @@ export function RotatingWords({ words, interval = 2200, className }: { words: st
   );
 }
 
-/** Tilts gently towards the mouse in 3D (desktop only; no effect on touch screens). */
+/**
+ * Tilts towards the mouse in 3D with a light glare. Updates the element directly on animation frames
+ * (no React re-render on every mouse move), so it stays smooth.
+ */
 export function Tilt({ children, className, max = 8 }: { children: ReactNode; className?: string; max?: number }) {
-  const [style, setStyle] = useState<CSSProperties>({});
+  const ref = useRef<HTMLDivElement>(null);
+  const frame = useRef(0);
   function onMove(e: MouseEvent<HTMLDivElement>) {
-    const r = e.currentTarget.getBoundingClientRect();
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width - 0.5;
     const y = (e.clientY - r.top) / r.height - 0.5;
-    setStyle({
-      transform: `perspective(900px) rotateX(${-y * max}deg) rotateY(${x * max}deg) translateZ(12px) translateY(-4px)`,
-      ["--gx" as string]: `${(x + 0.5) * 100}%`,
-      ["--gy" as string]: `${(y + 0.5) * 100}%`,
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      el.style.transform = `perspective(900px) rotateX(${-y * max}deg) rotateY(${x * max}deg) translate3d(0, -4px, 12px)`;
+      el.style.setProperty("--gx", `${(x + 0.5) * 100}%`);
+      el.style.setProperty("--gy", `${(y + 0.5) * 100}%`);
     });
   }
+  function onLeave() {
+    cancelAnimationFrame(frame.current);
+    if (ref.current) ref.current.style.transform = "";
+  }
   return (
-    <div className={`tilt-host relative ${className ?? ""}`} onMouseMove={onMove} onMouseLeave={() => setStyle({})}
-      style={{ transition: "transform 0.25s ease-out", transformStyle: "preserve-3d", ...style }}>
+    <div ref={ref} className={`tilt-host relative ${className ?? ""}`} onMouseMove={onMove} onMouseLeave={onLeave}
+      style={{ transition: "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)", transformStyle: "preserve-3d" }}>
       {children}
       <span className="tilt-glare" aria-hidden />
     </div>

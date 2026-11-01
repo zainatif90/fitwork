@@ -88,7 +88,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 );
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={clsx("rounded-2xl border border-white/70 bg-white/80 shadow-soft ring-1 ring-brand-100/60 backdrop-blur-xl", className)}>{children}</div>;
+  return <div className={clsx("rounded-2xl border border-white/70 bg-white/90 shadow-soft ring-1 ring-brand-100/60", className)}>{children}</div>;
 }
 
 export function Spinner({ className }: { className?: string }) {
@@ -154,7 +154,7 @@ export function PageHeader({ title, subtitle, actions, icon }: { title: string; 
       <Orb3D size={150} className="absolute -right-6 top-1/2 hidden -translate-y-1/2 opacity-80 md:block" />
       <div className="relative flex min-w-0 items-center gap-4">
         {icon && (
-          <span className="animate-pop-in animate-pulse-ring hidden shrink-0 rounded-2xl bg-gradient-animated p-3.5 text-white shadow-glow ring-1 ring-white/30 sm:inline-flex [&>svg]:h-7 [&>svg]:w-7">{icon}</span>
+          <span className="animate-pop-in animate-pulse-ring hidden shrink-0 rounded-2xl bg-brand-gradient p-3.5 text-white shadow-glow ring-1 ring-white/30 sm:inline-flex [&>svg]:h-7 [&>svg]:w-7">{icon}</span>
         )}
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-4xl">{title}</h1>
@@ -168,7 +168,7 @@ export function PageHeader({ title, subtitle, actions, icon }: { title: string; 
 
 export function EmptyState({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
   return (
-    <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/70 bg-white/80 px-6 py-16 text-center shadow-soft ring-1 ring-brand-100/60 backdrop-blur-xl">
+    <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/70 bg-white/90 px-6 py-16 text-center shadow-soft ring-1 ring-brand-100/60">
       <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-96 -translate-x-1/2 rounded-full bg-gradient-to-r from-brand-400/30 via-fuchsia-400/30 to-sky-400/30 blur-3xl" />
       <div className="animate-pop-in relative mb-4 rounded-2xl bg-gradient-animated p-4 text-white shadow-glow [&>svg]:h-8 [&>svg]:w-8">{icon}</div>
       <h3 className="relative font-display text-xl font-bold text-slate-900">{title}</h3>
