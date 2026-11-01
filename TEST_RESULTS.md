@@ -188,6 +188,10 @@ calculation 7.4 s on the free server right after a restart.
 | Timing reveals registered emails; HEAD /health 405 | 31, 26 | Dummy bcrypt check; GET/HEAD health with a database check |
 
 Browser walk-through after these fixes (local, new code): **11 / 11 steps, 0 JavaScript errors**.
+Live checks after deploying (1 Nov 2026): the **same walk-through on the live site passed 11 / 11 steps, 0 JavaScript errors**
+(test accounts deleted afterwards); login with a new fake IP on every try is blocked after 5 failures; reset emails
+with fake IPs: 3 sent, then 429; a faked CF-Connecting-IP header is refused by Cloudflare (403); HEAD /api/health 200;
+index.html served with Cache-Control: no-cache.
 
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.
