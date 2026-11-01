@@ -229,3 +229,59 @@ h1, h2, h3 {
   .reveal { opacity: 1; transform: none; }
   .aurora > span { animation: none; }
 }
+
+/* Colourful app background behind the glass cards (instead of flat white) */
+.app-canvas {
+  background-color: #f5f3ff;
+  background-image:
+    radial-gradient(40rem 28rem at 100% 0%, rgb(167 139 250 / 0.35), transparent 60%),
+    radial-gradient(36rem 26rem at 0% 30%, rgb(99 102 241 / 0.22), transparent 60%),
+    radial-gradient(40rem 30rem at 70% 100%, rgb(244 114 182 / 0.22), transparent 60%),
+    radial-gradient(30rem 22rem at 20% 100%, rgb(56 189 248 / 0.18), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* ===================== 3D effects ===================== */
+@keyframes orb-x { from { transform: rotateX(70deg) rotateZ(0deg); } to { transform: rotateX(70deg) rotateZ(360deg); } }
+@keyframes orb-y { from { transform: rotateY(70deg) rotateZ(0deg); } to { transform: rotateY(70deg) rotateZ(360deg); } }
+@keyframes orb-z { from { transform: rotateX(35deg) rotateY(-35deg) rotateZ(0deg); } to { transform: rotateX(35deg) rotateY(-35deg) rotateZ(-360deg); } }
+@keyframes orb-spin { from { transform: rotateY(0deg) rotateX(12deg); } to { transform: rotateY(360deg) rotateX(12deg); } }
+@keyframes core-pulse { 0%,100% { transform: scale(1); opacity: 0.95; } 50% { transform: scale(1.12); opacity: 1; } }
+
+/* A gyroscope: three glowing rings turning on different axes around a glowing core.
+   (No position rule here: the element is placed with Tailwind's absolute/relative classes.) */
+.orb3d { perspective: 900px; }
+.orb3d .orb-stage { position: absolute; inset: 0; transform-style: preserve-3d; animation: orb-spin 18s linear infinite; }
+.orb3d .ring { position: absolute; inset: 0; border-radius: 9999px; transform-style: preserve-3d; }
+.orb3d .ring:nth-child(1) { border: 3px solid rgb(165 180 252 / 0.95); box-shadow: 0 0 18px #818cf8, inset 0 0 18px #818cf8; animation: orb-x 7s linear infinite; }
+.orb3d .ring:nth-child(2) { inset: 10%; border: 3px solid rgb(240 171 252 / 0.95); box-shadow: 0 0 18px #e879f9, inset 0 0 18px #e879f9; animation: orb-y 9s linear infinite; }
+.orb3d .ring:nth-child(3) { inset: 20%; border: 3px solid rgb(125 211 252 / 0.95); box-shadow: 0 0 18px #38bdf8, inset 0 0 18px #38bdf8; animation: orb-z 6s linear infinite; }
+.orb3d .core { position: absolute; inset: 36%; border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #fff, #c4b5fd 30%, #7c3aed 65%, #312e81);
+  box-shadow: 0 0 40px 8px rgb(168 85 247 / 0.6), inset -6px -8px 16px rgb(30 27 75 / 0.5);
+  animation: core-pulse 3s ease-in-out infinite; }
+
+/* 3D "key" buttons: sit on a darker edge and press down when clicked */
+@utility btn-3d {
+  box-shadow: 0 5px 0 #3730a3, 0 10px 24px -6px rgb(99 102 241 / 0.6);
+  &:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #3730a3, 0 14px 28px -6px rgb(99 102 241 / 0.65); }
+  &:active { transform: translateY(4px); box-shadow: 0 1px 0 #3730a3, 0 4px 10px -4px rgb(99 102 241 / 0.5); }
+}
+
+/* Light glare that follows the mouse on tilting cards (position set by the Tilt component) */
+.tilt-glare { pointer-events: none; position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity 0.3s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.55), transparent 45%); mix-blend-mode: soft-light; z-index: 5; }
+.tilt-host:hover .tilt-glare { opacity: 1; }
+
+/* 3D card deck: cards stacked in perspective */
+.deck-3d { transform-style: preserve-3d; transform: perspective(1200px) rotateY(-14deg) rotateX(8deg); transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.deck-3d > * { transform-style: preserve-3d; box-shadow: 0 30px 60px -20px rgb(15 10 50 / 0.6); }
+.deck-3d > *:nth-child(1) { transform: translateZ(60px); }
+.deck-3d > *:nth-child(2) { transform: translateZ(30px); }
+.deck-3d > *:nth-child(3) { transform: translateZ(0px); }
+.deck-3d:hover { transform: perspective(1200px) rotateY(-4deg) rotateX(3deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb3d .orb-stage, .orb3d .ring, .orb3d .core { animation: none; }
+}
+.tilt-glare { border-radius: 1rem; }

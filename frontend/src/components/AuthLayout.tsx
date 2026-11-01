@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { ScoreRing } from "./MatchParts";
 import { Aurora } from "./Motion";
+import { Orb3D } from "./Orb3D";
 import { Logo } from "./ui";
 
 const points = [
@@ -19,6 +20,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
     <div className="flex min-h-full bg-white">
       <aside className="bg-hero relative hidden w-[46%] max-w-2xl flex-col justify-between overflow-hidden p-10 text-white lg:flex">
         <Aurora />
+        <Orb3D size={260} className="absolute -right-20 top-24 opacity-70" />
         <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
         <Link to="/" className="relative w-fit"><Logo light /></Link>
 

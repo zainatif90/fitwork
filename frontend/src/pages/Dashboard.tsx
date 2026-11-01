@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { AddJobModal } from "../components/AddJobModal";
-import { Aurora } from "../components/Motion";
+import { Aurora, Tilt } from "../components/Motion";
+import { Orb3D } from "../components/Orb3D";
 import { JobCard } from "../components/MatchParts";
 import { Alert, Card, CountUp, EmptyState, PageHeader, SkeletonList } from "../components/ui";
 import { api, ApiError } from "../lib/api";
@@ -82,6 +83,7 @@ export default function Dashboard() {
       {/* Welcome banner with the key numbers */}
       <div className="bg-hero relative mb-6 overflow-hidden rounded-3xl p-6 text-white shadow-lift sm:p-8">
         <Aurora />
+        <Orb3D size={220} className="absolute -right-10 -bottom-16 hidden opacity-90 lg:block" />
         <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_right,black_10%,transparent_70%)]" />
         <div className="relative flex flex-wrap items-start justify-between gap-6">
           <div>
@@ -110,12 +112,14 @@ export default function Dashboard() {
             { label: "Average top-5 score", value: <CountUp value={data?.stats.average_score ?? 0} decimals={1} />, hint: "out of 100" },
             { label: "Top source", value: sourceName(data?.stats.top_source ?? null), hint: "for your top 5" },
           ].map((s) => (
-            <div key={s.label} className="animate-pop-in rounded-2xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur transition hover:-translate-y-1 hover:bg-white/[0.12] sm:p-4">
+            <Tilt key={s.label} max={14}>
+            <div className="animate-pop-in h-full rounded-2xl border border-white/15 bg-white/[0.08] p-3 shadow-xl backdrop-blur transition hover:bg-white/[0.14] sm:p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
               <p className={`mt-1 truncate font-display font-bold ${typeof s.value === "string" ? "text-base sm:text-xl" : "text-lg sm:text-2xl"}`}
                 title={typeof s.value === "string" ? s.value : undefined}>{s.value}</p>
               <p className="text-[11px] text-slate-400">{s.hint}</p>
             </div>
+            </Tilt>
           ))}
         </div>
       </div>

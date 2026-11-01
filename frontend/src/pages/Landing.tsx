@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 
 import { ScoreRing } from "../components/MatchParts";
 import { Aurora, Reveal, RotatingWords, Tilt } from "../components/Motion";
+import { Orb3D } from "../components/Orb3D";
 import { Logo } from "../components/ui";
 import { useAuth } from "../lib/auth";
 
@@ -108,7 +109,7 @@ export default function Landing() {
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link to={loggedIn ? "/app" : "/register"}
-                className="group shine animate-pulse-ring inline-flex items-center gap-2 rounded-xl bg-gradient-animated px-6 py-3.5 font-semibold text-white shadow-glow transition hover:-translate-y-0.5">
+                className="group shine btn-3d inline-flex items-center gap-2 rounded-xl bg-gradient-animated px-6 py-3.5 font-semibold text-white transition">
                 {loggedIn ? "Go to my matches" : "Find my matches, free"}
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
               </Link>
@@ -124,13 +125,16 @@ export default function Landing() {
           {/* Product preview: illustrative examples */}
           <div className="relative mx-auto w-full min-w-0 max-w-md lg:mx-0">
             <div className="absolute -inset-8 rounded-[2rem] bg-gradient-to-tr from-brand-600/30 via-violet-500/20 to-fuchsia-500/20 blur-2xl" aria-hidden />
-            <Tilt className="relative space-y-4" max={8}>
-              <PreviewCard className="animate-fade-up" score={94} title="React dashboard for a SaaS startup" meta="#1 · Freelancer.com · 2h ago"
+            <Orb3D size={320} className="absolute -right-24 -top-24 hidden opacity-80 lg:block" />
+            <Tilt className="relative" max={10}>
+            <div className="deck-3d space-y-4">
+              <PreviewCard className="animate-fade-in" score={94} title="React dashboard for a SaaS startup" meta="#1 · Freelancer.com · 2h ago"
                 reason="Matches your React and TypeScript skills; budget fits your rate" />
-              <PreviewCard className="animate-fade-up [animation-delay:120ms] sm:ml-10" score={81} title="Next.js landing page redesign" meta="#2 · Himalayas · 5h ago"
+              <PreviewCard className="animate-fade-in [animation-delay:150ms] sm:ml-10" score={81} title="Next.js landing page redesign" meta="#2 · Himalayas · 5h ago"
                 reason="Similar to the work in your profile" />
-              <PreviewCard className="animate-fade-up [animation-delay:240ms]" score={63} title="Shopify theme with React widgets" meta="#3 · Remotive · 1 day ago"
+              <PreviewCard className="animate-fade-in [animation-delay:300ms]" score={63} title="Shopify theme with React widgets" meta="#3 · Remotive · 1 day ago"
                 reason="Partly fits: adding Shopify would raise this score" />
+            </div>
             </Tilt>
             <div className="animate-float absolute -right-3 -top-6 hidden rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-xs text-white shadow-xl backdrop-blur sm:block">
               <span className="text-emerald-400">✓</span> AI proposal ready

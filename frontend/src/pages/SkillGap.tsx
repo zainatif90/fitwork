@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Legend, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from "recharts";
 
+import { Tilt } from "../components/Motion";
 import { Alert, Button, Card, EmptyState, PageHeader } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { timeAgo } from "../lib/format";
@@ -32,8 +33,8 @@ interface SkillGapData {
 }
 
 // Validated categorical slots 1 and 2 (see dataviz palette)
-const DEMAND_COLOR = "#2a78d6";
-const YOU_COLOR = "#eb6834";
+const DEMAND_COLOR = "#6366f1";
+const YOU_COLOR = "#ec4899";
 
 function learnLinks(skill: string) {
   const q = encodeURIComponent(skill);
@@ -47,7 +48,7 @@ function learnLinks(skill: string) {
 function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocked: number }) {
   const [open, setOpen] = useState(rank === 1);
   return (
-    <div className="rounded-xl border border-slate-200 transition duration-200 hover:border-brand-200 hover:shadow-soft">
+    <Tilt max={3}><div className="rounded-2xl border border-white/70 bg-white/70 shadow-soft ring-1 ring-brand-100/60 backdrop-blur transition duration-200 hover:shadow-lift">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-4 p-4 text-left" aria-expanded={open}>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white shadow-glow">{rank}</span>
         <div className="min-w-0 flex-1">
@@ -64,7 +65,7 @@ function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocke
             </p>
           )}
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-brand-500" style={{ width: `${(gap.jobs_unlocked / maxUnlocked) * 100}%` }} />
+            <div className="h-full rounded-full bg-gradient-animated" style={{ width: `${Math.max(6, (gap.jobs_unlocked / maxUnlocked) * 100)}%` }} />
           </div>
           <p className="mt-1 text-xs text-slate-500">Asked for in {gap.demand} job{gap.demand === 1 ? "" : "s"} similar to yours</p>
         </div>
@@ -103,7 +104,7 @@ function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocke
           </div>
         </div>
       )}
-    </div>
+    </div></Tilt>
   );
 }
 

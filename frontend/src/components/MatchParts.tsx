@@ -42,10 +42,10 @@ export function SkillChips({ matched, missing, max = 6 }: { matched: string[]; m
   return (
     <div className="flex flex-wrap gap-1.5">
       {shownMatched.map((s) => (
-        <Badge key={`m-${s}`} className="bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">✓ {s}</Badge>
+        <Badge key={`m-${s}`} className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">✓ {s}</Badge>
       ))}
       {shownMissing.map((s) => (
-        <Badge key={`x-${s}`} className="bg-white text-slate-500 ring-1 ring-slate-200">{s}</Badge>
+        <Badge key={`x-${s}`} className="bg-brand-50 text-brand-700 ring-1 ring-brand-100">{s}</Badge>
       ))}
       {hidden > 0 && <Badge className="bg-white text-slate-400">+{hidden} more</Badge>}
     </div>
@@ -88,6 +88,10 @@ export function JobCard({ match, rank }: { match: Match; rank: number }) {
     <Tilt max={4}>
     <Card className={clsx("group relative p-5 transition-shadow duration-200 hover:shadow-lift sm:p-6",
       rank === 1 ? "glow-border border-transparent" : "overflow-hidden hover:border-brand-200")}>
+      {rank !== 1 && (
+        <span className={clsx("absolute inset-y-0 left-0 w-1.5", match.score >= 75 ? "bg-gradient-to-b from-emerald-400 to-teal-500"
+          : match.score >= 50 ? "bg-gradient-to-b from-amber-300 to-orange-500" : "bg-gradient-to-b from-rose-400 to-red-500")} aria-hidden />
+      )}
       {rank === 1 && (
         <span className="animate-pop-in absolute -top-3 right-5 rounded-full bg-gradient-animated px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-glow">
           Best match

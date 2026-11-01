@@ -1,6 +1,7 @@
 /** Small reusable UI building blocks so every page looks consistent. */
 import clsx from "clsx";
 import { AlertCircle, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { Orb3D } from "./Orb3D";
 import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
@@ -13,8 +14,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-gradient-animated shine text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0",
-  secondary: "bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-soft",
+  primary: "bg-gradient-animated shine btn-3d text-white",
+  secondary: "shine bg-white text-slate-800 border border-white/60 hover:-translate-y-0.5 hover:bg-brand-50 shadow-soft",
   ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
   danger: "bg-white text-red-600 border border-red-200 hover:bg-red-50",
 };
@@ -87,7 +88,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 );
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={clsx("rounded-2xl border border-slate-200/80 bg-white shadow-soft", className)}>{children}</div>;
+  return <div className={clsx("rounded-2xl border border-white/70 bg-white/80 shadow-soft ring-1 ring-brand-100/60 backdrop-blur-xl", className)}>{children}</div>;
 }
 
 export function Spinner({ className }: { className?: string }) {
@@ -147,26 +148,30 @@ export function Logo({ className, light }: { className?: string; light?: boolean
 
 export function PageHeader({ title, subtitle, actions, icon }: { title: string; subtitle?: string; actions?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="flex min-w-0 items-center gap-4">
+    <div className="bg-hero relative mb-6 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl p-6 text-white shadow-lift sm:p-8">
+      <div className="aurora" aria-hidden><span /><span /><span /></div>
+      <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_right,black_10%,transparent_70%)]" />
+      <Orb3D size={150} className="absolute -right-6 top-1/2 hidden -translate-y-1/2 opacity-80 md:block" />
+      <div className="relative flex min-w-0 items-center gap-4">
         {icon && (
-          <span className="animate-pop-in animate-pulse-ring hidden shrink-0 rounded-2xl bg-gradient-animated p-3 text-white shadow-glow sm:inline-flex [&>svg]:h-6 [&>svg]:w-6">{icon}</span>
+          <span className="animate-pop-in animate-pulse-ring hidden shrink-0 rounded-2xl bg-gradient-animated p-3.5 text-white shadow-glow ring-1 ring-white/30 sm:inline-flex [&>svg]:h-7 [&>svg]:w-7">{icon}</span>
         )}
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-          {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-4xl">{title}</h1>
+          {subtitle && <p className="mt-1.5 text-sm text-slate-300">{subtitle}</p>}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="relative flex flex-wrap items-center gap-2 md:mr-28">{actions}</div>}
     </div>
   );
 }
 
 export function EmptyState({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
-      <div className="mb-3 rounded-2xl bg-brand-50 p-3 text-brand-600">{icon}</div>
-      <h3 className="font-semibold text-slate-900">{title}</h3>
+    <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/70 bg-white/80 px-6 py-16 text-center shadow-soft ring-1 ring-brand-100/60 backdrop-blur-xl">
+      <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-96 -translate-x-1/2 rounded-full bg-gradient-to-r from-brand-400/30 via-fuchsia-400/30 to-sky-400/30 blur-3xl" />
+      <div className="animate-pop-in relative mb-4 rounded-2xl bg-gradient-animated p-4 text-white shadow-glow [&>svg]:h-8 [&>svg]:w-8">{icon}</div>
+      <h3 className="relative font-display text-xl font-bold text-slate-900">{title}</h3>
       {children && <div className="mt-1 max-w-md text-sm text-slate-500">{children}</div>}
     </div>
   );

@@ -50,18 +50,23 @@ export function RotatingWords({ words, interval = 2200, className }: { words: st
 }
 
 /** Tilts gently towards the mouse in 3D (desktop only; no effect on touch screens). */
-export function Tilt({ children, className, max = 6 }: { children: ReactNode; className?: string; max?: number }) {
+export function Tilt({ children, className, max = 8 }: { children: ReactNode; className?: string; max?: number }) {
   const [style, setStyle] = useState<CSSProperties>({});
   function onMove(e: MouseEvent<HTMLDivElement>) {
     const r = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width - 0.5;
     const y = (e.clientY - r.top) / r.height - 0.5;
-    setStyle({ transform: `perspective(900px) rotateX(${-y * max}deg) rotateY(${x * max}deg) translateY(-3px)` });
+    setStyle({
+      transform: `perspective(900px) rotateX(${-y * max}deg) rotateY(${x * max}deg) translateZ(12px) translateY(-4px)`,
+      ["--gx" as string]: `${(x + 0.5) * 100}%`,
+      ["--gy" as string]: `${(y + 0.5) * 100}%`,
+    });
   }
   return (
-    <div className={className} onMouseMove={onMove} onMouseLeave={() => setStyle({})}
-      style={{ transition: "transform 0.25s ease-out", ...style }}>
+    <div className={`tilt-host relative ${className ?? ""}`} onMouseMove={onMove} onMouseLeave={() => setStyle({})}
+      style={{ transition: "transform 0.25s ease-out", transformStyle: "preserve-3d", ...style }}>
       {children}
+      <span className="tilt-glare" aria-hidden />
     </div>
   );
 }
