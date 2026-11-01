@@ -165,6 +165,9 @@ What we measured on the way (why similarity alone was not enough):
   identical reposts are now counted once.
 - Without the field rule, "AWS" for a QA tester "unlocked" technical-support and DevOps jobs; now it unlocks none.
 Compute time per profile on 3,074 jobs: 250–290 ms on a laptop (cached for 1 hour).
+Live check after deploying (temporary QA account on the production API, deleted afterwards): field 40 of 3,016 jobs,
+suggestions Android, Mobile App Development, iOS, Mobile App Testing, CI/CD, no off-field skills; first uncached
+calculation 7.4 s on the free server right after a restart.
 
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.
