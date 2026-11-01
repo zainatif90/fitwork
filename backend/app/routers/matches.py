@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.redis_client import cache_delete
 from app.models.feedback import MatchFeedback
 from app.models.job import Job
 from app.models.user import User
@@ -57,6 +58,7 @@ def give_feedback(job_id: uuid.UUID, data: FeedbackIn, user: User = Depends(get_
     )
     db.execute(stmt)
     db.commit()
+    cache_delete(f"matches:{user.id}")  # the job leaves the top 5 and the next best moves up
     return FeedbackOut(job_id=str(job.id), outcome=data.outcome, score_at_feedback=score)
 
 

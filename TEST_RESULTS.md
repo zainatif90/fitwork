@@ -30,7 +30,8 @@ TC-7 uses 520 jobs labelled `source = synthetic` that exist **only in the test d
 after every test). The real-data performance numbers are in sections 3 and 4.
 
 ## 2. Full automated test suite
-Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **131 passed, 0 failed (37.2 s)**
+Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **208 passed, 0 failed (58 s)** (1 Nov 2026).
+The table below is the original breakdown; new files since: test_auth_sessions.py, test_review_fixes.py, test_job_boards.py.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -120,9 +121,9 @@ Test accounts created by these checks were deleted afterwards.
 | No secrets in repo | Done | `.env` not tracked; scan of tracked files found only the `.env.example` placeholder |
 | No stack traces to users | Done | test_security: forced exception → generic 500 message, no traceback |
 | SQL injection | Done | SQLAlchemy bound parameters; TC-8 |
-| Password storage | Done | bcrypt cost 12; refresh token in httpOnly SameSite=Lax cookie; access token in memory only |
+| Password storage | Done | bcrypt cost 12 (72-byte limit checked); refresh token in an httpOnly cookie (SameSite=None; Secure; Partitioned in production); access token in memory only; server-side sessions |
 | Dependency audit | Done | `npm audit`: 0 vulnerabilities after upgrading react-router-dom 6 → 7.18.5 |
-| API docs in production | Off by default | `ENABLE_API_DOCS=false` |
+| API docs in production | Currently ON (for the viva demo) | `ENABLE_API_DOCS=true` on Render; set to false after the viva |
 
 ## 7. Bugs found and fixed during development
 | # | Bug | How it was found | Fix |
@@ -168,6 +169,25 @@ Compute time per profile on 3,074 jobs: 250–290 ms on a laptop (cached for 1 h
 Live check after deploying (temporary QA account on the production API, deleted afterwards): field 40 of 3,016 jobs,
 suggestions Android, Mobile App Development, iOS, Mobile App Testing, CI/CD, no off-field skills; first uncached
 calculation 7.4 s on the free server right after a restart.
+
+### Fixed after the 1 November 2026 review (34 bugs; each has a test in test_auth_sessions.py, test_agency.py, test_review_fixes.py or test_skill_gap.py)
+| Area | Bugs | Fix |
+|---|---|---|
+| Login / reset limits bypassed with a fake `X-Forwarded-For` (reproduced live: 7 tries, no 429) | 01, 02 | Limits per email whatever the IP; IP from CF-Connecting-IP or the last XFF entry |
+| Sessions survived logout and password reset; old refresh tokens worked for 7 days | 07, 08 | Server-side sessions (migration 0008), refresh rotation with reuse detection |
+| Correct logins counted towards the limit | 09 | Only failed attempts count; success / reset clears them |
+| Urdu/emoji password over 72 bytes crashed sign-up; 500s had no CORS headers | 10 | Byte-length check; JSON 500 inside CORS; frontend handles non-JSON errors |
+| Invite emails: unescaped HTML, unlimited, unverified owners | 03 | html.escape, no links in agency names, 10/day, verified email required |
+| Agency: re-routed job vanished; removed member kept jobs; expired job assignable; won could change back | 05, 06, 23, 24 | Re-routed jobs listed first; open jobs return to routing; is_active check; forward-only status |
+| "Not relevant" did not remove a match | 04 | Jobs with feedback leave matches; cache cleared |
+| Seed jobs outranked live jobs; unrelated jobs scored "Possible fit" | 11, 16 | Seed recency 0; fit gate. Live data (3,071 jobs, 5 profiles): top-5 scores unchanged, off-field jobs scoring ≥ 50 fell from 373→180 (QA), 147→64 (React), 271→126 (Python), 321→152 (logo), 160→59 (writer) |
+| Proposals: failed AI used quota; template grammar/title junk; Regenerate active at 0 | 12, 27, 34 | Only real AI drafts count; singular wording, title trimmed; buttons disabled at 0 |
+| Skill Gap: unusual skills gave random suggestions; duplicate radar names; cut off on phones | 15, 33, 14 | Clear message instead of fallback; aliases + standard names; grid can shrink |
+| Jobs: broken link showed a validation error; raw paste errors; unlimited paste; expired jobs embedded | 20, 21, 25, 32 | 404 "Job not found" page; plain messages + form checks; 20/day, 200 total; filtered before embedding |
+| UI: sign-up from redirect skipped onboarding; next user opened previous user's page; silent errors; no confirm on remove; mobile menu; "1m ago"; skill input | 13, 22, 17, 18, 19, 28, 29, 30 | Fixed in Register, ProtectedRoute, AgencySettings, AppLayout, format.ts, SkillInput |
+| Timing reveals registered emails; HEAD /health 405 | 31, 26 | Dummy bcrypt check; GET/HEAD health with a database check |
+
+Browser walk-through after these fixes (local, new code): **11 / 11 steps, 0 JavaScript errors**.
 
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.

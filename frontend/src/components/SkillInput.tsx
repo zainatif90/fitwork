@@ -22,6 +22,8 @@ export function SkillInput({ value, onChange, max = 40, invalid }: Props) {
   const [options, setOptions] = useState<SkillOption[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [activeTouched, setActiveTouched] = useState(false); // the user moved through the list with the arrow keys
+  const [hint, setHint] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounced search: wait 150 ms after the user stops typing.
@@ -46,11 +48,24 @@ export function SkillInput({ value, onChange, max = 40, invalid }: Props) {
   function add(skill: string) {
     const s = skill.trim().replace(/\s+/g, " ");
     if (!s || s.length > 60 || value.length >= max) return;
-    if (value.some((v) => v.toLowerCase() === s.toLowerCase())) return;
+    if (value.some((v) => v.toLowerCase() === s.toLowerCase())) {
+      setHint(`"${s}" is already added.`);  // tell the user instead of silently ignoring it
+      setQuery("");
+      return;
+    }
+    setHint(null);
     onChange([...value, s]);
     setQuery("");
     setOptions([]);
     inputRef.current?.focus();
+  }
+
+  /** Enter: an exact match of what was typed wins over the first suggestion ("seo" adds "SEO", not "SEO Optimization"). */
+  function pickOnEnter(): string {
+    const typed = query.trim().toLowerCase();
+    const exact = options.find((o) => o.name.toLowerCase() === typed);
+    if (exact) return exact.name;
+    return options[activeTouched ? active : 0]?.name ?? query;
   }
 
   function remove(skill: string) {
@@ -60,13 +75,15 @@ export function SkillInput({ value, onChange, max = 40, invalid }: Props) {
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      setActiveTouched(true);
       setActive((a) => Math.min(a + 1, options.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      setActiveTouched(true);
       setActive((a) => Math.max(a - 1, 0));
     } else if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      add(options[active]?.name ?? query);
+      add(pickOnEnter());
     } else if (e.key === "Backspace" && !query && value.length) {
       remove(value[value.length - 1]);
     } else if (e.key === "Escape") {
@@ -100,6 +117,8 @@ export function SkillInput({ value, onChange, max = 40, invalid }: Props) {
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
+            setActiveTouched(false);
+            setHint(null);
           }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
@@ -142,6 +161,7 @@ export function SkillInput({ value, onChange, max = 40, invalid }: Props) {
           )}
         </ul>
       )}
+      {hint && <p className="mt-1 text-xs text-slate-500" role="status">{hint}</p>}
     </div>
   );
 }

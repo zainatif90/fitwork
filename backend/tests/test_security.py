@@ -17,6 +17,7 @@ PUBLIC = {
     ("POST", "/api/auth/forgot-password"),  # rate limited, same answer for every email
     ("POST", "/api/auth/reset-password"),   # needs the signed single-use token from the email
     ("GET", "/api/health"),
+    ("HEAD", "/api/health"),         # uptime monitors send HEAD
 }
 
 DUMMY_UUID = "00000000-0000-0000-0000-000000000000"
@@ -77,4 +78,4 @@ def test_oversized_and_malformed_input_rejected(client: TestClient) -> None:
     assert client.post("/api/auth/register", json={"email": "a@b.co", "password": "A1" + "x" * 200, "full_name": "Ab"}).status_code == 422
     assert client.post("/api/auth/login", content=b"{not json", headers={"Content-Type": "application/json"}).status_code == 422
     token = register(client)["access_token"]
-    assert client.get("/api/jobs/not-a-uuid", headers=auth_header(token)).status_code == 422
+    assert client.get("/api/jobs/not-a-uuid", headers=auth_header(token)).status_code == 404  # "Job not found"

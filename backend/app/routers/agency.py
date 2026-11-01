@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, require_roles
+from app.core.redis_client import hit_rate_limit
 from app.models.agency import TAKEN_STATUSES, Agency, AgencyMember, Assignment
 from app.models.job import Job
 from app.models.user import User
@@ -33,6 +34,7 @@ from app.schemas.agency import (
     TeamStatsOut,
 )
 from app.services import agency as agency_service
+from app.services import email as email_service
 from app.services.matching import job_summary, score_single_job
 from app.services.profiles import get_profile
 from app.services.routing import compute_routing, next_best_after_decline
@@ -41,6 +43,9 @@ router = APIRouter(prefix="/agency", tags=["agency"])
 
 owner_only = require_roles("agency_owner")
 member_only = require_roles("agency_member")
+
+# Status changes a member may make (forward only; won and lost are final)
+NEXT_STATUSES: dict[str, tuple[str, ...]] = {"assigned": ("applied", "won", "lost"), "applied": ("won", "lost")}
 
 
 def _assignment_out(db: Session, a: Assignment) -> dict[str, Any]:
@@ -75,12 +80,22 @@ def rename_agency(data: AgencyRenameIn, user: User = Depends(owner_only), db: Se
             "members": agency_service.list_members(db, agency)}
 
 
+INVITES_PER_DAY = 10
+
+
 @router.post("/invite", response_model=InviteOut, status_code=status.HTTP_201_CREATED)
 def invite(data: InviteIn, user: User = Depends(owner_only), db: Session = Depends(get_db)) -> dict:
+    # Invites are emails sent from our address: only verified owners, and at most 10 a day
+    # (otherwise anyone could sign up and use our mail quota to email strangers).
+    if not user.is_verified:
+        raise HTTPException(status_code=403, detail="Please verify your email address before inviting team members.")
+    if hit_rate_limit(f"rl:invite:{user.id}", INVITES_PER_DAY, 24 * 3600):
+        raise HTTPException(status_code=429, detail=f"You can send up to {INVITES_PER_DAY} invites a day. Please try again tomorrow.")
     agency = agency_service.get_or_create_agency(db, user)
     member, token, link = agency_service.invite_member(db, agency, user, data.email)
     row = next(m for m in agency_service.list_members(db, agency) if m["id"] == str(member.id))
-    return {"member": MemberRow(**row), "invite_link": link, "invite_token": token}
+    return {"member": MemberRow(**row), "invite_link": link, "invite_token": token,
+            "email_sent": email_service.mailer_configured()}
 
 
 @router.get("/invite/{token}", response_model=InviteInfoOut)
@@ -119,6 +134,8 @@ def assign(data: AssignIn, user: User = Depends(owner_only), db: Session = Depen
     job = db.get(Job, data.job_id)
     if job is None or job.source == "manual":
         raise HTTPException(status_code=404, detail="Job not found")
+    if not job.is_active:
+        raise HTTPException(status_code=400, detail="This job has expired and can no longer be assigned")
     if db.scalar(select(Assignment).where(Assignment.agency_id == agency.id, Assignment.job_id == job.id,
                                           Assignment.status.in_(TAKEN_STATUSES))):
         raise HTTPException(status_code=409, detail="This job is already assigned in your agency")
@@ -188,8 +205,11 @@ def decline(assignment_id: uuid.UUID, user: User = Depends(member_only), db: Ses
 def update_status(assignment_id: uuid.UUID, data: AssignmentStatusIn, user: User = Depends(member_only),
                   db: Session = Depends(get_db)) -> dict:
     a, _ = _my_assignment(db, user, assignment_id)
-    if a.status not in ("assigned", "applied", "won", "lost"):
-        raise HTTPException(status_code=400, detail="Only assigned jobs can be updated")
+    # Only forward moves: assigned -> applied -> won/lost. A final result cannot be changed later,
+    # otherwise past win rates would change.
+    allowed = NEXT_STATUSES.get(a.status, ())
+    if data.status != a.status and data.status not in allowed:
+        raise HTTPException(status_code=400, detail=f"A job that is '{a.status}' cannot be changed to '{data.status}'")
     a.status = data.status
     db.commit()
     db.refresh(a)

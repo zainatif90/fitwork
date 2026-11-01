@@ -10,6 +10,7 @@ import hashlib
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from typing import Any, Literal
 
 import bcrypt
@@ -30,6 +31,19 @@ def verify_password(password: str, password_hash: str) -> bool:
         return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
     except ValueError:
         return False
+
+
+@lru_cache(maxsize=1)
+def _dummy_hash() -> str:
+    return hash_password("timing-equaliser-1")
+
+
+def burn_password_check(password: str) -> None:
+    """
+    Run one bcrypt check against a dummy hash. Used when the email does not exist, so a failed login
+    takes the same time either way (otherwise the response time reveals which emails have accounts).
+    """
+    verify_password(password, _dummy_hash())
 
 
 def password_fingerprint(password_hash: str) -> str:
@@ -54,13 +68,14 @@ def _create_token(subject: str, token_type: TokenType, expires: timedelta, extra
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_access_token(user_id: str) -> str:
-    return _create_token(user_id, "access", timedelta(hours=settings.ACCESS_TOKEN_HOURS))
+def create_access_token(user_id: str, session_id: str) -> str:
+    """`sid` ties the token to a login session, so logout or a password reset ends it at once."""
+    return _create_token(user_id, "access", timedelta(hours=settings.ACCESS_TOKEN_HOURS), {"sid": session_id})
 
 
-def create_refresh_token(user_id: str, password_hash: str) -> str:
+def create_refresh_token(user_id: str, password_hash: str, session_id: str, jti: str) -> str:
     return _create_token(user_id, "refresh", timedelta(days=settings.REFRESH_TOKEN_DAYS),
-                         {"pwd": password_fingerprint(password_hash)})
+                         {"pwd": password_fingerprint(password_hash), "sid": session_id, "jti": jti})
 
 
 def create_verify_token(user_id: str) -> str:

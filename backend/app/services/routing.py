@@ -9,6 +9,8 @@ For an agency with members M1..Mn:
    flag the job "Low Team Fit" and list the job skills nobody in the team has.
 4. Jobs already assigned inside the agency are skipped. Members who declined a job are
    never recommended for that job again (so a decline re-routes to the next best member).
+   Re-routed jobs are always listed first, whatever their score: seen in testing, a re-routed job
+   whose new best score was 49 fell outside the top 20 and silently disappeared.
 """
 import uuid
 from dataclasses import dataclass
@@ -93,6 +95,14 @@ def _assignment_state(db: Session, agency_id: uuid.UUID) -> tuple[set[uuid.UUID]
     return taken, declined
 
 
+def _rerouted_jobs(db: Session, agency_id: uuid.UUID, taken: set[uuid.UUID]) -> list[Job]:
+    """Active jobs that were declined and are waiting for the owner to re-assign them."""
+    jobs = db.scalars(select(Job).join(Assignment, Assignment.job_id == Job.id).where(
+        Assignment.agency_id == agency_id, Assignment.status == "recommended",
+        Job.is_active.is_(True), Job.embedding.is_not(None)).distinct())
+    return [j for j in jobs if j.id not in taken]
+
+
 def recommend_for_job(job: Job, team: list[TeamMember], excluded: set[str], now: datetime) -> dict[str, Any] | None:
     eligible = [m for m in team if str(m.user.id) not in excluded]
     if not eligible or job.embedding is None:
@@ -116,8 +126,10 @@ def compute_routing(db: Session, agency: Agency, limit: int = 20) -> list[dict[s
         return []
     taken, declined = _assignment_state(db, agency.id)
 
-    # 1. Candidate jobs: union of each member's nearest jobs (manual jobs are private, so skipped)
-    candidates: dict[uuid.UUID, Job] = {}
+    # 1. Candidate jobs: re-routed jobs, plus the union of each member's nearest jobs
+    #    (manual jobs are private, so skipped)
+    rerouted = _rerouted_jobs(db, agency.id, taken)
+    candidates: dict[uuid.UUID, Job] = {job.id: job for job in rerouted}
     for m in team:
         for job, _ in nearest_jobs(db, m.profile.embedding, m.user.id, CANDIDATES_PER_MEMBER):  # type: ignore[arg-type]
             if job.source != "manual" and job.id not in taken:
@@ -130,8 +142,9 @@ def compute_routing(db: Session, agency: Agency, limit: int = 20) -> list[dict[s
         rec = recommend_for_job(job, team, declined.get(job.id, set()), now)
         if rec:
             recs.append(rec)
-    recs.sort(key=lambda r: r["recommended"]["score"], reverse=True)
-    return recs[:limit]
+    # Re-routed jobs first (they need the owner's decision), then the best scores
+    recs.sort(key=lambda r: (r["rerouted_after_decline"], r["recommended"]["score"]), reverse=True)
+    return recs[:max(limit, len(rerouted))]
 
 
 def next_best_after_decline(db: Session, agency: Agency, job: Job) -> dict[str, Any] | None:

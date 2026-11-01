@@ -8,6 +8,10 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 def check_password_strength(v: str) -> str:
     if not any(c.isalpha() for c in v) or not any(c.isdigit() for c in v):
         raise ValueError("Password must contain at least one letter and one number")
+    # bcrypt reads at most 72 BYTES (bcrypt 5 refuses longer ones). Urdu letters and emoji use 2-4 bytes each,
+    # so a 42-character Urdu password (82 bytes) passed the 72-character check and crashed sign-up.
+    if len(v.encode("utf-8")) > 72:
+        raise ValueError("Password is too long. Use a shorter one (Urdu letters and emoji count as 2-4 characters each).")
     return v
 
 

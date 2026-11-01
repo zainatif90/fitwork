@@ -3,8 +3,8 @@ Skill Gap Radar (UC-5): which missing skill, from the user's OWN field of work, 
 
 1. Your field: the 200 active jobs most similar to your profile (cosine similarity, at least 0.30)
    that also ask for at least one skill you already have (in their tags or title). For a QA tester
-   these are testing jobs; for a logo designer, design jobs. (Fallback when fewer than 5 jobs share
-   a skill: similarity only.) A job posted several times is counted once.
+   these are testing jobs; for a logo designer, design jobs. If fewer than 5 jobs share one of your
+   skills, we say so instead of guessing. A job posted several times is counted once.
 2. Candidates: the 15 skills that those field jobs ask for most often and that you do NOT have
    (generic words such as "documentation" are never suggested). Skills from other fields
    (e.g. social media for a QA tester) cannot appear, because jobs in your field do not ask for them.
@@ -51,8 +51,14 @@ def skill_demand(jobs: list[Job]) -> tuple[Counter[str], dict[str, str]]:
             counts[key] += 1
         for s in job.skills:
             spellings.setdefault(canonical_skill(s), Counter())[s.strip()] += 1
-    display = {key: c.most_common(1)[0][0] for key, c in spellings.items()}
+    display = {key: _display_name(key, c) for key, c in spellings.items()}
     return counts, display
+
+
+def _display_name(key: str, spellings: Counter[str]) -> str:
+    """Prefer the standard spelling ("iOS" rather than "iPhone"), else the most common one."""
+    standard = [s for s in spellings if s.lower() == key]
+    return max(standard, key=lambda s: spellings[s]) if standard else spellings.most_common(1)[0][0]
 
 
 def semantic_vector(cosines: np.ndarray) -> np.ndarray:
@@ -61,8 +67,13 @@ def semantic_vector(cosines: np.ndarray) -> np.ndarray:
 
 
 def scores_from_cosines(cosines: np.ndarray, fixed_part: np.ndarray) -> np.ndarray:
-    """Match Scores for many jobs. `fixed_part` = budget + recency contribution (does not depend on the profile text)."""
-    return np.round(100 * (settings.W_SEM * semantic_vector(cosines) + fixed_part))
+    """
+    Match Scores for many jobs (vectorised scoring.combine). `fixed_part` = budget + recency contribution,
+    which does not depend on the profile text; the fit gate scales it by how well the job fits.
+    """
+    sem = semantic_vector(cosines)
+    gate = np.minimum(1.0, sem / settings.FIT_GATE)
+    return np.round(100 * np.clip(settings.W_SEM * sem + gate * fixed_part, 0.0, 1.0))
 
 
 def count_unlocked(base_scores: np.ndarray, new_scores: np.ndarray, threshold: float) -> np.ndarray:
@@ -105,11 +116,11 @@ def in_your_field(cosines: np.ndarray, shares_skill: np.ndarray) -> np.ndarray:
     Boolean mask of jobs in the user's field: similar to the profile (similarity >= the floor) AND
     asking for at least one of the user's skills. Similarity alone is not enough: MiniLM gives any two
     job-like texts ~0.3 (measured: a social media job scored 0.39 against a React profile).
-    If fewer than SKILL_GAP_FIELD_MIN_JOBS jobs share a skill (e.g. unusual skill names), similarity alone is used.
+    If fewer than SKILL_GAP_FIELD_MIN_JOBS jobs share a skill (e.g. unusual skill names), the field is empty
+    and the user is told so. (A similarity-only fallback suggested video editing to an unrelated profile.)
     """
-    related = cosines >= settings.SKILL_GAP_FIELD_MIN_COSINE
-    sharing = related & shares_skill
-    return sharing if sharing.sum() >= settings.SKILL_GAP_FIELD_MIN_JOBS else related
+    sharing = (cosines >= settings.SKILL_GAP_FIELD_MIN_COSINE) & shares_skill
+    return sharing if sharing.sum() >= settings.SKILL_GAP_FIELD_MIN_JOBS else np.zeros_like(sharing)
 
 
 def field_of_work(cosines: np.ndarray, shares_skill: np.ndarray) -> np.ndarray:
@@ -186,8 +197,8 @@ def compute_skill_gap(db: Session, profile: Profile) -> dict[str, Any]:
 
     message = None
     if not field_jobs:
-        message = ("We could not find jobs similar to your profile yet. Add more of your skills and a short bio, "
-                   "or check again when new jobs arrive.")
+        message = ("We could not find enough jobs that ask for your skills yet. Use the common names for your "
+                   "skills (pick them from the suggestions in your profile), or check again when new jobs arrive.")
     elif not useful:
         message = "Strong coverage: you already have the skills that jobs in your field ask for most."
     elif radar and covered_top >= max(1, round(0.75 * len(radar))):

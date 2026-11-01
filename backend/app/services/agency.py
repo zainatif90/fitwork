@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -103,6 +103,11 @@ def remove_member(db: Session, agency: Agency, member_row_id: uuid.UUID) -> None
         user = db.get(User, member.user_id)
         if user:
             user.role = "freelancer"
+        # Their open jobs go back to routing so the owner can give them to someone else.
+        # Won/lost results are kept for the team's history.
+        db.execute(delete(Assignment).where(
+            Assignment.agency_id == agency.id, Assignment.member_id == member.user_id,
+            Assignment.status.in_(("recommended", "assigned", "applied"))))
     db.delete(member)
     db.commit()
 

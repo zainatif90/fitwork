@@ -10,6 +10,7 @@ Email sending (verification links, password reset, agency invites). Three ways, 
 
 Emails are sent in a background thread so a slow mail service never slows down the API response.
 """
+import html
 import logging
 import smtplib
 import ssl
@@ -82,7 +83,15 @@ def send_email(to: str, subject: str, text: str, html: str) -> None:
     threading.Thread(target=_send_now, args=(_build(to, subject, text, html),), daemon=True).start()
 
 
+def mailer_configured() -> bool:
+    """True when emails really leave the server (webhook or SMTP); False = printed to the console (development)."""
+    return bool(settings.EMAIL_WEBHOOK_URL) or smtp_configured()
+
+
 def _layout(title: str, body_html: str, button_text: str, link: str) -> str:
+    # Every value typed by a user (names, agency names) is passed through html.escape() by the callers,
+    # so nobody can put their own links or HTML into an email sent from our address.
+    link = html.escape(link, quote=True)
     return f"""<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#1e293b">
   <h2 style="color:#4f46e5;margin-bottom:4px">FitWork</h2>
   <h3 style="margin-top:0">{title}</h3>
@@ -94,31 +103,34 @@ def _layout(title: str, body_html: str, button_text: str, link: str) -> str:
 
 
 def send_verification(to: str, name: str, link: str) -> None:
+    safe_name = html.escape(name)
     send_email(
         to, "Verify your FitWork email",
         f"Hi {name},\n\nPlease confirm your email address for FitWork:\n{link}\n\nThe link is valid for 48 hours.",
-        _layout("Confirm your email", f"<p>Hi {name}, please confirm your email address.</p>", "Verify email", link),
+        _layout("Confirm your email", f"<p>Hi {safe_name}, please confirm your email address.</p>", "Verify email", link),
     )
 
 
 def send_password_reset(to: str, name: str, link: str) -> None:
+    safe_name = html.escape(name)
     send_email(
         to, "Reset your FitWork password",
         f"Hi {name},\n\nUse this link to choose a new password (valid for 1 hour):\n{link}\n\n"
         "If you did not ask for this, you can ignore this email.",
         _layout("Reset your password",
-                f"<p>Hi {name}, click below to choose a new password. The link is valid for 1 hour.</p>"
+                f"<p>Hi {safe_name}, click below to choose a new password. The link is valid for 1 hour.</p>"
                 "<p>If you did not ask for this, you can ignore this email.</p>", "Choose a new password", link),
     )
 
 
 def send_agency_invite(to: str, agency_name: str, owner_name: str, link: str) -> None:
+    agency_html, owner_html = html.escape(agency_name), html.escape(owner_name)
     send_email(
         to, f"{owner_name} invited you to {agency_name} on FitWork",
         f"{owner_name} invited you to join {agency_name} on FitWork.\n\nAccept the invite:\n{link}\n\n"
         "Log in (or create an account) with this email address to accept.",
-        _layout(f"Join {agency_name}",
-                f"<p>{owner_name} invited you to join <b>{agency_name}</b> on FitWork. FitWork routes each "
+        _layout(f"Join {agency_html}",
+                f"<p>{owner_html} invited you to join <b>{agency_html}</b> on FitWork. FitWork routes each "
                 "freelance job to the team member who fits it best.</p>"
                 "<p>Log in or create an account with this email address to accept.</p>", "Accept invite", link),
     )

@@ -66,14 +66,24 @@ def test_tc3_ranked_matches(client: TestClient, db: Session) -> None:
 
 
 def test_tc4_skill_gap(client: TestClient, db: Session) -> None:
-    upsert_jobs(db, BASE_JOBS)
+    """Missing skills come only from the user's own field: jobs similar to the profile that share one of its skills."""
+    react_field = [
+        jd("rshop1", "React storefront for a Shopify store", "Build React components for our Shopify storefront.", ["React", "Shopify"]),
+        jd("rshop2", "Shopify app with a React admin", "Build the React admin panel of a Shopify app.", ["React", "Shopify", "TypeScript"]),
+        jd("rnext1", "Next.js marketing site", "Build a Next.js and React marketing site with Tailwind CSS.", ["React", "Next.js", "Tailwind CSS"]),
+        jd("rnext2", "Next.js blog", "Build a Next.js blog in TypeScript.", ["Next.js", "TypeScript"]),
+    ]
+    upsert_jobs(db, BASE_JOBS + react_field)
     token = register(client)["access_token"]
     client.put("/api/profile/me", json=REACT, headers=auth_header(token))
     body = client.get("/api/skill-gap", headers=auth_header(token)).json()
     radar = {r["skill"]: r for r in body["radar"]}
+    # Only the 2 Shopify jobs that also ask for React are in a React developer's field
     assert radar["Shopify"]["jobs"] == 2 and radar["React"]["your_coverage"] == 100
-    assert all(g["skill"] not in REACT["skills"] for g in body["gaps"])
-    assert all(g["jobs_unlocked"] > 0 and len(g["sample_jobs"]) <= 3 for g in body["gaps"])
+    suggested = {g["skill"] for g in body["gaps"]}
+    assert suggested and suggested <= {"Shopify", "Next.js", "Liquid"}
+    assert not suggested & {"SEO", "Content Writing", "Django", "Python"}  # other fields are never suggested
+    assert all(len(g["sample_jobs"]) <= 3 for g in body["gaps"])
 
 
 def test_tc5_proposal_generation_mocked_llm(client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch) -> None:

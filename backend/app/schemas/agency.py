@@ -2,13 +2,22 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.schemas.match import JobSummary
 
 
 class AgencyRenameIn(BaseModel):
     name: str = Field(min_length=2, max_length=120)
+
+    @field_validator("name")
+    @classmethod
+    def plain_name(cls, v: str) -> str:
+        """The name goes into invite emails, so links and HTML are refused (seen in testing: a phishing link)."""
+        low = v.lower()
+        if any(bad in low for bad in ("<", ">", "http:", "https:", "www.", "://")):
+            raise ValueError("Agency name can't contain links or the characters < >")
+        return v.strip()
 
 
 class InviteIn(BaseModel):
@@ -50,6 +59,7 @@ class InviteOut(BaseModel):
     member: MemberRow
     invite_link: str   # built from FRONTEND_URL (used in the dev email log)
     invite_token: str  # the browser builds the link from its own address, so it is right on any domain
+    email_sent: bool   # False in development, where emails are only printed to the console
 
 
 class InviteInfoOut(BaseModel):

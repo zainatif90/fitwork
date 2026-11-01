@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 
 class ManualJobIn(BaseModel):
@@ -16,10 +16,22 @@ class ManualJobIn(BaseModel):
     budget_type: Literal["fixed", "hourly"] = "fixed"
     url: HttpUrl | None = None
 
+    @field_validator("url", mode="before")
+    @classmethod
+    def plain_link_message(cls, v: object) -> object:
+        """A clear message instead of pydantic's "relative URL without a base"."""
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return None
+            if not v.lower().startswith(("http://", "https://")):
+                raise ValueError("Links must start with https://")
+        return v
+
     @model_validator(mode="after")
     def check_budget(self) -> "ManualJobIn":
         if self.budget_min is not None and self.budget_max is not None and self.budget_min > self.budget_max:
-            raise ValueError("budget_min cannot be larger than budget_max")
+            raise ValueError("Minimum budget can't be more than the maximum budget")
         self.skills = [s.strip()[:80] for s in self.skills if s.strip()]
         return self
 

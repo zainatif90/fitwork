@@ -8,13 +8,15 @@ Usage in a route:
 import uuid
 from collections.abc import Callable
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.security import decode_token_payload
+from app.models.session import AuthSession
 from app.models.user import User
+from app.services.sessions import is_active
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -31,16 +33,34 @@ def get_current_user(
 ) -> User:
     if creds is None:
         raise _unauthorized
-    user_id = decode_token(creds.credentials, "access")
-    if user_id is None:
+    payload = decode_token_payload(creds.credentials, "access")
+    if payload is None:
         raise _unauthorized
     try:
-        user = db.get(User, uuid.UUID(user_id))
-    except ValueError:
+        user = db.get(User, uuid.UUID(payload["sub"]))
+        session = db.get(AuthSession, uuid.UUID(str(payload.get("sid"))))
+    except (KeyError, ValueError):
         raise _unauthorized
-    if user is None:
+    # The login session must still be open: logout and password reset end it immediately.
+    if user is None or not is_active(session, user.id):
         raise _unauthorized
     return user
+
+
+def client_ip(request: Request) -> str:
+    """
+    The visitor's real IP, for rate limits. Never the first X-Forwarded-For entry: the visitor writes
+    that one themselves (seen in testing: a new fake IP per request bypassed the login limit).
+    - CF-Connecting-IP: set by Cloudflare, which sits in front of Render; visitors cannot override it.
+    - Otherwise the LAST X-Forwarded-For entry, which the proxy nearest to us appended.
+    """
+    cf = request.headers.get("cf-connecting-ip", "").strip()
+    if cf:
+        return cf
+    forwarded = [part.strip() for part in request.headers.get("x-forwarded-for", "").split(",") if part.strip()]
+    if forwarded:
+        return forwarded[-1]
+    return request.client.host if request.client else "unknown"
 
 
 def require_roles(*roles: str) -> Callable[..., User]:

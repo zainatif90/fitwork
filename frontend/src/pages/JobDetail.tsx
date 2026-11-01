@@ -42,22 +42,48 @@ export default function JobDetail() {
   const [error, setError] = useState<string | null>(null);
   const [savingOutcome, setSavingOutcome] = useState<Outcome | null>(null);
 
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+
   useEffect(() => {
     api<JobDetailData>(`/jobs/${id}`)
       .then(setData)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load this job."));
+      .catch((err) => {
+        if (err instanceof ApiError && (err.status === 404 || err.status === 422)) setError("not-found");
+        else setError(err instanceof ApiError ? err.message : "Could not load this job.");
+      });
   }, [id]);
 
   async function sendFeedback(outcome: Outcome) {
     setSavingOutcome(outcome);
+    setFeedbackError(null);
     try {
       await api(`/matches/${id}/feedback`, { method: "POST", body: { outcome } });
       setData((d) => (d ? { ...d, feedback: outcome } : d));
+    } catch (err) {
+      setFeedbackError(err instanceof ApiError ? err.message : "Could not save. Please try again.");
     } finally {
       setSavingOutcome(null);
     }
   }
 
+  // "Back" stays inside FitWork: a job opened from an email link or a new tab has no earlier app page
+  function goBack() {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate("/app");
+  }
+
+  if (error === "not-found") {
+    return (
+      <Card className="p-8 text-center">
+        <h1 className="text-lg font-semibold text-slate-900">Job not found</h1>
+        <p className="mt-1 text-sm text-slate-500">This job may have expired, or the link is not complete.</p>
+        <Link to="/app" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline">
+          <ArrowLeft className="h-4 w-4" /> Back to matches
+        </Link>
+      </Card>
+    );
+  }
   if (error) return <Alert tone="error">{error}</Alert>;
   if (!data) {
     return (
@@ -72,7 +98,7 @@ export default function JobDetail() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900">
+      <button onClick={goBack} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900">
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
 
@@ -156,6 +182,10 @@ export default function JobDetail() {
                 </button>
               ))}
             </div>
+            {feedbackError && <Alert tone="error" className="mt-3">{feedbackError}</Alert>}
+            {data.feedback && !feedbackError && (
+              <p className="mt-3 text-xs text-slate-500">Saved. This job won't appear in your top matches any more.</p>
+            )}
           </Card>
         </aside>
       </div>

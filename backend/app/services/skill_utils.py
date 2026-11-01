@@ -40,6 +40,8 @@ ALIASES: dict[str, str] = {
     "llm": "large language models", "chatgpt api": "openai api",
     "wordpress development": "wordpress", "shopify development": "shopify",
     "mobile app": "mobile app development", "app development": "mobile app development",
+    "website design": "web design", "website designing": "web design", "web designing": "web design",
+    "website development": "web development", "website developer": "web development",
     # QA / testing: users write the same skill in many ways
     "qa": "qa testing", "sqa": "qa testing", "quality assurance": "qa testing", "testing / qa": "qa testing",
     "software testing": "qa testing", "software quality assurance": "qa testing", "qa engineer": "qa testing",

@@ -85,6 +85,16 @@ Portfolio links:
 """
 
 
+# Words that start a new sentence glued onto a title by some sites ("Speed OptimizationThe budget is $20.")
+_GLUED_SENTENCE = re.compile(r"(?<=[a-z])(?=(?:The|This|We|I|Our|Budget|Please|Looking|Need|Must)\b)")
+
+
+def short_title(title: str) -> str:
+    """The job title up to its first sentence end, so the template never quotes extra text."""
+    first = re.split(r"[.!?](?:\s|$)", _GLUED_SENTENCE.split(title.strip(), maxsplit=1)[0], maxsplit=1)[0].strip()
+    return first[:100].rsplit(" ", 1)[0] if len(first) > 100 else first
+
+
 def fallback_proposal(job: Job, profile: Profile, user: User, length: str) -> str:
     """A filled template used when the LLM is unavailable. Uses only real profile facts."""
     first_name = user.full_name.split()[0]
@@ -93,11 +103,14 @@ def fallback_proposal(job: Job, profile: Profile, user: User, length: str) -> st
     skill_text = ", ".join(skills[:-1]) + f" and {skills[-1]}" if len(skills) > 1 else skills[0]
     bio_first = re.split(r"(?<=[.!?])\s+", profile.bio.strip())[0] if profile.bio.strip() else ""
 
-    skills_sentence = (f"My relevant skills for this work are {skill_text}." if matched
-                       else f"My main skills are {skill_text}.")
+    one = len(skills) == 1
+    if matched:
+        skills_sentence = f"My relevant skill{'' if one else 's'} for this work {'is' if one else 'are'} {skill_text}."
+    else:
+        skills_sentence = f"My main skill{'' if one else 's'} {'is' if one else 'are'} {skill_text}."
     paragraphs = [
         "Hello,",
-        f"I read your post about \"{job.title}\" and I would like to help. {skills_sentence}",
+        f"I read your post about \"{short_title(job.title)}\" and I would like to help. {skills_sentence}",
     ]
     if bio_first:
         paragraphs.append(f"A little about me: {bio_first}")
@@ -156,17 +169,14 @@ def remaining_today(user_id: object) -> int:
     return max(0, settings.PROPOSALS_PER_DAY - used)
 
 
-def consume_quota(user_id: object) -> None:
+def record_use(user_id: object) -> None:
+    """Count one AI draft towards today's limit."""
     key = _rate_limit_key(user_id)
     try:
-        count = redis_client.incr(key)
-        if count == 1:
+        if redis_client.incr(key) == 1:
             redis_client.expire(key, 26 * 3600)
     except Exception as exc:  # Redis down -> do not block the user
         log.warning("Proposal rate limit skipped: %s", exc)
-        return
-    if count > settings.PROPOSALS_PER_DAY:
-        raise RateLimitExceeded()
 
 
 def draft_proposal(job: Job, profile: Profile, user: User, tone: str, length: str,
@@ -183,8 +193,11 @@ def draft_proposal(job: Job, profile: Profile, user: User, tone: str, length: st
 
 
 def generate_and_save(db: Session, user: User, profile: Profile, job: Job, tone: str, length: str) -> Proposal:
-    consume_quota(user.id)
+    if remaining_today(user.id) <= 0:
+        raise RateLimitExceeded()
     draft = draft_proposal(job, profile, user, tone, length)
+    if not draft.is_fallback:
+        record_use(user.id)  # only real AI drafts count: a template after an AI failure is free
     proposal = Proposal(user_id=user.id, job_id=job.id, tone=tone, length=length, content=draft.content,
                         is_fallback=draft.is_fallback, provider=draft.provider, model=draft.model)
     db.add(proposal)

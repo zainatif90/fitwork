@@ -165,3 +165,77 @@ def test_stats_and_win_rate(client: TestClient, team: dict, jobs: dict) -> None:
     assert rex["win_rate_30d"] is None  # no outcomes -> no made-up number
     assert stats["has_outcomes"] is True
     assert stats["win_rate_series"][-1][py_id] == 1.0
+
+
+# ---------- Bugs found in the 1 November 2026 review ----------
+
+def test_bug03_invites_need_a_verified_owner(client: TestClient) -> None:
+    owner = register(client, email="fresh@example.com", role="agency_owner", verified=False)["access_token"]
+    res = client.post("/api/agency/invite", json={"email": "someone@example.com"}, headers=auth_header(owner))
+    assert res.status_code == 403 and "verify" in res.text
+
+
+def test_bug03_invites_are_limited_per_day(client: TestClient) -> None:
+    owner = register(client, email="spammer@example.com", role="agency_owner")["access_token"]
+    codes = [client.post("/api/agency/invite", json={"email": f"t{i}@example.com"}, headers=auth_header(owner)).status_code
+             for i in range(12)]
+    assert codes == [201] * 10 + [429, 429]
+
+
+def test_bug03_agency_name_cannot_hold_a_link_and_emails_escape_html(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services import email as email_service
+
+    owner = register(client, email="phish@example.com", role="agency_owner", full_name="<b>Evil</b> Owner")["access_token"]
+    bad = '<a href="https://evil.example/login">Click to keep your account</a>'
+    assert client.put("/api/agency/me", json={"name": bad}, headers=auth_header(owner)).status_code == 422
+    assert client.put("/api/agency/me", json={"name": "Visit www.evil.example"}, headers=auth_header(owner)).status_code == 422
+
+    sent: list[str] = []
+    monkeypatch.setattr(email_service, "send_email", lambda to, subject, text, html: sent.append(html))
+    assert client.post("/api/agency/invite", json={"email": "victim@example.com"}, headers=auth_header(owner)).status_code == 201
+    assert "<b>Evil</b>" not in sent[-1] and "&lt;b&gt;Evil&lt;/b&gt;" in sent[-1]
+
+
+def test_bug05_rerouted_job_is_always_listed_first(client: TestClient, team: dict, jobs: dict) -> None:
+    owner_h = auth_header(team["owner"])
+    py_id, rx_id = member_id(client, team["py"]), member_id(client, team["rx"])
+    a = client.post("/api/agency/assign", json={"job_id": jobs["py"], "member_id": py_id}, headers=owner_h).json()
+    client.post(f"/api/agency/assignments/{a['id']}/decline", headers=auth_header(team["py"]))
+    recs = client.get("/api/agency/routing", headers=owner_h).json()
+    # Rex (React) is a poor fit for the Django job, yet the re-routed job is first and flagged
+    assert recs[0]["job"]["id"] == jobs["py"]
+    assert recs[0]["rerouted_after_decline"] is True and recs[0]["recommended"]["member_id"] == rx_id
+
+
+def test_bug06_removing_a_member_returns_their_open_jobs_to_routing(client: TestClient, team: dict, jobs: dict) -> None:
+    owner_h = auth_header(team["owner"])
+    py_id = member_id(client, team["py"])
+    for job in ("py", "re"):
+        assert client.post("/api/agency/assign", json={"job_id": jobs[job], "member_id": py_id}, headers=owner_h).status_code == 201
+    row = next(m for m in client.get("/api/agency/me", headers=owner_h).json()["members"] if m["user_id"] == py_id)
+    assert client.delete(f"/api/agency/members/{row['id']}", headers=owner_h).status_code == 204
+
+    assert client.get("/api/agency/assignments", headers=owner_h).json() == []
+    routed = {r["job"]["id"] for r in client.get("/api/agency/routing", headers=owner_h).json()}
+    assert {jobs["py"], jobs["re"]} <= routed
+
+
+def test_bug23_expired_job_cannot_be_assigned(client: TestClient, db: Session, team: dict, jobs: dict) -> None:
+    from app.models.job import Job
+
+    db.query(Job).filter(Job.external_id == "py").update({"is_active": False})
+    db.commit()
+    res = client.post("/api/agency/assign", json={"job_id": jobs["py"], "member_id": member_id(client, team["py"])},
+                      headers=auth_header(team["owner"]))
+    assert res.status_code == 400 and "expired" in res.text
+
+
+def test_bug24_a_final_result_cannot_be_changed(client: TestClient, team: dict, jobs: dict) -> None:
+    py_h = auth_header(team["py"])
+    a = client.post("/api/agency/assign", json={"job_id": jobs["py"], "member_id": member_id(client, team["py"])},
+                    headers=auth_header(team["owner"])).json()
+    url = f"/api/agency/assignments/{a['id']}/status"
+    assert client.post(url, json={"status": "applied"}, headers=py_h).status_code == 200
+    assert client.post(url, json={"status": "won"}, headers=py_h).status_code == 200
+    assert client.post(url, json={"status": "applied"}, headers=py_h).status_code == 400
+    assert client.post(url, json={"status": "lost"}, headers=py_h).status_code == 400

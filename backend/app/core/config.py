@@ -59,14 +59,18 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_DAYS: int = 7
     VERIFY_TOKEN_HOURS: int = 48
     BCRYPT_ROUNDS: int = 12
-    LOGIN_RATE_LIMIT_PER_MIN: int = 5
+    LOGIN_RATE_LIMIT_PER_MIN: int = 5        # failed logins per minute for one IP + email
+    LOGIN_FAILS_PER_EMAIL: int = 10          # failed logins for one email from ANY IP...
+    LOGIN_FAILS_WINDOW_SEC: int = 900        # ...per 15 minutes (a fake IP header cannot get around this)
+    REGISTER_PER_IP_HOUR: int = 10           # sign-ups per IP per hour (each one costs bcrypt + an email)
     REFRESH_COOKIE_NAME: str = "fitwork_refresh"
     # Same address for website + API (local dev): "lax". Website on another domain than the API
-    # (Firebase Hosting + Azure): "none" + partitioned, so the browser still sends the refresh cookie.
+    # (Firebase Hosting + Render): "none" + partitioned, so the browser still sends the refresh cookie.
     COOKIE_SAMESITE: str = "lax"
     COOKIE_PARTITIONED: bool = False
     RESET_TOKEN_MINUTES: int = 60
-    RESET_REQUESTS_PER_HOUR: int = 3
+    RESET_REQUESTS_PER_HOUR: int = 3         # reset emails per email address per hour (any IP)
+    RESET_REQUESTS_PER_IP_HOUR: int = 20     # reset requests per IP per hour (all addresses)
 
     # --- Email (SMTP). Empty = emails are printed to the console (development) ---
     SMTP_HOST: str = ""       # e.g. smtp.gmail.com
@@ -109,6 +113,7 @@ class Settings(BaseSettings):
     W_RECENCY: float = 0.15
     SEM_LOW: float = 0.15   # cosine at/below this -> semantic 0
     SEM_HIGH: float = 0.65  # cosine at/above this -> semantic 1
+    FIT_GATE: float = 0.6   # semantic below this -> budget + recency only count in proportion (see scoring.py)
     MATCH_CANDIDATES: int = 50
     MATCH_TOP_N: int = 5
     MATCH_CACHE_SEC: int = 600

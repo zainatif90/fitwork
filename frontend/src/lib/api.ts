@@ -13,6 +13,13 @@ const API_BASE: string = import.meta.env.VITE_API_BASE ?? "/api";
 
 let accessToken: string | null = null;
 let refreshInFlight: Promise<TokenResponse | null> | null = null;
+// True after the user clicked "Log out": the login page then must not send the next person
+// back to the page the previous user was on.
+let loggedOutByUser = false;
+
+export function wasLoggedOutByUser(): boolean {
+  return loggedOutByUser;
+}
 
 // Hooks the AuthProvider registers so this module can tell React about changes.
 let onUserChanged: ((user: User | null) => void) | null = null;
@@ -23,6 +30,7 @@ export function registerAuthListener(fn: (user: User | null) => void): void {
 
 export function setSession(data: TokenResponse | null): void {
   accessToken = data?.access_token ?? null;
+  if (data) loggedOutByUser = false;
   onUserChanged?.(data?.user ?? null);
 }
 
@@ -106,14 +114,25 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   }
 
   const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : undefined;
+  let data: unknown;
+  try {
+    data = text ? JSON.parse(text) : undefined;
+  } catch {
+    // Not JSON, e.g. an HTML error page from the hosting provider
+    throw new ApiError(res.status, "The server had a problem. Please try again.");
+  }
   if (!res.ok) throw new ApiError(res.status, errorMessage(data, res.status));
   return data as T;
 }
 
 export async function logoutRequest(): Promise<void> {
+  loggedOutByUser = true;
   try {
-    await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
+    // The access token is sent too, so the server ends this session even if the cookie is blocked
+    const headers: Record<string, string> = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+    await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include", headers });
+  } catch {
+    // Offline: the session still ends in this browser
   } finally {
     setSession(null);
   }

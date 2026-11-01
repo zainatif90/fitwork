@@ -2,27 +2,34 @@
 Authentication routes: register, login, refresh, logout, me, verify email.
 
 Token flow:
-1. Login returns an access token (24h) in the JSON body and sets a refresh token (7d)
-   in an httpOnly cookie that JavaScript cannot read.
+1. Login starts a session (one per device) and returns an access token (24h) in the JSON body and
+   a refresh token (7d) in an httpOnly cookie that JavaScript cannot read. Both carry the session id.
 2. The frontend keeps the access token in memory and sends it as `Authorization: Bearer`.
 3. When the access token expires (or the page reloads), the frontend calls /auth/refresh;
-   the browser sends the cookie automatically and gets a new access token back.
+   the browser sends the cookie automatically and gets a new access token (and a new refresh token) back.
+4. Logout ends this device's session; a password reset ends every session of the user (services/sessions.py).
+
+Rate limits (counted per email, so a fake IP header cannot get around them):
+- login: 5 failed attempts per minute per IP + email, and 10 failed attempts per 15 minutes per email.
+  Only FAILED attempts count, and a successful login or password reset clears the counters.
+- forgot password: 3 emails per hour per address, 20 requests per hour per IP.
+- register: 10 sign-ups per hour per IP.
 """
 import logging
 import uuid
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.deps import get_current_user
-from app.core.redis_client import hit_rate_limit
+from app.core.deps import bearer_scheme, client_ip, get_current_user
+from app.core.redis_client import cache_delete, hit_rate_limit, is_rate_limited
 from app.core.security import (
-    create_access_token,
-    create_refresh_token,
+    burn_password_check,
     create_reset_token,
     create_verify_token,
     decode_token,
@@ -41,7 +48,7 @@ from app.schemas.auth import (
     TokenOut,
     UserOut,
 )
-from app.services import email
+from app.services import email, sessions
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -75,14 +82,14 @@ def _write_refresh_cookie(response: Response, value: str, max_age: int) -> None:
         )
 
 
-def _set_refresh_cookie(response: Response, user: User) -> None:
-    _write_refresh_cookie(response, create_refresh_token(str(user.id), user.password_hash),
-                          settings.REFRESH_TOKEN_DAYS * 24 * 3600)
+def _tokens_out(response: Response, user: User, tokens: tuple[str, str]) -> TokenOut:
+    access_token, refresh_token = tokens
+    _write_refresh_cookie(response, refresh_token, settings.REFRESH_TOKEN_DAYS * 24 * 3600)
+    return TokenOut(access_token=access_token, user=UserOut.model_validate(user))
 
 
-def _token_response(response: Response, user: User) -> TokenOut:
-    _set_refresh_cookie(response, user)
-    return TokenOut(access_token=create_access_token(str(user.id)), user=UserOut.model_validate(user))
+def _login_keys(request: Request, email_addr: str) -> tuple[str, str]:
+    return f"rl:login:{client_ip(request)}:{email_addr}", f"rl:login-email:{email_addr}"
 
 
 def send_verification_email(user: User) -> None:
@@ -92,13 +99,15 @@ def send_verification_email(user: User) -> None:
 
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
-def register(data: RegisterIn, response: Response, db: Session = Depends(get_db)) -> TokenOut:
-    email = data.email.lower()
-    if db.scalar(select(User).where(User.email == email)):
+def register(data: RegisterIn, request: Request, response: Response, db: Session = Depends(get_db)) -> TokenOut:
+    if hit_rate_limit(f"rl:register:{client_ip(request)}", settings.REGISTER_PER_IP_HOUR, 3600):
+        raise HTTPException(status_code=429, detail="Too many sign-ups from your network. Please try again in an hour.")
+    email_addr = data.email.lower()
+    if db.scalar(select(User).where(User.email == email_addr)):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email is already registered")
 
     user = User(
-        email=email,
+        email=email_addr,
         full_name=data.full_name,
         password_hash=hash_password(data.password),
         role=data.role,
@@ -112,26 +121,31 @@ def register(data: RegisterIn, response: Response, db: Session = Depends(get_db)
     db.refresh(user)
 
     send_verification_email(user)
-    return _token_response(response, user)
+    return _tokens_out(response, user, sessions.start_session(db, user))
 
 
 @router.post("/login", response_model=TokenOut)
 def login(data: LoginIn, request: Request, response: Response, db: Session = Depends(get_db)) -> TokenOut:
-    email = data.email.lower()
-    client_ip = request.client.host if request.client else "unknown"
-    if hit_rate_limit(f"rl:login:{client_ip}:{email}", settings.LOGIN_RATE_LIMIT_PER_MIN, 60):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many login attempts. Please wait a minute and try again.",
-        )
+    email_addr = data.email.lower()
+    ip_key, email_key = _login_keys(request, email_addr)
+    if is_rate_limited(ip_key, settings.LOGIN_RATE_LIMIT_PER_MIN):
+        raise HTTPException(status_code=429, detail="Too many login attempts. Please wait a minute and try again.")
+    if is_rate_limited(email_key, settings.LOGIN_FAILS_PER_EMAIL):
+        raise HTTPException(status_code=429, detail="Too many failed logins for this account. "
+                                                    "Please wait 15 minutes or reset your password.")
 
     # SQLAlchemy sends the email as a bound parameter, never as raw SQL text,
     # so input like "' OR 1=1 --" is treated as a plain string.
-    user = db.scalar(select(User).where(User.email == email))
+    user = db.scalar(select(User).where(User.email == email_addr))
+    if user is None:
+        burn_password_check(data.password)  # same response time whether or not the email exists
     if user is None or not verify_password(data.password, user.password_hash):
+        hit_rate_limit(ip_key, settings.LOGIN_RATE_LIMIT_PER_MIN, 60)
+        hit_rate_limit(email_key, settings.LOGIN_FAILS_PER_EMAIL, settings.LOGIN_FAILS_WINDOW_SEC)
         # Same message for both cases so attackers cannot tell which emails exist.
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-    return _token_response(response, user)
+    cache_delete(ip_key, email_key)  # only failed attempts count towards the limit
+    return _tokens_out(response, user, sessions.start_session(db, user))
 
 
 @router.post("/refresh", response_model=TokenOut)
@@ -142,16 +156,28 @@ def refresh(
 ) -> TokenOut:
     payload = decode_token_payload(refresh_token, "refresh") if refresh_token else None
     user = db.get(User, uuid.UUID(payload["sub"])) if payload else None
+    tokens = None
     # The token remembers which password it was issued for: after a password reset it stops working.
-    if user is None or payload.get("pwd") != password_fingerprint(user.password_hash):  # type: ignore[union-attr]
+    if user is not None and payload.get("pwd") == password_fingerprint(user.password_hash):  # type: ignore[union-attr]
+        tokens = sessions.rotate(db, user, payload)  # type: ignore[arg-type]
+    if user is None or tokens is None:
         _write_refresh_cookie(response, "", 0)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please log in again")
-    # Rotate: a fresh refresh cookie is issued every time.
-    return _token_response(response, user)
+    return _tokens_out(response, user, tokens)
 
 
 @router.post("/logout", response_model=MessageOut)
-def logout(response: Response) -> MessageOut:
+def logout(
+    response: Response,
+    db: Session = Depends(get_db),
+    refresh_token: str | None = Cookie(default=None, alias=REFRESH_COOKIE),
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+) -> MessageOut:
+    """End this device's session: its refresh cookie and its access token stop working at once."""
+    for token, kind in ((refresh_token, "refresh"), (creds.credentials if creds else None, "access")):
+        payload = decode_token_payload(token, kind) if token else None  # type: ignore[arg-type]
+        if payload:
+            sessions.revoke(db, payload.get("sid"))
     _write_refresh_cookie(response, "", 0)
     return MessageOut(message="Logged out")
 
@@ -190,9 +216,12 @@ FORGOT_MESSAGE = "If an account exists for that email, we have sent a link to re
 def forgot_password(data: ForgotPasswordIn, request: Request, db: Session = Depends(get_db)) -> MessageOut:
     """Always answers the same way, so nobody can use this form to find out which emails are registered."""
     email_addr = data.email.lower()
-    client_ip = request.client.host if request.client else "unknown"
-    if hit_rate_limit(f"rl:forgot:{client_ip}:{email_addr}", settings.RESET_REQUESTS_PER_HOUR, 3600):
-        raise HTTPException(status_code=429, detail="Too many requests. Please try again in an hour.")
+    too_many = "Too many requests. Please try again in an hour."
+    if hit_rate_limit(f"rl:forgot-ip:{client_ip(request)}", settings.RESET_REQUESTS_PER_IP_HOUR, 3600):
+        raise HTTPException(status_code=429, detail=too_many)
+    # Per address, whatever the IP: one person's inbox cannot be flooded with reset emails.
+    if hit_rate_limit(f"rl:forgot:{email_addr}", settings.RESET_REQUESTS_PER_HOUR, 3600):
+        raise HTTPException(status_code=429, detail=too_many)
     user = db.scalar(select(User).where(User.email == email_addr))
     if user is not None:
         token = create_reset_token(str(user.id), user.password_hash)
@@ -209,5 +238,7 @@ def reset_password(data: ResetPasswordIn, db: Session = Depends(get_db)) -> Mess
         raise HTTPException(status_code=400, detail="This reset link is invalid or has already been used")
     user.password_hash = hash_password(data.password)
     user.is_verified = True  # they proved they can read this mailbox
+    sessions.revoke_all(db, user.id)  # logs the user out on every device, at once
     db.commit()
+    cache_delete(f"rl:login-email:{user.email}")  # earlier failed logins no longer lock them out
     return MessageOut(message="Password changed. You can now log in with your new password.")

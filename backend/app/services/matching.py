@@ -17,11 +17,12 @@ from typing import Any
 
 import numpy as np
 from fastapi import HTTPException
-from sqlalchemy import or_, select, text
+from sqlalchemy import exists, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.redis_client import cache_get, cache_set
+from app.models.feedback import MatchFeedback
 from app.models.job import Job
 from app.models.profile import Profile
 from app.services import scoring
@@ -50,14 +51,19 @@ def visible_jobs_filter(user_id: uuid.UUID):  # type: ignore[no-untyped-def]
 
 
 def nearest_jobs(db: Session, embedding: list[float], user_id: uuid.UUID, limit: int) -> list[tuple[Job, float]]:
-    """Top-k jobs by cosine distance. Returns (job, cosine_similarity) pairs, closest first."""
+    """
+    Top-k jobs by cosine distance. Returns (job, cosine_similarity) pairs, closest first.
+    Jobs the user already gave feedback on (not relevant / applied / won / lost) are left out,
+    so marking a job "Not relevant" lets the next best job move up.
+    """
     # The HNSW index only explores `ef_search` candidates (default 40). Raise it so that,
     # after the WHERE filter, we still get `limit` results.
     db.execute(text(f"SET LOCAL hnsw.ef_search = {max(100, limit * 2)}"))
     distance = Job.embedding.cosine_distance(embedding)
+    already_handled = exists().where(MatchFeedback.user_id == user_id, MatchFeedback.job_id == Job.id)
     rows = db.execute(
         select(Job, distance.label("distance"))
-        .where(*visible_jobs_filter(user_id))
+        .where(*visible_jobs_filter(user_id), ~already_handled)
         .order_by(distance)
         .limit(limit)
     ).all()

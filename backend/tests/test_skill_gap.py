@@ -53,9 +53,27 @@ def test_field_of_work_needs_similarity_and_a_shared_skill(monkeypatch) -> None:
     assert field_of_work(cos, shares).tolist() == [0, 2, 3]  # 0.29 and 0.1 are below the 0.30 floor
     monkeypatch.setattr(settings, "SKILL_GAP_FIELD_SIZE", 2)
     assert field_of_work(cos, shares).tolist() == [0, 2]     # only the 2 most similar
-    # Too few jobs share a skill -> fall back to similarity alone
+    # Too few jobs share a skill -> no field at all (BUG-15: similarity alone suggested unrelated skills)
     monkeypatch.setattr(settings, "SKILL_GAP_FIELD_MIN_JOBS", 5)
-    assert field_of_work(cos, shares).tolist() == [0, 5]
+    assert field_of_work(cos, shares).tolist() == []
+
+
+def test_bug15_unknown_skills_get_a_message_not_random_suggestions(client: TestClient, db: Session) -> None:
+    _seed(db)
+    token = register(client)["access_token"]
+    client.put("/api/profile/me", headers=auth_header(token), json={
+        "skills": ["Underwater Basket Weaving"], "experience_level": "beginner", "hourly_rate": 10,
+        "bio": "I weave baskets underwater."})
+    body = client.get("/api/skill-gap", headers=auth_header(token)).json()
+    assert body["field_jobs"] == 0 and body["gaps"] == [] and body["radar"] == []
+    assert body["coverage_message"].startswith("We could not find enough jobs")
+
+
+def test_bug33_one_name_per_skill() -> None:
+    counts, display = skill_demand([Job(skills=["Website Design", "iPhone"]), Job(skills=["Web Design", "iOS"]),
+                                    Job(skills=["iPhone"])])
+    assert counts["web design"] == 2 and display["web design"] == "Web Design"
+    assert counts["ios"] == 3 and display["ios"] == "iOS"
 
 
 def test_qa_spellings_are_merged() -> None:

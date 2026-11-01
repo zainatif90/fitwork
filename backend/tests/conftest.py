@@ -78,13 +78,21 @@ def db() -> Iterator[Session]:
 
 
 def register(client: TestClient, email: str = "sara@example.com", password: str = "Secret123",
-             role: str = "freelancer", full_name: str = "Sara Khan") -> dict:
-    """Register a user and return the JSON body (contains access_token and user)."""
+             role: str = "freelancer", full_name: str = "Sara Khan", verified: bool | None = None) -> dict:
+    """
+    Register a user and return the JSON body (contains access_token and user).
+    Agency owners are verified by default, because inviting a team member requires a verified email.
+    """
     res = client.post("/api/auth/register", json={
         "email": email, "password": password, "role": role, "full_name": full_name,
     })
     assert res.status_code == 201, res.text
-    return res.json()
+    body = res.json()
+    if verified if verified is not None else role == "agency_owner":
+        from app.core.security import create_verify_token
+
+        assert client.get("/api/auth/verify", params={"token": create_verify_token(body["user"]["id"])}).status_code == 200
+    return body
 
 
 def auth_header(token: str) -> dict[str, str]:

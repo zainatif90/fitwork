@@ -25,10 +25,13 @@ FitWork is a web platform that collects freelance job listings and matches them 
 
 ## Auth and token storage (decided)
 - All backend routes are under the `/api` prefix.
-- The frontend always calls the backend through the same origin `/api`:
-  Vite dev proxy locally, Vercel rewrites in production. That avoids cross-site cookie problems.
+- Locally the frontend calls `/api` through the Vite dev proxy (same origin). In production the website
+  (Firebase) calls the Render API directly (`VITE_API_BASE`), so the refresh cookie is cross-site.
 - Access token: kept in memory only (JS variable), sent as `Authorization: Bearer`.
-- Refresh token: httpOnly, Secure (in prod), SameSite=Lax cookie, path `/api/auth`.
+- Refresh token: httpOnly cookie, path `/api/auth`. Locally SameSite=Lax; in production
+  SameSite=None; Secure; Partitioned (COOKIE_SAMESITE / COOKIE_PARTITIONED).
+- Server-side sessions (`auth_sessions`): both tokens carry the session id. Logout ends that device's session,
+  a password reset ends all sessions, refresh tokens rotate (old one refused after a 30 s grace for two tabs).
 - On page load the app calls `/api/auth/refresh` to get a new access token. If refresh fails -> logout.
 - Unverified users can log in but see a "verify your email" banner.
 - Real emails (verification, password reset, agency invites) go through SMTP (Gmail App Password in production);
@@ -47,13 +50,16 @@ FitWork is a web platform that collects freelance job listings and matches them 
 
 ## Job freshness rules (decided)
 - `freelancer` / `upwork` jobs: marked inactive 72h after `posted_at`.
+- Job boards (himalayas / remotive / jobicy): inactive 21 days after `posted_at`.
 - `csv` and `manual` jobs never auto-expire (otherwise the seed dataset disappears).
-- Recency for live sources: 1.0 under 6h old, linear down to 0 at 72h.
-  Recency for `csv` / `manual` / `synthetic`: neutral 0.5 (their dates are not live).
-- Skill gap demand = all active jobs (not "last 7 days").
+- Recency for live sources: 1.0 for the first 1/12 of the source lifetime, linear down to 0 at expiry.
+  Recency for `csv`: 0 (a 28 Oct 2026 snapshot, probably closed; must never beat a live job).
+  Recency for `manual` / `synthetic`: neutral 0.5.
+- Skill gap = "your field": the 200 most similar active jobs that share one of your skills (see skill_gap.py).
 
 ## Match Score (decided)
-- score = 100 * (W_SEM*semantic + W_BUDGET*budget_fit + W_RECENCY*recency); default weights 0.70 / 0.15 / 0.15.
+- score = 100 * (W_SEM*semantic + fit_gate*(W_BUDGET*budget_fit + W_RECENCY*recency)); default weights 0.70 / 0.15 / 0.15.
+  fit_gate = min(1, semantic / FIT_GATE=0.6): budget and recency only count fully when the job fits the profile.
   Weights are heuristic and live in one config place (`app/core/config.py`); document them as tunable.
 - semantic: raw cosine from MiniLM is usually ~0.15-0.65, so we calibrate:
   clip cosine to [SEM_LOW=0.15, SEM_HIGH=0.65] and min-max scale to 0-1. Bounds are in config and justified by
@@ -76,11 +82,14 @@ FitWork is a web platform that collects freelance job listings and matches them 
 - /backend/tests - pytest (uses a separate `fitwork_test` database, never the dev database)
 - /data - CSV seed datasets (+ a SOURCES.md citing where data came from)
 - /loadtest - Locust scripts
-- docker-compose.yml, .env.example, README.md, PROGRESS.md, TEST_RESULTS.md, DEMO.md
+- docker-compose.yml, .env.example, README.md, PROGRESS.md, TEST_RESULTS.md
 
 ## Runtime rules
 - Run uvicorn with a single worker. The scheduler also takes a Redis lock so a fetch never runs twice.
-- Rate limits use Redis: login 5/min per IP+email, proposals 20/day per user.
+- Rate limits use Redis (or the in-memory store): failed logins 5/min per IP+email and 10/15 min per email;
+  reset emails 3/hour per address; sign-ups 10/hour per IP; invites 10/day (verified owners only);
+  pasted jobs 20/day and 200 total; AI proposals 20/day (template fallbacks are free).
+  The client IP comes from CF-Connecting-IP or the LAST X-Forwarded-For entry, never the first.
 - Never return stack traces to users; log them server-side.
 
 ## Dev environment (Windows)

@@ -9,12 +9,16 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
+from app.core.database import get_db
 from app.routers import admin, agency, auth, jobs, matches, profile, proposals, skill_gap, skills
 from app.services import embeddings
 from app.services.bootstrap import start_bootstrap
@@ -51,6 +55,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+async def catch_errors(request: Request, call_next):  # type: ignore[no-untyped-def]
+    """
+    Turn any unexpected error into a JSON 500 (no stack trace). This middleware sits INSIDE the CORS
+    middleware, so the error still carries CORS headers and the website can show it; without that the
+    browser hid the response and the app wrongly said "Cannot reach the server".
+    """
+    try:
+        return await call_next(request)
+    except Exception:
+        log.exception("Unhandled error on %s %s", request.method, request.url.path)
+        return JSONResponse(status_code=500, content={"detail": "Something went wrong. Please try again."})
+
+
+app.add_middleware(BaseHTTPMiddleware, dispatch=catch_errors)  # added first = innermost
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -107,9 +125,15 @@ app.include_router(admin.router, prefix=API_PREFIX)
 app.include_router(admin.internal_router, prefix=API_PREFIX)
 
 
-@app.get("/api/health", tags=["health"])
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+@app.api_route("/api/health", methods=["GET", "HEAD"], tags=["health"])
+def health(db: Session = Depends(get_db)) -> JSONResponse:
+    """Uptime check (uptime monitors often send HEAD). Also checks that the database answers."""
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        log.exception("Health check: database unreachable")
+        return JSONResponse(status_code=503, content={"status": "database unavailable"})
+    return JSONResponse(content={"status": "ok"})
 
 
 # ---- Web app (production): the built React files are served by this same server ----------

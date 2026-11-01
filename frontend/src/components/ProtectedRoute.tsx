@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
+import { wasLoggedOutByUser } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { Role } from "../lib/types";
 import { FullPageSpinner } from "./ui";
@@ -12,7 +13,10 @@ export function ProtectedRoute({ children, roles }: { children: ReactNode; roles
 
   if (status === "loading") return <FullPageSpinner />;
   if (status === "anonymous" || !user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    // Remember the page only when the session expired, not after "Log out" (the next person
+    // logging in on this browser must not land on the previous user's page).
+    const state = wasLoggedOutByUser() ? undefined : { from: location.pathname + location.search };
+    return <Navigate to="/login" replace state={state} />;
   }
   if (roles && !roles.includes(user.role)) return <Navigate to="/app" replace />;
   return <>{children}</>;

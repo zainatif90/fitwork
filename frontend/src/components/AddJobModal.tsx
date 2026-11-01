@@ -23,6 +23,10 @@ export function AddJobModal({ open, onClose }: { open: boolean; onClose: () => v
     setError(null);
     if (title.trim().length < 3) return setError("Please add a job title.");
     if (description.trim().length < 20) return setError("Please paste the full job description (at least 20 characters).");
+    if (budgetMin && budgetMax && Number(budgetMin) > Number(budgetMax)) {
+      return setError("Minimum budget can't be more than the maximum budget.");
+    }
+    if (url.trim() && !/^https?:\/\//i.test(url.trim())) return setError("Links must start with https://");
     setSaving(true);
     try {
       const job = await api<Job>("/jobs/manual", {

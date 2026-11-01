@@ -10,7 +10,8 @@ export function AgencySettings() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [lastLink, setLastLink] = useState<{ email: string; link: string } | null>(null);
+  const [lastLink, setLastLink] = useState<{ email: string; link: string; emailed: boolean } | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -41,8 +42,9 @@ export function AgencySettings() {
     setError(null);
     setBusy(true);
     try {
-      const res = await api<{ member: AgencyMemberRow; invite_token: string }>("/agency/invite", { method: "POST", body: { email } });
-      setLastLink({ email: res.member.email, link: `${window.location.origin}/invite/${res.invite_token}` });
+      const res = await api<{ member: AgencyMemberRow; invite_token: string; email_sent: boolean }>(
+        "/agency/invite", { method: "POST", body: { email } });
+      setLastLink({ email: res.member.email, link: `${window.location.origin}/invite/${res.invite_token}`, emailed: res.email_sent });
       setEmail("");
       setAgency(await api<Agency>("/agency/me"));
     } catch (err) {
@@ -53,15 +55,25 @@ export function AgencySettings() {
   }
 
   async function remove(id: string) {
-    await api(`/agency/members/${id}`, { method: "DELETE" });
-    setAgency(await api<Agency>("/agency/me"));
+    setError(null);
+    try {
+      await api(`/agency/members/${id}`, { method: "DELETE" });
+      setConfirmRemove(null);
+      setAgency(await api<Agency>("/agency/me"));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not remove this member.");
+    }
   }
 
   async function copy() {
     if (!lastLink) return;
-    await navigator.clipboard.writeText(lastLink.link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(lastLink.link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Could not copy automatically. Please select the link and copy it.");
+    }
   }
 
   return (
@@ -89,7 +101,11 @@ export function AgencySettings() {
 
       {lastLink && (
         <Alert tone="info" className="mt-4">
-          <p>Invite link for <strong>{lastLink.email}</strong> (email sending is not set up, so share this link with them):</p>
+          {lastLink.emailed ? (
+            <p>We emailed an invite to <strong>{lastLink.email}</strong>. You can also share this link with them:</p>
+          ) : (
+            <p>Invite link for <strong>{lastLink.email}</strong> (email sending is not set up, so share this link with them):</p>
+          )}
           <div className="mt-2 flex items-center gap-2">
             <code className="block flex-1 truncate rounded bg-white px-2 py-1 text-xs text-slate-700">{lastLink.link}</code>
             <Button size="sm" variant="secondary" onClick={copy} icon={copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}>
@@ -107,12 +123,20 @@ export function AgencySettings() {
               <p className="text-sm font-medium text-slate-900">{m.name ?? m.email}</p>
               {m.name && <p className="text-xs text-slate-500">{m.email}</p>}
             </div>
-            <div className="flex items-center gap-2">
-              <Badge className={m.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}>{m.status}</Badge>
-              <button onClick={() => remove(m.id)} className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`Remove ${m.email}`}>
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            {confirmRemove === m.id ? (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <span className="text-sm text-slate-700">Remove {m.name ?? m.email} from the team?</span>
+                <Button size="sm" variant="danger" onClick={() => remove(m.id)}>Remove</Button>
+                <Button size="sm" variant="secondary" onClick={() => setConfirmRemove(null)}>Cancel</Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Badge className={m.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}>{m.status}</Badge>
+                <button onClick={() => setConfirmRemove(m.id)} className="rounded-md p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label={`Remove ${m.email}`}>
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </li>
         ))}
       </ul>

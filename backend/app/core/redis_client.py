@@ -5,9 +5,9 @@ JSON caching and fixed-window rate limiting.
 If Redis is down, caching silently turns off (the app still works, just slower).
 Rate limiting "fails open" in that case and logs a warning.
 
-REDIS_URL=memory uses a small in-process store instead of a Redis server. That is used on
-Google Cloud Run, which runs exactly ONE instance of the app (max-instances=1), so keeping
-the cache and rate-limit counters in memory gives the same behaviour without paying for Redis.
+REDIS_URL=memory uses a small in-process store instead of a Redis server. Production (Render free)
+runs exactly ONE instance of the app, so keeping the cache and rate-limit counters in memory gives
+the same behaviour without paying for Redis (counters reset when the server restarts).
 """
 import json
 import logging
@@ -108,6 +108,15 @@ def cache_delete(*keys: str) -> None:
             redis_client.delete(*keys)
     except redis.RedisError as exc:
         log.warning("Redis delete failed: %s", exc)
+
+
+def is_rate_limited(key: str, limit: int) -> bool:
+    """True if `key` already used up its limit (checks without counting a new attempt)."""
+    try:
+        return int(redis_client.get(key) or 0) >= limit
+    except redis.RedisError as exc:
+        log.warning("Rate limit check skipped (Redis error): %s", exc)
+        return False
 
 
 def hit_rate_limit(key: str, limit: int, window_seconds: int) -> bool:

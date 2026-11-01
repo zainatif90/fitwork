@@ -166,8 +166,8 @@ export default function SkillGap() {
 
       {data.coverage_message && <Alert tone="success" className="mb-6">{data.coverage_message}</Alert>}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <Card className="p-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <Card className="min-w-0 p-5">
           <h2 className="font-semibold text-slate-900">You vs your field</h2>
           <p className="mt-0.5 text-xs text-slate-500">Top {data.radar.length} skills requested by jobs similar to yours. Demand is scaled so the most requested skill = 100.</p>
           <div className="mt-2 h-80">
@@ -201,7 +201,7 @@ export default function SkillGap() {
           )}
         </Card>
 
-        <Card className="p-5">
+        <Card className="min-w-0 p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="flex items-center gap-2 font-semibold text-slate-900">

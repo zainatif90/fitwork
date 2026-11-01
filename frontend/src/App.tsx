@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "./components/AppLayout";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { GuestRoute, ProtectedRoute } from "./components/ProtectedRoute";
 import { FullPageSpinner } from "./components/ui";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -34,8 +35,8 @@ export default function App() {
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="jobs/:id" element={<JobDetail />} />
-        <Route path="skill-gap" element={<Suspense fallback={<FullPageSpinner />}><SkillGap /></Suspense>} />
-        <Route path="agency" element={<Suspense fallback={<FullPageSpinner />}><Agency /></Suspense>} />
+        <Route path="skill-gap" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><SkillGap /></Suspense></ErrorBoundary>} />
+        <Route path="agency" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><Agency /></Suspense></ErrorBoundary>} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

@@ -1,9 +1,13 @@
 """
 Match Score formula (pure functions, no database), so every part can be unit-tested and explained.
 
-    score = 100 * (W_SEM * semantic + W_BUDGET * budget_fit + W_RECENCY * recency)
+    score = 100 * (W_SEM * semantic + fit_gate * (W_BUDGET * budget_fit + W_RECENCY * recency))
+    fit_gate = min(1, semantic / FIT_GATE)
 
-All three parts are numbers from 0 to 1. Weights and bounds live in app/core/config.py.
+All parts are numbers from 0 to 1. Weights and bounds live in app/core/config.py.
+The fit gate means budget and recency only count fully once the job really fits the profile
+(semantic >= FIT_GATE). Without it, a brand-new job in another field with a perfect budget scored
+54-58 ("Possible fit") for an unrelated profile, only because of budget and recency.
 """
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -67,8 +71,13 @@ def recency_score(source: str, posted_at: datetime, now: datetime | None = None)
     """
     Live jobs: 1.0 while fresh, falling linearly to 0 when the job expires for its source.
     Fresh = the first 1/12 of the source's lifetime: Freelancer.com 6 h of 72 h,
-    job boards 42 h of 21 days. Seed/manual jobs: neutral 0.5 (their dates are not live).
+    job boards 42 h of 21 days.
+    Seed jobs (csv): 0. They are a snapshot copied on 28 Oct 2026 and are probably closed by now,
+    so they must never beat a live job on freshness (before, their neutral 0.5 beat any live job
+    older than 39 h). Manual / synthetic jobs: neutral 0.5 (their dates are not live).
     """
+    if source == "csv":
+        return 0.0
     if source not in SOURCE_MAX_AGE_HOURS:
         return NEUTRAL
     now = now or datetime.now(timezone.utc)
@@ -82,8 +91,13 @@ def recency_score(source: str, posted_at: datetime, now: datetime | None = None)
     return 1.0 - (age_h - fresh) / (max_age - fresh)
 
 
+def fit_gate(semantic: float) -> float:
+    """How much of the budget + recency credit a job gets: all of it once it fits the profile well."""
+    return min(1.0, semantic / settings.FIT_GATE)
+
+
 def combine(semantic: float, budget: float, recency: float) -> int:
-    raw = settings.W_SEM * semantic + settings.W_BUDGET * budget + settings.W_RECENCY * recency
+    raw = settings.W_SEM * semantic + fit_gate(semantic) * (settings.W_BUDGET * budget + settings.W_RECENCY * recency)
     return int(round(100 * min(1.0, max(0.0, raw))))
 
 

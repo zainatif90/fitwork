@@ -1,9 +1,9 @@
 import clsx from "clsx";
 import { Briefcase, LogOut, Menu, Radar, Settings, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { Role } from "../lib/types";
 import { Logo } from "./ui";
@@ -20,6 +20,22 @@ export function AppLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [resent, setResent] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Mobile menu: Escape closes it, focus moves into it while open and back to the ☰ button after
+  useEffect(() => {
+    if (!mobileOpen) return;
+    drawerRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
+    document.addEventListener("keydown", onKey);
+    const menuButton = menuButtonRef.current;
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      menuButton?.focus();
+    };
+  }, [mobileOpen]);
 
   const nav = [
     { to: "/app", label: "Matches", icon: Briefcase, end: true },
@@ -34,8 +50,13 @@ export function AppLayout() {
   }
 
   async function resendVerification() {
-    await api("/auth/resend-verification", { method: "POST" });
-    setResent(true);
+    setResendError(null);
+    try {
+      await api("/auth/resend-verification", { method: "POST" });
+      setResent(true);
+    } catch (err) {
+      setResendError(err instanceof ApiError ? err.message : "Could not send the email. Please try again.");
+    }
   }
 
   const sidebar = (
@@ -89,15 +110,16 @@ export function AppLayout() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-64 bg-white shadow-xl">{sidebar}</aside>
+          <aside ref={drawerRef} className="absolute inset-y-0 left-0 w-64 bg-white shadow-xl">{sidebar}</aside>
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:hidden">
-          <button onClick={() => setMobileOpen(true)} className="rounded-md p-1.5 text-slate-600" aria-label="Open menu">
+          <button ref={menuButtonRef} onClick={() => setMobileOpen(true)} className="rounded-md p-1.5 text-slate-600"
+            aria-label="Open menu" aria-expanded={mobileOpen}>
             <Menu className="h-5 w-5" />
           </button>
           <Logo />
@@ -108,6 +130,8 @@ export function AppLayout() {
             Please verify your email address.{" "}
             {resent ? (
               <span className="font-medium">A new link has been sent.</span>
+            ) : resendError ? (
+              <span className="font-medium" role="alert">{resendError}</span>
             ) : (
               <button onClick={resendVerification} className="font-medium underline underline-offset-2 hover:text-amber-700">
                 Resend link

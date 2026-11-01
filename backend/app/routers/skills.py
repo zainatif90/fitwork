@@ -24,7 +24,8 @@ def search_skills(
     if term:
         # Escape LIKE wildcards so user input is matched literally.
         safe = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        starts_first = case((Skill.name_lower.like(f"{safe}%", escape="\\"), 0), else_=1)
+        # Exact name first ("seo" -> "SEO" before "SEO Optimization"), then names that start with it
+        starts_first = case((Skill.name_lower == term, 0), (Skill.name_lower.like(f"{safe}%", escape="\\"), 1), else_=2)
         stmt = stmt.where(Skill.name_lower.like(f"%{safe}%", escape="\\")).order_by(starts_first, Skill.name)
     else:
         stmt = stmt.order_by(Skill.name)

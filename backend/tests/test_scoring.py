@@ -36,7 +36,7 @@ def test_recency() -> None:
     assert scoring.recency_score("freelancer", NOW - timedelta(hours=2), NOW) == 1.0
     assert scoring.recency_score("freelancer", NOW - timedelta(hours=39), NOW) == pytest.approx(0.5)
     assert scoring.recency_score("freelancer", NOW - timedelta(hours=80), NOW) == 0.0
-    assert scoring.recency_score("csv", NOW - timedelta(days=30), NOW) == 0.5  # seed data is neutral
+    assert scoring.recency_score("csv", NOW - timedelta(days=30), NOW) == 0.0  # seed snapshot: never "fresh"
 
 
 def test_combine_weights_and_bounds() -> None:

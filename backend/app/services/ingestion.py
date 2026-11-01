@@ -55,6 +55,8 @@ def fit_to_columns(item: JobData) -> None:
     if item.client_country:
         item.client_country = item.client_country[:80]
     item.skills = [s[:80] for s in item.skills]
+    if item.url and not item.url.lower().startswith(("http://", "https://")):
+        item.url = None  # only web links are shown as "Open on platform" (never javascript: etc.)
 
 
 def upsert_jobs(db: Session, items: list[JobData], created_by=None) -> tuple[list[Job], int, int]:  # type: ignore[no-untyped-def]
@@ -136,8 +138,15 @@ def deactivate_stale_jobs(db: Session, now: datetime | None = None) -> int:
     return hidden
 
 
+def drop_expired(items: list[JobData], now: datetime | None = None) -> list[JobData]:
+    """Skip jobs that are already too old for their source, before spending time embedding them."""
+    now = now or datetime.now(timezone.utc)
+    return [i for i in items if i.source not in SOURCE_MAX_AGE_HOURS
+            or i.posted_at >= now - timedelta(hours=SOURCE_MAX_AGE_HOURS[i.source])]
+
+
 def ingest_items(db: Session, source: str, items: list[JobData], started: float) -> IngestStats:
-    _, inserted, updated = upsert_jobs(db, items)
+    _, inserted, updated = upsert_jobs(db, drop_expired(items))
     stats = IngestStats(source=source, fetched=len(items), inserted=inserted, updated=updated)
     stats.deactivated = deactivate_stale_jobs(db)
     stats.seconds = round(time.perf_counter() - started, 2)

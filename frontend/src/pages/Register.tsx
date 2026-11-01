@@ -34,8 +34,10 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  // When the user arrives from an agency invite link we send them back there after sign-up.
-  const from = (location.state as { from?: string } | null)?.from;
+  // When the user arrives from an agency invite link we send them back there after sign-up
+  // (they join as a member, so no account type choice). Any other page: normal sign-up + onboarding.
+  const rawFrom = (location.state as { from?: string } | null)?.from;
+  const from = rawFrom?.startsWith("/invite/") ? rawFrom : undefined;
 
   const [role, setRole] = useState<AccountType>("freelancer");
   const [fullName, setFullName] = useState("");

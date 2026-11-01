@@ -114,7 +114,15 @@ with sync_playwright() as p:
 
     # 8. Agency: owner + 2 members created via API, then the owner views the dashboard in the UI
     owner_email = f"owner-{RUN}@example.com"
-    owner = api("POST", "/auth/register", {"email": owner_email, "password": "Demo12345", "full_name": "Omar Siddiqui", "role": "agency_owner"})["access_token"]
+    owner_body = api("POST", "/auth/register", {"email": owner_email, "password": "Demo12345", "full_name": "Omar Siddiqui", "role": "agency_owner"})
+    owner = owner_body["access_token"]
+    # Inviting needs a verified email. Locally we sign the verify link ourselves (FITWORK_JWT_SECRET = the dev
+    # JWT_SECRET); against the live site, verify the owner from the real email first.
+    if os.getenv("FITWORK_JWT_SECRET"):
+        import jwt  # PyJWT
+        vt = jwt.encode({"sub": owner_body["user"]["id"], "type": "verify", "exp": int(time.time()) + 3600,
+                         "jti": uuid.uuid4().hex}, os.environ["FITWORK_JWT_SECRET"], algorithm="HS256")
+        api("GET", f"/auth/verify?token={vt}")
     members = [
         (f"pyra-{RUN}@example.com", "Bilal Ahmed", {"skills": ["Python", "Django", "Web Scraping", "Pandas"], "experience_level": "expert", "hourly_rate": 25, "bio": "Python developer for scraping, APIs and automation."}),
         (f"rex-{RUN}@example.com", "Sana Iqbal", {"skills": ["React", "Next.js", "TypeScript", "Tailwind CSS"], "experience_level": "expert", "hourly_rate": 25, "bio": "Frontend developer building React and Next.js apps."}),

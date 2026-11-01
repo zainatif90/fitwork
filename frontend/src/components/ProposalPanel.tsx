@@ -80,6 +80,15 @@ export function ProposalPanel({ jobId }: { jobId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const limitReached = remaining === 0;
+
+  // How many AI drafts are left today, so the buttons can be disabled at 0
+  useEffect(() => {
+    api<{ remaining_today: number }>("/proposals/quota")
+      .then((q) => setRemaining(q.remaining_today))
+      .catch(() => undefined);
+  }, []);
 
   // Show the latest saved draft for this job, if any
   useEffect(() => {
@@ -103,7 +112,9 @@ export function ProposalPanel({ jobId }: { jobId: string }) {
       const res = await api<GeneratedProposal>("/proposals/generate", { method: "POST", body: { job_id: jobId, tone, length } });
       setText(res.content);
       setMeta({ is_fallback: res.is_fallback, remaining: res.remaining_today });
+      setRemaining(res.remaining_today);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 429) setRemaining(0);
       setError(err instanceof ApiError ? err.message : "Could not generate a proposal.");
     } finally {
       setLoading(false);
@@ -131,7 +142,7 @@ export function ProposalPanel({ jobId }: { jobId: string }) {
           </h2>
           <p className="mt-1 text-sm text-slate-500">A first draft written only from your real profile. Always review before sending.</p>
         </div>
-        {meta?.remaining !== undefined && <span className="text-xs text-slate-400">{meta.remaining} generations left today</span>}
+        {remaining !== null && <span className="text-xs text-slate-500">{remaining} generations left today</span>}
       </div>
 
       <div className="mt-5 flex flex-wrap gap-5">
@@ -142,8 +153,8 @@ export function ProposalPanel({ jobId }: { jobId: string }) {
       {error && <Alert tone="error" className="mt-4">{error}</Alert>}
 
       {!text && !loading && (
-        <Button className="mt-5" onClick={generate} icon={<Sparkles className="h-4 w-4" />}>
-          Generate proposal
+        <Button className="mt-5" onClick={generate} disabled={limitReached} icon={<Sparkles className="h-4 w-4" />}>
+          {limitReached ? "Limit reached, try tomorrow" : "Generate proposal"}
         </Button>
       )}
 
@@ -167,10 +178,11 @@ export function ProposalPanel({ jobId }: { jobId: string }) {
             )}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs text-slate-400">{words} words</span>
+            <span className="text-xs text-slate-500">{words} words</span>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={generate} loading={loading} icon={<RefreshCw className="h-4 w-4" />}>
-                Regenerate
+              <Button variant="secondary" onClick={generate} loading={loading} disabled={limitReached}
+                title={limitReached ? "Daily limit reached, try tomorrow" : undefined} icon={<RefreshCw className="h-4 w-4" />}>
+                {limitReached ? "Limit reached, try tomorrow" : "Regenerate"}
               </Button>
               <Button onClick={copy} icon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}>
                 {copied ? "Copied" : "Copy to clipboard"}
