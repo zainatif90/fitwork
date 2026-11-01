@@ -1,6 +1,7 @@
 /** Small pieces used on the matches list and the job detail page. */
 import clsx from "clsx";
 import { ArrowRight, Clock, DollarSign, MessageSquare } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { formatBudget, platformLabel, scoreTone, timeAgo } from "../lib/format";
@@ -53,6 +54,12 @@ export function SkillChips({ matched, missing, max = 6 }: { matched: string[]; m
 /** Circular Match Score: the ring fills to the score, coloured by fit (green / amber / red). */
 export function ScoreRing({ score, size = 64, label = true }: { score: number; size?: number; label?: boolean }) {
   const tone = scoreTone(score);
+  // The ring fills from 0 to the score when it first appears
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(score));
+    return () => cancelAnimationFrame(id);
+  }, [score]);
   const stroke = size >= 90 ? 9 : 6;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
@@ -63,8 +70,8 @@ export function ScoreRing({ score, size = 64, label = true }: { score: number; s
         <svg width={size} height={size} className="-rotate-90">
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#eef2f7" strokeWidth={stroke} />
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
-            strokeDasharray={circumference} strokeDashoffset={circumference * (1 - score / 100)}
-            style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.22, 1, 0.36, 1)" }} />
+            strokeDasharray={circumference} strokeDashoffset={circumference * (1 - shown / 100)}
+            style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s" }} />
         </svg>
         <span className={clsx("absolute inset-0 flex items-center justify-center font-display font-bold tabular-nums text-slate-900",
           size >= 90 ? "text-3xl" : "text-lg")}>{score}</span>

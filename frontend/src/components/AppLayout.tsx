@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { Briefcase, LogOut, Menu, Radar, Settings, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -18,6 +18,7 @@ const roleLabel: Record<Role, string> = {
 export function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [resent, setResent] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export function AppLayout() {
             className={({ isActive }) =>
               clsx(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                isActive ? "bg-brand-gradient text-white shadow-glow" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                isActive ? "bg-brand-gradient text-white shadow-glow" : "text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900",
               )
             }
           >
@@ -111,8 +112,8 @@ export function AppLayout() {
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-          <div className="absolute inset-0 bg-slate-900/40" onClick={() => setMobileOpen(false)} />
-          <aside ref={drawerRef} className="absolute inset-y-0 left-0 w-64 bg-white shadow-xl">{sidebar}</aside>
+          <div className="animate-fade-in absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <aside ref={drawerRef} className="animate-slide-in-left absolute inset-y-0 left-0 w-64 bg-white shadow-xl">{sidebar}</aside>
         </div>
       )}
 
@@ -141,7 +142,8 @@ export function AppLayout() {
         )}
 
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
+          {/* key = page address: every page fades in, its sections one after another */}
+          <div key={location.pathname} className="stagger-children mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
             <Outlet />
           </div>
         </main>

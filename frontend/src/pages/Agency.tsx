@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { PlatformBadge } from "../components/MatchParts";
-import { Alert, Badge, Button, Card, EmptyState, PageHeader, Spinner } from "../components/ui";
+import { Alert, Badge, Button, Card, EmptyState, PageHeader, SkeletonList } from "../components/ui";
 import { WinRateChart } from "../components/WinRateChart";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -150,6 +150,7 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
   return (
     <>
       <PageHeader
+        icon={<Users />}
         title={agency.name}
         subtitle={`${activeMembers} active member${activeMembers === 1 ? "" : "s"} · jobs are routed to the teammate with the highest Match Score`}
         actions={
@@ -166,14 +167,14 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
       {error && <Alert tone="error" className="mb-6">{error}</Alert>}
 
       {!stats || !recs ? (
-        <div className="flex h-48 items-center justify-center"><Spinner /></div>
+        <SkeletonList rows={2} />
       ) : stats.members.length === 0 ? (
         <EmptyState icon={<Users className="h-6 w-6" />} title="Invite your first team member">
           Members join with an invite link and complete their own profile. Then FitWork routes each job to the best person.{" "}
           <Link to="/app/settings#agency" className="font-medium text-brand-600 hover:underline">Invite a member →</Link>
         </EmptyState>
       ) : (
-        <div className="space-y-6">
+        <div className="stagger-children space-y-6">
           <Card className="overflow-hidden">
             <div className="border-b border-slate-100 px-5 py-4">
               <h2 className="font-semibold text-slate-900">Team</h2>
@@ -191,7 +192,7 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {stats.members.map((m) => (
-                    <tr key={m.member_id}>
+                    <tr key={m.member_id} className="transition-colors hover:bg-brand-50/40">
                       <td className="px-5 py-3">
                         <p className="font-medium text-slate-900">{m.name}</p>
                         <p className="text-xs text-slate-500">{m.email}</p>
@@ -221,7 +222,7 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
                 <h2 className="font-semibold text-slate-900">Routing recommendations</h2>
                 <span className="text-xs text-slate-500">{recs.length} jobs</span>
               </div>
-              <div className="mt-4 space-y-3">
+              <div className="stagger-children mt-4 space-y-3">
                 {recs.length === 0 ? (
                   <p className="text-sm text-slate-500">No unassigned jobs fit your team right now. Members need completed profiles to be routed jobs.</p>
                 ) : (
@@ -312,20 +313,20 @@ function MemberQueue({ agency }: { agency: AgencyData }) {
 
   return (
     <>
-      <PageHeader title="My Job Queue" subtitle={`Jobs ${agency.owner_name} assigned to you at ${agency.name}`} />
+      <PageHeader icon={<Inbox />} title="My Job Queue" subtitle={`Jobs ${agency.owner_name} assigned to you at ${agency.name}`} />
       {error && <Alert tone="error" className="mb-4">{error}</Alert>}
       {notice && <Alert tone="success" className="mb-4">{notice}</Alert>}
       {!queue ? (
-        <div className="flex h-48 items-center justify-center"><Spinner /></div>
+        <SkeletonList rows={2} />
       ) : queue.length === 0 ? (
         <EmptyState icon={<Inbox className="h-6 w-6" />} title="Your queue is empty">
           When your agency owner assigns you a job, it appears here. Keep your{" "}
           <Link to="/onboarding" className="font-medium text-brand-600 hover:underline">profile</Link> up to date so you get the right jobs.
         </EmptyState>
       ) : (
-        <div className="space-y-4">
+        <div className="stagger-children space-y-4">
           {queue.map((a) => (
-            <Card key={a.id} className="p-5">
+            <Card key={a.id} className="p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lift">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -388,7 +389,7 @@ export default function Agency() {
   if (!isAgencyUser) {
     return (
       <>
-        <PageHeader title="Agency Mode" />
+        <PageHeader icon={<Users />} title="Agency Mode" />
         <EmptyState icon={<Users className="h-6 w-6" />} title="Agency Mode is for teams">
           Agency owners invite their team, and FitWork routes every job to the teammate with the best Match Score.
           If your agency owner sends you an invite link, open it while logged in to join.
@@ -397,6 +398,6 @@ export default function Agency() {
     );
   }
   if (error) return <Alert tone="error">{error}</Alert>;
-  if (!agency) return <div className="flex h-48 items-center justify-center"><Spinner /></div>;
+  if (!agency) return <SkeletonList rows={2} />;
   return agency.role === "owner" ? <OwnerAgency agency={agency} /> : <MemberQueue agency={agency} />;
 }

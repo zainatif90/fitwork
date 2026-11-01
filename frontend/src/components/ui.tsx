@@ -1,7 +1,7 @@
 /** Small reusable UI building blocks so every page looks consistent. */
 import clsx from "clsx";
 import { AlertCircle, CheckCircle2, Info, Loader2 } from "lucide-react";
-import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -145,12 +145,17 @@ export function Logo({ className, light }: { className?: string; light?: boolean
   );
 }
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+export function PageHeader({ title, subtitle, actions, icon }: { title: string; subtitle?: string; actions?: ReactNode; icon?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      <div className="flex min-w-0 items-center gap-4">
+        {icon && (
+          <span className="hidden shrink-0 rounded-2xl bg-brand-gradient p-3 text-white shadow-glow sm:inline-flex [&>svg]:h-6 [&>svg]:w-6">{icon}</span>
+        )}
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
+          {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+        </div>
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -165,4 +170,46 @@ export function EmptyState({ icon, title, children }: { icon: ReactNode; title: 
       {children && <div className="mt-1 max-w-md text-sm text-slate-500">{children}</div>}
     </div>
   );
+}
+
+/** Shimmering placeholder cards shown while a page loads. */
+export function SkeletonList({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-label="Loading">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-soft">
+          <div className="flex gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="skeleton h-4 w-1/3" />
+              <div className="skeleton h-5 w-2/3" />
+              <div className="skeleton h-4 w-1/4" />
+              <div className="skeleton h-4 w-5/6" />
+            </div>
+            <div className="skeleton h-16 w-16 rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Counts from 0 up to `value` when it first appears. */
+export function CountUp({ value, decimals = 0 }: { value: number; decimals?: number }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShown(value);
+      return;
+    }
+    const start = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / 900);
+      setShown(value * (1 - Math.pow(1 - t, 3))); // ease-out
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+  return <>{shown.toFixed(decimals)}</>;
 }

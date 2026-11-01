@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Legend, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from "recharts";
 
-import { Alert, Button, Card, EmptyState, PageHeader, Spinner } from "../components/ui";
+import { Alert, Button, Card, EmptyState, PageHeader } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { timeAgo } from "../lib/format";
 
@@ -47,9 +47,9 @@ function learnLinks(skill: string) {
 function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocked: number }) {
   const [open, setOpen] = useState(rank === 1);
   return (
-    <div className="rounded-lg border border-slate-200">
+    <div className="rounded-xl border border-slate-200 transition duration-200 hover:border-brand-200 hover:shadow-soft">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-4 p-4 text-left" aria-expanded={open}>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">{rank}</span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white shadow-glow">{rank}</span>
         <div className="min-w-0 flex-1">
           {gap.jobs_unlocked > 0 ? (
             <p className="text-sm text-slate-900">
@@ -132,15 +132,19 @@ export default function SkillGap() {
 
   if (state === "loading") {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-slate-500">
-        <Spinner /> Analysing the job market for your profile…
+      <div className="flex h-72 flex-col items-center justify-center gap-4 text-sm text-slate-500">
+        <span className="relative flex h-16 w-16 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-brand-400/30" />
+          <span className="relative rounded-full bg-brand-gradient p-4 text-white shadow-glow"><RadarIcon className="h-7 w-7" /></span>
+        </span>
+        Analysing jobs in your field…
       </div>
     );
   }
   if (state === "no-profile") {
     return (
       <>
-        <PageHeader title="Skill Gap Radar" />
+        <PageHeader icon={<RadarIcon />} title="Skill Gap Radar" />
         <EmptyState icon={<UserCog className="h-6 w-6" />} title="Complete your profile first">
           <Link to="/onboarding" className="font-medium text-brand-600 hover:underline">Set up your profile →</Link>
         </EmptyState>
@@ -154,6 +158,7 @@ export default function SkillGap() {
   return (
     <>
       <PageHeader
+        icon={<RadarIcon />}
         title="Skill Gap Radar"
         subtitle={`Your field: the ${data.field_jobs} jobs most similar to your profile (out of ${data.total_active_jobs} active) · updated ${timeAgo(data.generated_at)}`}
         actions={
@@ -176,8 +181,8 @@ export default function SkillGap() {
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="skill" tick={{ fill: "#475569", fontSize: 11 }} />
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="Market demand" dataKey="market_demand" stroke={DEMAND_COLOR} strokeWidth={2} fill={DEMAND_COLOR} fillOpacity={0.15} isAnimationActive={false} />
-                <Radar name="Your coverage" dataKey="your_coverage" stroke={YOU_COLOR} strokeWidth={2} fill={YOU_COLOR} fillOpacity={0.1} isAnimationActive={false} />
+                <Radar name="Market demand" dataKey="market_demand" stroke={DEMAND_COLOR} strokeWidth={2} fill={DEMAND_COLOR} fillOpacity={0.15} animationDuration={900} />
+                <Radar name="Your coverage" dataKey="your_coverage" stroke={YOU_COLOR} strokeWidth={2} fill={YOU_COLOR} fillOpacity={0.1} animationDuration={900} animationBegin={250} />
                 <Tooltip
                   formatter={(value, name, item) =>
                     name === "Market demand" ? [`${(item.payload as { jobs: number }).jobs} jobs`, name] : [Number(value) === 100 ? "You have it" : "Missing", name]}
@@ -212,7 +217,7 @@ export default function SkillGap() {
               </p>
             </div>
           </div>
-          <div className="mt-4 space-y-3">
+          <div className="stagger-children mt-4 space-y-3">
             {data.gaps.length === 0 ? (
               <EmptyState icon={<RadarIcon className="h-6 w-6" />} title="No missing skills in your field right now">
                 Check back after new jobs arrive.

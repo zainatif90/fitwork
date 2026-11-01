@@ -130,7 +130,7 @@ export default function Onboarding() {
         {/* Progress bar with step labels */}
         <div className="mt-6">
           <div className="h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={STEPS.length}>
-            <div className="h-full rounded-full bg-brand-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+            <div className="h-full rounded-full bg-brand-gradient transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
           </div>
           <ol className="mt-3 hidden grid-cols-4 text-xs sm:grid">
             {STEPS.map((label, i) => (
@@ -144,7 +144,8 @@ export default function Onboarding() {
           </ol>
         </div>
 
-        <Card className="mt-8 p-6 sm:p-8">
+        {/* key = step: each step slides in */}
+        <Card key={step} className="animate-fade-up mt-8 p-6 sm:p-8">
           {serverError && <Alert tone="error" className="mb-5">{serverError}</Alert>}
 
           {step === 0 && (

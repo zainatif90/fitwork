@@ -32,3 +32,4 @@ Deadline: 19 November 2026
   their skills; reposts counted once; QA spellings merged). Before/after on live data in TEST_RESULTS.md 5d; 177 tests.
 - [x] 1 Nov: fixed all 34 bugs from the full review (security limits, sessions, agency, matching, UI); 208 tests, E2E 11/11.
 - [x] 1 Nov: UI/UX redesign: landing page, gradient design system, score rings, dashboard banner, new auth panel; E2E 11/11.
+- [x] 1 Nov: tasteful animations on every page (page/section stagger, score rings, count-up, skeletons, drawer/dialog motion); E2E 11/11.

@@ -1,9 +1,9 @@
-import { ExternalLink, Pencil } from "lucide-react";
+import { ExternalLink, Pencil, Settings as SettingsIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { AgencySettings } from "../components/AgencySettings";
-import { Badge, Card, FullPageSpinner, PageHeader } from "../components/ui";
+import { Badge, Card, PageHeader, SkeletonList } from "../components/ui";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { Profile } from "../lib/types";
@@ -25,12 +25,12 @@ export default function Settings({ extra }: { extra?: ReactNode }) {
     api<Profile | null>("/profile/me").then(setProfile).catch(() => setProfile(null));
   }, []);
 
-  if (profile === undefined) return <FullPageSpinner />;
+  if (profile === undefined) return <SkeletonList rows={2} />;
 
   return (
     <>
-      <PageHeader title="Settings" subtitle="Your account and freelancer profile." />
-      <div className="space-y-6">
+      <PageHeader icon={<SettingsIcon />} title="Settings" subtitle="Your account and freelancer profile." />
+      <div className="stagger-children space-y-6">
         <Card className="p-6">
           <h2 className="font-semibold text-slate-900">Account</h2>
           <dl className="mt-2 divide-y divide-slate-100">
