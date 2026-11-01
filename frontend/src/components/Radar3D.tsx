@@ -17,6 +17,7 @@ export interface RadarPoint {
   market_demand: number; // 0-100 (the most requested skill = 100)
   jobs: number;
   your_coverage: number; // 100 = the user has this skill
+  example_job?: string | null; // a real job in the user's field that asks for it
 }
 
 const W = 30;          // tower width and depth (px)
@@ -103,22 +104,28 @@ export function Radar3D({ data }: { data: RadarPoint[] }) {
       });
       frame = requestAnimationFrame(tick);
     };
+    // Fit the floor to the available width (phones are much narrower than the chart)
+    const fit = () => el.style.setProperty("--fit", String(Math.min(1, (el.clientWidth - 16) / (floorW * 1.12))));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerleave", onLeave);
     frame = requestAnimationFrame(tick);
     return () => {
+      ro.disconnect();
       cancelAnimationFrame(frame);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerleave", onLeave);
     };
-  }, []);
+  }, [floorW]);
 
   return (
     <div>
-      <div ref={stage} className="relative h-[340px] w-full cursor-ew-resize select-none overflow-hidden"
+      <div ref={stage} className="relative h-[300px] w-full cursor-ew-resize touch-pan-y select-none overflow-hidden sm:h-[340px]"
         style={{ perspective: "1000px", ["--rz" as string]: "-28deg", ["--rx" as string]: "58deg" }}>
         <div className="absolute left-1/2 top-[62%]" style={{ width: floorW, height: DEPTH, marginLeft: -floorW / 2, marginTop: -DEPTH / 2,
-          transformStyle: "preserve-3d", transform: "rotateX(var(--rx)) rotateZ(var(--rz))", willChange: "transform" }}>
+          transformStyle: "preserve-3d", transform: "scale(var(--fit, 1)) rotateX(var(--rx)) rotateZ(var(--rz))", willChange: "transform" }}>
           {/* Floor zones with their names painted on the floor */}
           {items.have.length > 0 && (
             <div className="absolute rounded-2xl border border-emerald-400/50 bg-emerald-400/10" style={{ left: PAD - 14, top: 0, width: haveW + 28, height: DEPTH }}>
@@ -159,10 +166,10 @@ export function Radar3D({ data }: { data: RadarPoint[] }) {
       </div>
 
       {/* The key: what each number means */}
-      <div className="grid gap-4 px-4 pb-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 px-4 pb-2 sm:grid-cols-2">
         {[{ title: "✓ You have", list: items.have, offset: 0, have: true },
           { title: "✗ You're missing", list: items.miss, offset: items.have.length, have: false }].map((group) => (
-          <div key={group.title}>
+          <div key={group.title} className="min-w-0">
             <p className={`mb-2 text-xs font-bold uppercase tracking-widest ${group.have ? "text-emerald-300" : "text-violet-300"}`}>{group.title}</p>
             {group.list.length === 0 ? (
               <p className="text-xs text-slate-400">{group.have ? "None of the top skills in your field yet." : "Nothing: you have every top skill in your field."}</p>
@@ -172,10 +179,15 @@ export function Radar3D({ data }: { data: RadarPoint[] }) {
                   const i = group.offset + j;
                   return (
                     <li key={d.skill} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}
-                      className={`flex items-center gap-2 rounded-lg px-2 py-1 text-sm transition ${hover === i ? "bg-white/15" : ""}`}>
-                      <span className={`flex h-5 min-w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${group.have ? "bg-emerald-500" : "bg-violet-600"}`}>{i + 1}</span>
-                      <span className="min-w-0 flex-1 truncate font-medium text-white">{d.skill}</span>
-                      <span className="shrink-0 text-xs text-slate-300">{d.jobs} jobs</span>
+                      className={`min-w-0 rounded-lg px-2 py-1.5 text-sm transition ${hover === i ? "bg-white/15" : ""}`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`flex h-5 min-w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${group.have ? "bg-emerald-500" : "bg-violet-600"}`}>{i + 1}</span>
+                        <span className="min-w-0 flex-1 truncate font-medium text-white">{d.skill}</span>
+                        <span className="shrink-0 text-xs text-slate-300">{d.jobs} jobs</span>
+                      </div>
+                      {d.example_job && (
+                        <p className="mt-0.5 truncate pl-7 text-[11px] text-slate-400" title={d.example_job}>e.g. “{d.example_job}”</p>
+                      )}
                     </li>
                   );
                 })}

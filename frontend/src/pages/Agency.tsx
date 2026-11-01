@@ -179,7 +179,35 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
             <div className="border-b border-slate-100 px-5 py-4">
               <h2 className="font-semibold text-slate-900">Team</h2>
             </div>
-            <div className="overflow-x-auto">
+            {/* Phones: one card per member (the table is too wide for a phone screen) */}
+            <ul className="divide-y divide-slate-100 sm:hidden">
+              {stats.members.map((m) => (
+                <li key={m.member_id} className="space-y-2 px-5 py-4">
+                  <div className="min-w-0">
+                    <p className="font-medium text-slate-900">{m.name}</p>
+                    <p className="truncate text-xs text-slate-500">{m.email}</p>
+                  </div>
+                  {m.has_profile ? (
+                    <div className="flex flex-wrap gap-1">{m.top_skills.map((s) => <Badge key={s}>{s}</Badge>)}</div>
+                  ) : (
+                    <span className="text-xs text-amber-700">Profile not completed yet</span>
+                  )}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: "Active", value: m.active_assignments },
+                      { label: "Win rate 30d", value: m.win_rate_30d == null ? "—" : `${Math.round(m.win_rate_30d * 100)}%` },
+                      { label: "Routed today", value: m.routed_today },
+                    ].map((x) => (
+                      <div key={x.label} className="rounded-xl bg-brand-50/60 px-2 py-1.5">
+                        <p className="font-display text-base font-bold text-slate-900">{x.value}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-slate-500">{x.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
                   <tr>

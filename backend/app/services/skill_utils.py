@@ -55,13 +55,28 @@ ALIASES: dict[str, str] = {
 _AMBIGUOUS_IN_TEXT = {"c", "r", "go", "qt", "sales", "editing", "consulting", "automation", "nft", "ai",
                       "architecture", "documentation"}
 
+
+
+def _compact(text: str) -> str:
+    """Lowercase key without spaces, hyphens, underscores, dots or slashes ("E-commerce" -> "ecommerce")."""
+    return re.sub(r"[\s\-_./]+", "", text.lower())
+
+
+# The alias table in compact form, so "React JS", "react-js" and "ReactJS" all hit the same entry.
+_COMPACT_ALIASES: dict[str, str] = {_compact(k): _compact(v) for k, v in ALIASES.items()}
+
 # Generic words that appear in jobs of every field; they are never suggested as a skill to learn next.
-NOT_SUGGESTED = {"documentation", "architecture", "consulting", "sales", "automation", "editing"}
+NOT_SUGGESTED = {_compact(s) for s in ("documentation", "architecture", "consulting", "sales", "automation", "editing")}
 
 
 def canonical_skill(name: str) -> str:
-    key = " ".join(name.lower().split())
-    return ALIASES.get(key, key)
+    """
+    One comparison key per skill, whatever the spelling: case, spaces, hyphens, dots and slashes are
+    ignored, then known aliases are applied. Seen live: a user with "E-commerce" was told they were
+    missing "eCommerce".
+    """
+    key = _compact(name)
+    return _COMPACT_ALIASES.get(key, key)
 
 
 def canonical_set(skills: Iterable[str]) -> set[str]:

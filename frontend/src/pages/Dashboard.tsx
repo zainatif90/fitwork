@@ -110,15 +110,15 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-        <div className="relative mt-7 grid grid-cols-3 gap-3 sm:max-w-2xl">
+        <div className="relative mt-7 grid grid-cols-2 gap-3 sm:max-w-2xl sm:grid-cols-3">
           {[
             { label: "Strong matches", value: <CountUp value={data?.stats.strong_matches ?? 0} />, hint: "score 75+" },
             { label: "Average top-5 score", value: <CountUp value={data?.stats.average_score ?? 0} decimals={1} />, hint: "out of 100" },
             { label: "Top source", value: sourceName(data?.stats.top_source ?? null), hint: "for your top 5" },
           ].map((s) => (
-            <Tilt key={s.label} max={14}>
+            <Tilt key={s.label} max={14} className={s.label === "Top source" ? "col-span-2 sm:col-span-1" : ""}>
             <div className="animate-pop-in h-full rounded-2xl border border-white/15 bg-white/[0.08] p-3 shadow-xl transition hover:bg-white/[0.14] sm:p-4">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400 sm:text-[11px]">{s.label}</p>
               <p className={`mt-1 truncate font-display font-bold ${typeof s.value === "string" ? "text-base sm:text-xl" : "text-lg sm:text-2xl"}`}
                 title={typeof s.value === "string" ? s.value : undefined}>{s.value}</p>
               <p className="text-[11px] text-slate-400">{s.hint}</p>

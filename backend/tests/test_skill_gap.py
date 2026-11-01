@@ -26,10 +26,10 @@ def job(eid: str, title: str, desc: str, skills: list[str], source: str = "freel
 def test_demand_merges_spellings_and_counts_once_per_job() -> None:
     jobs = [Job(skills=["React.js", "React", "CSS"]), Job(skills=["ReactJS", "Node.js"]), Job(skills=["css3"])]
     counts, display = skill_demand(jobs)
-    assert counts["react"] == 2        # 3 spellings, but job 1 counted once
-    assert counts["css"] == 2          # "CSS" and "css3"
-    assert counts["node.js"] == 1
-    assert display["react"] in {"React.js", "React", "ReactJS"}
+    assert counts[canonical_skill("react")] == 2        # 3 spellings, but job 1 counted once
+    assert counts[canonical_skill("css")] == 2          # "CSS" and "css3"
+    assert counts[canonical_skill("node.js")] == 1
+    assert display[canonical_skill("react")] in {"React.js", "React", "ReactJS"}
 
 
 def test_count_unlocked_only_counts_new_passes() -> None:
@@ -72,18 +72,18 @@ def test_bug15_unknown_skills_get_a_message_not_random_suggestions(client: TestC
 def test_bug33_one_name_per_skill() -> None:
     counts, display = skill_demand([Job(skills=["Website Design", "iPhone"]), Job(skills=["Web Design", "iOS"]),
                                     Job(skills=["iPhone"])])
-    assert counts["web design"] == 2 and display["web design"] == "Web Design"
-    assert counts["ios"] == 3 and display["ios"] == "iOS"
+    assert counts[canonical_skill("web design")] == 2 and display[canonical_skill("web design")] == "Web Design"
+    assert counts[canonical_skill("ios")] == 3 and display[canonical_skill("ios")] == "iOS"
 
 
 def test_qa_spellings_are_merged() -> None:
     """Live Freelancer.com QA jobs are tagged "Testing / QA" and "Software Testing"; users write "QA" or "SQA"."""
-    assert canonical_skill("SQA") == canonical_skill("Testing / QA") == canonical_skill("Software Testing") == "qa testing"
-    assert canonical_skill("Test Automation") == canonical_skill("QA Automation") == "automation testing"
+    assert canonical_skill("SQA") == canonical_skill("Testing / QA") == canonical_skill("Software Testing") == canonical_skill("QA Testing")
+    assert canonical_skill("Test Automation") == canonical_skill("QA Automation") == canonical_skill("Automation Testing")
 
 
 def test_skills_in_title() -> None:
-    assert skills_in_text("QA Tester (Manual Testing, SaaS)", ["QA", "Manual Testing", "Jira"]) == {"qa testing", "manual testing"}
+    assert skills_in_text("QA Tester (Manual Testing, SaaS)", ["QA", "Manual Testing", "Jira"]) == {canonical_skill("QA Testing"), canonical_skill("Manual Testing")}
     assert skills_in_text("Social media manager for a bakery", ["QA", "Manual Testing"]) == set()
 
 
@@ -179,3 +179,13 @@ def test_qa_tester_only_gets_skills_from_their_field(client: TestClient, db: Ses
 def test_skill_gap_requires_profile(client: TestClient) -> None:
     token = register(client)["access_token"]
     assert client.get("/api/skill-gap", headers=auth_header(token)).status_code == 409
+
+
+def test_spelling_variants_are_one_skill() -> None:
+    """Seen live: a Shopify user with "E-commerce" was told they were missing "eCommerce"."""
+    assert canonical_skill("E-commerce") == canonical_skill("eCommerce") == canonical_skill("e commerce")
+    assert canonical_skill("Front-end Development") == canonical_skill("Frontend development")
+    assert canonical_skill("Node JS") == canonical_skill("node.js") == canonical_skill("NodeJS")
+    assert canonical_skill("C#") != canonical_skill("C") and canonical_skill("C++") != canonical_skill("C")
+    counts, display = skill_demand([Job(skills=["E-commerce"]), Job(skills=["eCommerce", "Shopify"])])
+    assert counts[canonical_skill("ecommerce")] == 2

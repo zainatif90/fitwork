@@ -99,8 +99,8 @@ def test_extract_skills_handles_symbols_and_ambiguous_words() -> None:
 
 
 def test_canonical_skill_aliases() -> None:
-    assert canonical_skill("React.js") == canonical_skill("react") == "react"
-    assert canonical_skill("  Node JS ") == "node.js"
+    assert canonical_skill("React.js") == canonical_skill("react") == canonical_skill("ReactJS")
+    assert canonical_skill("  Node JS ") == canonical_skill("node.js")
 
 
 def test_read_csv(tmp_path: Path) -> None:

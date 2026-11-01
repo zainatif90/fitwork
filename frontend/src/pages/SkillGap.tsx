@@ -24,7 +24,7 @@ interface SkillGapData {
   baseline_matches: number;
   threshold: number;
   gaps: Gap[];
-  radar: { skill: string; market_demand: number; jobs: number; your_coverage: number }[];
+  radar: { skill: string; market_demand: number; jobs: number; your_coverage: number; example_job?: string | null }[];
   your_skills: { skill: string; jobs: number }[];
   coverage_message: string | null;
   analysed_skills: number;
@@ -69,8 +69,8 @@ function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocke
         <ChevronDown className={clsx("h-4 w-4 shrink-0 text-slate-400 transition", open && "rotate-180")} />
       </button>
       {open && (
-        <div className="grid gap-4 border-t border-slate-100 p-4 sm:grid-cols-2">
-          <div>
+        <div className="grid grid-cols-1 gap-4 border-t border-slate-100 p-4 sm:grid-cols-2">
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Jobs you would unlock</p>
             {gap.sample_jobs.length === 0 ? (
               <p className="mt-2 text-sm text-slate-500">
@@ -79,15 +79,15 @@ function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocke
             ) : (
               <ul className="mt-2 space-y-1.5">
                 {gap.sample_jobs.map((j) => (
-                  <li key={j.id} className="flex items-center justify-between gap-2 text-sm">
-                    <Link to={`/app/jobs/${j.id}`} className="truncate text-slate-700 hover:text-brand-700">{j.title}</Link>
+                  <li key={j.id} className="flex min-w-0 items-center justify-between gap-2 text-sm">
+                    <Link to={`/app/jobs/${j.id}`} className="min-w-0 truncate text-slate-700 hover:text-brand-700">{j.title}</Link>
                     <span className="shrink-0 rounded bg-emerald-50 px-1.5 text-xs font-semibold text-emerald-700">{j.score}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Learn it for free</p>
             <ul className="mt-2 space-y-1.5">
               {learnLinks(gap.skill).map((l) => (

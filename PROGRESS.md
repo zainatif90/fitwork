@@ -38,3 +38,4 @@ Deadline: 19 November 2026
 - [x] 1 Nov: smoother motion (frame-based tilt, no glass blur, lighter glows) and a 3D Skill Gap radar (pillars on a turning holographic floor).
 - [x] 1 Nov: Skill Gap 3D chart redesigned as a 'skill skyline': 3D towers in two zones (have / missing), numbered with a key, turns with the mouse.
 - [x] 1 Nov: profile editing made visible: sidebar 'My Profile & Skills', buttons on Settings, Matches and Skill Gap.
+- [x] 1 Nov: skill spelling variants merged automatically (E-commerce = eCommerce); example job per Skill Gap skill; phone layout fixes (3D chart fits, dashboard tiles, agency team cards, text truncation).

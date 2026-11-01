@@ -33,7 +33,7 @@ from app.models.job import Job
 from app.models.profile import Profile
 from app.services import embeddings, scoring
 from app.services.matching import ensure_profile_embedding
-from app.services.skill_utils import NOT_SUGGESTED, canonical_set, canonical_skill, skills_in_text
+from app.services.skill_utils import NOT_SUGGESTED, _compact, canonical_set, canonical_skill, skills_in_text
 
 TOP_GAPS = 5
 RADAR_SKILLS = 8
@@ -57,7 +57,7 @@ def skill_demand(jobs: list[Job]) -> tuple[Counter[str], dict[str, str]]:
 
 def _display_name(key: str, spellings: Counter[str]) -> str:
     """Prefer the standard spelling ("iOS" rather than "iPhone"), else the most common one."""
-    standard = [s for s in spellings if s.lower() == key]
+    standard = [s for s in spellings if _compact(s) == key]
     return max(standard, key=lambda s: spellings[s]) if standard else spellings.most_common(1)[0][0]
 
 
@@ -187,8 +187,11 @@ def compute_skill_gap(db: Session, profile: Profile) -> dict[str, Any]:
     # 4. Radar: you vs your field
     top_demand = [(k, c) for k, c in demand.most_common() if k not in NOT_SUGGESTED][:RADAR_SKILLS]
     max_count = top_demand[0][1] if top_demand else 1
+    # One real job from the user's field that asks for each skill, so the link is visible
+    field_keys = [canonical_set(j.skills) for j in field_jobs]
+    example = {k: next((j.title for j, keys in zip(field_jobs, field_keys) if k in keys), None) for k, _ in top_demand}
     radar = [{"skill": display[k], "market_demand": round(100 * c / max_count), "jobs": c,
-              "your_coverage": 100 if k in mine else 0} for k, c in top_demand]
+              "your_coverage": 100 if k in mine else 0, "example_job": example[k]} for k, c in top_demand]
     covered_top = sum(1 for r in radar if r["your_coverage"] == 100)
     # How many active jobs (all fields) ask for each skill the user already has
     all_demand, _ = skill_demand([j for j in jobs if j.source != "manual"])

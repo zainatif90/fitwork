@@ -32,6 +32,7 @@ class RadarPoint(BaseModel):
     market_demand: int
     jobs: int
     your_coverage: int
+    example_job: str | None = None  # a real job in the user's field that asks for this skill
 
 
 class SkillDemand(BaseModel):
