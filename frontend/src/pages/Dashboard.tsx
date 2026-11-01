@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { AddJobModal } from "../components/AddJobModal";
+import { Aurora } from "../components/Motion";
 import { JobCard } from "../components/MatchParts";
 import { Alert, Card, CountUp, EmptyState, PageHeader, SkeletonList } from "../components/ui";
 import { api, ApiError } from "../lib/api";
@@ -80,11 +81,12 @@ export default function Dashboard() {
     <>
       {/* Welcome banner with the key numbers */}
       <div className="bg-hero relative mb-6 overflow-hidden rounded-3xl p-6 text-white shadow-lift sm:p-8">
+        <Aurora />
         <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_right,black_10%,transparent_70%)]" />
         <div className="relative flex flex-wrap items-start justify-between gap-6">
           <div>
             <p className="text-sm font-medium text-brand-200">{greeting()}, {firstName}</p>
-            <h1 className="mt-1 text-3xl font-extrabold sm:text-4xl">Your top matches</h1>
+            <h1 className="mt-1 text-3xl font-extrabold sm:text-4xl">Your <span className="text-gradient-animated">top matches</span></h1>
             {data && (
               <p className="mt-2 text-sm text-slate-300">
                 Updated {timeAgo(data.generated_at)} · ranked from the {data.stats.candidates_considered} jobs closest to your profile
@@ -97,7 +99,7 @@ export default function Dashboard() {
               <ClipboardPaste className="h-4 w-4" /> Paste a job
             </button>
             <button onClick={onRefresh} disabled={refreshing}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-900 shadow hover:bg-brand-50 disabled:opacity-70">
+              className="shine inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-900 shadow transition hover:-translate-y-0.5 hover:bg-brand-50 disabled:opacity-70">
               <RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Refresh matches
             </button>
           </div>
@@ -108,9 +110,10 @@ export default function Dashboard() {
             { label: "Average top-5 score", value: <CountUp value={data?.stats.average_score ?? 0} decimals={1} />, hint: "out of 100" },
             { label: "Top source", value: sourceName(data?.stats.top_source ?? null), hint: "for your top 5" },
           ].map((s) => (
-            <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur sm:p-4">
+            <div key={s.label} className="animate-pop-in rounded-2xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur transition hover:-translate-y-1 hover:bg-white/[0.12] sm:p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
-              <p className="mt-1 truncate font-display text-lg font-bold sm:text-2xl" title={typeof s.value === "string" ? s.value : undefined}>{s.value}</p>
+              <p className={`mt-1 truncate font-display font-bold ${typeof s.value === "string" ? "text-base sm:text-xl" : "text-lg sm:text-2xl"}`}
+                title={typeof s.value === "string" ? s.value : undefined}>{s.value}</p>
               <p className="text-[11px] text-slate-400">{s.hint}</p>
             </div>
           ))}
@@ -148,8 +151,8 @@ export default function Dashboard() {
             <p className="mt-3 text-xs text-slate-500">It's a fit score, not a promise you will win the job.</p>
           </Card>
           <Link to="/app/skill-gap" className="group block">
-            <div className="relative overflow-hidden rounded-2xl bg-brand-gradient p-5 text-white shadow-lift transition group-hover:-translate-y-0.5">
-              <Radar className="absolute -right-4 -top-4 h-24 w-24 text-white/10" />
+            <div className="shine relative overflow-hidden rounded-2xl bg-gradient-animated p-5 text-white shadow-lift transition group-hover:-translate-y-1">
+              <Radar className="absolute -right-4 -top-4 h-24 w-24 animate-[spin-slow_12s_linear_infinite] text-white/15" />
               <p className="font-display font-bold">Skill Gap Radar</p>
               <p className="mt-1 text-sm text-brand-100">Find the one skill from your field that unlocks the most new jobs.</p>
               <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold">Open radar <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>

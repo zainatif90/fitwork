@@ -78,7 +78,7 @@ export function AppLayout() {
             className={({ isActive }) =>
               clsx(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                isActive ? "bg-brand-gradient text-white shadow-glow" : "text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900",
+                isActive ? "bg-gradient-animated shine text-white shadow-glow" : "text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900",
               )
             }
           >

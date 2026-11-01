@@ -13,7 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-brand-gradient text-white shadow-glow hover:brightness-110 hover:-translate-y-px active:translate-y-0",
+  primary: "bg-gradient-animated shine text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0",
   secondary: "bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-soft",
   ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
   danger: "bg-white text-red-600 border border-red-200 hover:bg-red-50",
@@ -150,7 +150,7 @@ export function PageHeader({ title, subtitle, actions, icon }: { title: string; 
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="flex min-w-0 items-center gap-4">
         {icon && (
-          <span className="hidden shrink-0 rounded-2xl bg-brand-gradient p-3 text-white shadow-glow sm:inline-flex [&>svg]:h-6 [&>svg]:w-6">{icon}</span>
+          <span className="animate-pop-in animate-pulse-ring hidden shrink-0 rounded-2xl bg-gradient-animated p-3 text-white shadow-glow sm:inline-flex [&>svg]:h-6 [&>svg]:w-6">{icon}</span>
         )}
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>

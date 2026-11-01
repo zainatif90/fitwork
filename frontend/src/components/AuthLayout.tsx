@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { ScoreRing } from "./MatchParts";
+import { Aurora } from "./Motion";
 import { Logo } from "./ui";
 
 const points = [
@@ -17,12 +18,13 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
   return (
     <div className="flex min-h-full bg-white">
       <aside className="bg-hero relative hidden w-[46%] max-w-2xl flex-col justify-between overflow-hidden p-10 text-white lg:flex">
+        <Aurora />
         <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
         <Link to="/" className="relative w-fit"><Logo light /></Link>
 
         <div className="relative">
           <h2 className="text-4xl font-extrabold leading-tight">
-            Find the freelance jobs <span className="text-gradient">that actually fit you.</span>
+            Find the freelance jobs <span className="text-gradient-animated">that actually fit you.</span>
           </h2>
 
           {/* Product preview (illustrative example, not real data) */}

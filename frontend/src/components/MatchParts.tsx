@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 
 import { formatBudget, platformLabel, scoreTone, timeAgo } from "../lib/format";
 import type { JobSource, Match } from "../lib/types";
+import { Tilt } from "./Motion";
 import { Badge, Card } from "./ui";
 
 export function PlatformBadge({ source, url }: { source: JobSource; url: string | null }) {
@@ -84,8 +85,14 @@ export function ScoreRing({ score, size = 64, label = true }: { score: number; s
 export function JobCard({ match, rank }: { match: Match; rank: number }) {
   const { job } = match;
   return (
-    <Card className="group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lift sm:p-6">
-      {rank === 1 && <div className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" aria-hidden />}
+    <Tilt max={4}>
+    <Card className={clsx("group relative p-5 transition-shadow duration-200 hover:shadow-lift sm:p-6",
+      rank === 1 ? "glow-border border-transparent" : "overflow-hidden hover:border-brand-200")}>
+      {rank === 1 && (
+        <span className="animate-pop-in absolute -top-3 right-5 rounded-full bg-gradient-animated px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-glow">
+          Best match
+        </span>
+      )}
       <div className="flex gap-4 sm:gap-6">
         <div className="min-w-0 flex-1">
           <div className="mb-2.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -118,5 +125,6 @@ export function JobCard({ match, rank }: { match: Match; rank: number }) {
         </div>
       </div>
     </Card>
+    </Tilt>
   );
 }
