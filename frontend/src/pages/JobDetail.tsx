@@ -103,7 +103,7 @@ export default function JobDetail() {
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] [&>*]:min-w-0">
         <div className="space-y-6">
           <Card className="p-6">
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -143,7 +143,7 @@ export default function JobDetail() {
           {match && tone ? (
             <Card className="p-5">
               <h2 className="text-sm font-semibold text-slate-900">Match Score</h2>
-              <div className="mt-4 flex items-center gap-5">
+              <div className="mt-4 flex flex-col items-start gap-4 min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-5">
                 <ScoreRing score={match.score} size={104} />
                 <p className="text-sm leading-relaxed text-slate-600">{match.reason}.</p>
               </div>

@@ -179,7 +179,7 @@ export function ProposalPanel({ jobId }: { jobId: string }) {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs text-slate-500">{words} words</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 [&>button]:shrink-0">
               <Button variant="secondary" onClick={generate} loading={loading} disabled={limitReached}
                 title={limitReached ? "Daily limit reached, try tomorrow" : undefined} icon={<RefreshCw className="h-4 w-4" />}>
                 {limitReached ? "Limit reached, try tomorrow" : "Regenerate"}

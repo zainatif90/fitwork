@@ -131,7 +131,7 @@ export default function Dashboard() {
       {justSaved && <Alert tone="success" className="mb-6">Profile saved. Your matches are now based on your new profile.</Alert>}
       {state.kind === "error" && <Alert tone="error" className="mb-6">{state.message}</Alert>}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_300px] [&>*]:min-w-0">
         <section className="stagger-children space-y-4" aria-label="Matched jobs">
           {matches.length > 0 ? (
             matches.map((m, i) => <JobCard key={m.job_id} match={m} rank={i + 1} />)

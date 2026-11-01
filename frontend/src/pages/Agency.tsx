@@ -244,7 +244,7 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
             </div>
           </Card>
 
-          <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px] [&>*]:min-w-0">
             <Card className="p-5">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-slate-900">Routing recommendations</h2>
