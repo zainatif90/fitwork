@@ -8,16 +8,19 @@ from sqlalchemy.orm import Session
 from app.models.job import Job
 from app.services import scoring
 from app.services.ingestion import upsert_jobs
-from app.services.skill_gap import count_unlocked, scores_from_cosines, skill_demand
+from app.core.config import settings
+from app.services.skill_gap import count_unlocked, field_of_work, scores_from_cosines, skill_demand, unique_postings
+from app.services.skill_utils import canonical_skill, skills_in_text
 from app.services.sources.base import JobData
 from tests.conftest import auth_header, register
 
 NOW = datetime.now(timezone.utc)
 
 
-def job(eid: str, title: str, desc: str, skills: list[str], source: str = "freelancer") -> JobData:
+def job(eid: str, title: str, desc: str, skills: list[str], source: str = "freelancer", budget: bool = True) -> JobData:
     return JobData(source=source, external_id=eid, title=title, description=desc, skills=skills,
-                   budget_min=20, budget_max=40, budget_type="hourly", posted_at=NOW - timedelta(hours=1))
+                   budget_min=20 if budget else None, budget_max=40 if budget else None,
+                   budget_type="hourly", posted_at=NOW - timedelta(hours=1))
 
 
 def test_demand_merges_spellings_and_counts_once_per_job() -> None:
@@ -43,8 +46,42 @@ def test_scores_from_cosines_matches_single_job_formula() -> None:
     assert vec[1] == scoring.combine(scoring.semantic_score(0.2), 0.5, 0.5)
 
 
+def test_field_of_work_needs_similarity_and_a_shared_skill(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    cos = np.array([0.9, 0.1, 0.5, 0.31, 0.29, 0.8])
+    shares = np.array([True, True, True, True, True, False])  # job 5 is similar but shares no skill
+    monkeypatch.setattr(settings, "SKILL_GAP_FIELD_MIN_JOBS", 1)
+    assert field_of_work(cos, shares).tolist() == [0, 2, 3]  # 0.29 and 0.1 are below the 0.30 floor
+    monkeypatch.setattr(settings, "SKILL_GAP_FIELD_SIZE", 2)
+    assert field_of_work(cos, shares).tolist() == [0, 2]     # only the 2 most similar
+    # Too few jobs share a skill -> fall back to similarity alone
+    monkeypatch.setattr(settings, "SKILL_GAP_FIELD_MIN_JOBS", 5)
+    assert field_of_work(cos, shares).tolist() == [0, 5]
+
+
+def test_qa_spellings_are_merged() -> None:
+    """Live Freelancer.com QA jobs are tagged "Testing / QA" and "Software Testing"; users write "QA" or "SQA"."""
+    assert canonical_skill("SQA") == canonical_skill("Testing / QA") == canonical_skill("Software Testing") == "qa testing"
+    assert canonical_skill("Test Automation") == canonical_skill("QA Automation") == "automation testing"
+
+
+def test_skills_in_title() -> None:
+    assert skills_in_text("QA Tester (Manual Testing, SaaS)", ["QA", "Manual Testing", "Jira"]) == {"qa testing", "manual testing"}
+    assert skills_in_text("Social media manager for a bakery", ["QA", "Manual Testing"]) == set()
+
+
+def test_reposted_job_is_counted_once() -> None:
+    """Seen live: one "CAD Engineer - AI Trainer" role posted 14 times made SolidWorks look like 14 jobs."""
+    a = Job(title="CAD Engineer - AI Trainer", description="Use SolidWorks  and Python.", skills=["SolidWorks"])
+    b = Job(title="CAD engineer - AI trainer", description="Use SolidWorks and Python.", skills=["SolidWorks"])
+    c = Job(title="CAD Engineer - AI Trainer", description="A different project in AutoCAD.", skills=["AutoCAD"])
+    assert unique_postings([a, b, c]) == [a, c]
+
+
 def _seed(db: Session) -> None:
-    shopify = [job(f"s{i}", f"Shopify store {t}", f"Customise our Shopify store: {t}. Shopify Liquid theme work.", ["Shopify", "Liquid"])
+    # Shopify jobs that also ask for React: in a React developer's field, but they need Shopify too.
+    # Seed-dataset jobs without a budget (neutral budget + recency), so some are just below a match (52-62).
+    shopify = [job(f"s{i}", f"Shopify store {t}", f"Customise our Shopify store: {t}. Shopify Liquid theme work, React widgets.",
+                   ["Shopify", "Liquid", "React"], source="csv", budget=False)
                for i, t in enumerate(["theme customization", "product page redesign", "checkout tweaks", "speed optimisation"])]
     react = [job(f"r{i}", f"React {t}", f"Build a React {t} with TypeScript.", ["React", "TypeScript"])
              for i, t in enumerate(["dashboard", "landing page"])]
@@ -67,7 +104,8 @@ def test_skill_gap_endpoint_finds_shopify(client: TestClient, db: Session) -> No
 
     assert body["total_active_jobs"] == 6  # inactive and other users' manual jobs excluded
     radar = {r["skill"]: r for r in body["radar"]}
-    assert radar["Shopify"]["jobs"] == 4 and radar["Shopify"]["market_demand"] == 100
+    assert body["field_jobs"] == 6  # every job here asks for React
+    assert radar["Shopify"]["jobs"] == 4 and radar["React"]["jobs"] == 6 and radar["React"]["market_demand"] == 100
     assert radar["React"]["your_coverage"] == 100 and radar["Shopify"]["your_coverage"] == 0
     assert all(g["skill"] not in ("React", "TypeScript") for g in body["gaps"])  # never suggest owned skills
 
@@ -90,6 +128,34 @@ def test_strong_coverage_message(client: TestClient, db: Session) -> None:
     body = client.get("/api/skill-gap", headers=auth_header(token)).json()
     assert body["gaps"] == []
     assert body["coverage_message"].startswith("Strong coverage")
+
+
+def test_qa_tester_only_gets_skills_from_their_field(client: TestClient, db: Session) -> None:
+    """Seen live: a QA tester was told to learn social media and Photoshop because those jobs are the most common."""
+    marketing = [job(f"mk{i}", f"Social media manager for {t}",
+                     f"Manage our Instagram and Facebook pages for {t}. Design posts in Photoshop and Canva.",
+                     ["Social Media Marketing", "Adobe Photoshop", "Canva"])
+                 for i, t in enumerate(["a bakery", "a gym", "a salon", "a clothing brand", "a cafe", "a dentist",
+                                        "a real estate agent", "a travel agency"])]
+    qa = [job(f"qa{i}", f"QA tester for {t}",
+              f"Test our {t}: write test cases, report bugs, automate end-to-end tests with Cypress and Selenium.",
+              ["QA Testing", "Cypress", "Selenium", "Test Automation"])
+          for i, t in enumerate(["web app", "checkout flow", "mobile app", "admin dashboard", "booking website"])]
+    upsert_jobs(db, marketing + qa)
+
+    token = register(client)["access_token"]
+    client.put("/api/profile/me", headers=auth_header(token), json={
+        "skills": ["Manual Testing", "QA", "Bug Reporting", "Test Cases"], "experience_level": "intermediate",
+        "hourly_rate": 25, "bio": "Software QA tester. I test web and mobile apps and write clear bug reports."})
+    body = client.get("/api/skill-gap", headers=auth_header(token)).json()
+
+    marketing_skills = {"Social Media Marketing", "Adobe Photoshop", "Canva"}
+    suggested = {g["skill"] for g in body["gaps"]}
+    assert not suggested & marketing_skills, suggested
+    assert not {r["skill"] for r in body["radar"]} & marketing_skills
+    assert suggested & {"Cypress", "Selenium"}, suggested       # testing tools from their own field
+    assert "QA Testing" not in suggested                         # "QA" in the profile is the same skill
+    assert 0 < body["field_jobs"] < body["total_active_jobs"]
 
 
 def test_skill_gap_requires_profile(client: TestClient) -> None:

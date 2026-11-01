@@ -40,10 +40,21 @@ ALIASES: dict[str, str] = {
     "llm": "large language models", "chatgpt api": "openai api",
     "wordpress development": "wordpress", "shopify development": "shopify",
     "mobile app": "mobile app development", "app development": "mobile app development",
+    # QA / testing: users write the same skill in many ways
+    "qa": "qa testing", "sqa": "qa testing", "quality assurance": "qa testing", "testing / qa": "qa testing",
+    "software testing": "qa testing", "software quality assurance": "qa testing", "qa engineer": "qa testing",
+    "manual qa": "manual testing",
+    "qa automation": "automation testing", "automation qa": "automation testing",
+    "test automation": "automation testing", "automated testing": "automation testing",
+    "api test": "api testing", "rest api testing": "api testing",
 }
 
 # Very short or common words that would create false matches in free text ("go to", "a C grade").
-_AMBIGUOUS_IN_TEXT = {"c", "r", "go", "qt", "sales", "editing", "consulting", "automation", "nft", "ai"}
+_AMBIGUOUS_IN_TEXT = {"c", "r", "go", "qt", "sales", "editing", "consulting", "automation", "nft", "ai",
+                      "architecture", "documentation"}
+
+# Generic words that appear in jobs of every field; they are never suggested as a skill to learn next.
+NOT_SUGGESTED = {"documentation", "architecture", "consulting", "sales", "automation", "editing"}
 
 
 def canonical_skill(name: str) -> str:
@@ -55,7 +66,7 @@ def canonical_set(skills: Iterable[str]) -> set[str]:
     return {canonical_skill(s) for s in skills if s.strip()}
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=16)
 def _compiled_patterns(names: tuple[str, ...]) -> list[tuple[str, re.Pattern[str]]]:
     patterns = []
     for name in names:
@@ -86,3 +97,8 @@ def extract_skills(text: str, known: Sequence[str], limit: int = 12) -> list[str
             seen.add(key)
             result.append(name)
     return result[:limit]
+
+
+def skills_in_text(text: str, skills: Sequence[str]) -> set[str]:
+    """Canonical keys of the given skills that appear in `text` as whole words (e.g. "QA" in "QA Tester needed")."""
+    return {canonical_skill(name) for name in extract_skills(text, skills, limit=len(skills))}

@@ -118,6 +118,9 @@ class Settings(BaseSettings):
     # --- Skill gap ---
     SKILL_GAP_CANDIDATES: int = 15
     SKILL_GAP_CACHE_SEC: int = 3600
+    SKILL_GAP_FIELD_SIZE: int = 200           # "your field" = the 200 active jobs most similar to your profile,
+    SKILL_GAP_FIELD_MIN_COSINE: float = 0.30  # each at least this similar (measured live: the top 200 were >= 0.34)
+    SKILL_GAP_FIELD_MIN_JOBS: int = 5         # fewer jobs than this share a skill with you -> use similarity only
 
     # --- LLM (proposals only) ---
     LLM_PROVIDER: str = "gemini"  # gemini | openai

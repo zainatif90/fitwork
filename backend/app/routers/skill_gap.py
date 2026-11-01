@@ -41,6 +41,7 @@ class SkillDemand(BaseModel):
 
 class SkillGapOut(BaseModel):
     total_active_jobs: int
+    field_jobs: int  # jobs most similar to the user's profile ("your field"); gaps come only from these
     baseline_matches: int
     threshold: int
     gaps: list[Gap]

@@ -28,3 +28,5 @@ Deadline: 19 November 2026
 - [x] Prompt 7: skill gap radar (re-embed per candidate skill, vectorised re-scoring; ~220 ms on 1,486 jobs; 90 tests)
 - [x] Prompt 8: testing, security, real results (131 tests, Locust 50 users 0 failures, E2E 11/11, TEST_RESULTS.md)
 - [x] Prompt 9: deployment - LIVE 24/7 for $0: website https://fitwork-zain2026.web.app (Firebase Hosting), API https://fitwork-api-zain2026.onrender.com (Render free, keep-awake ping, private GHCR image built by GitHub Actions), Neon DB. Live E2E 11/11. Real emails live via Google Apps Script mailer (SMTP blocked on Render free). Real AI proposals live (Gemini 3.5 Flash). Job sources: Freelancer.com + Himalayas + Remotive + Jobicy (1,786 active jobs on 30 Oct). NEXT: Prompt 10 (SRS update, needs the SRS text) and viva practice.
+- [x] 1 Nov: Skill Gap now only suggests skills from the user's own field (200 most similar jobs that share one of
+  their skills; reposts counted once; QA spellings merged). Before/after on live data in TEST_RESULTS.md 5d; 177 tests.

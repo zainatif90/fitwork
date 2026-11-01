@@ -1,4 +1,4 @@
-/** Skill Gap Radar (UC-5): which missing skill would unlock the most matching jobs. */
+/** Skill Gap Radar (UC-5): which missing skill from the user's own field would unlock the most matching jobs. */
 import clsx from "clsx";
 import { ChevronDown, ExternalLink, GraduationCap, Radar as RadarIcon, RefreshCw, TrendingUp, UserCog } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -19,6 +19,7 @@ interface Gap {
 
 interface SkillGapData {
   total_active_jobs: number;
+  field_jobs: number;
   baseline_matches: number;
   threshold: number;
   gaps: Gap[];
@@ -50,15 +51,22 @@ function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocke
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-4 p-4 text-left" aria-expanded={open}>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">{rank}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-slate-900">
-            Add <span className="font-semibold">{gap.skill}</span> → unlocks{" "}
-            <span className="font-semibold">{gap.jobs_unlocked} more job{gap.jobs_unlocked === 1 ? "" : "s"}</span>
-            {gap.percent_increase != null && <span className="text-emerald-700"> (+{gap.percent_increase}%)</span>}
-          </p>
+          {gap.jobs_unlocked > 0 ? (
+            <p className="text-sm text-slate-900">
+              Add <span className="font-semibold">{gap.skill}</span> → unlocks{" "}
+              <span className="font-semibold">{gap.jobs_unlocked} more job{gap.jobs_unlocked === 1 ? "" : "s"}</span>
+              {gap.percent_increase != null && <span className="text-emerald-700"> (+{gap.percent_increase}%)</span>}
+            </p>
+          ) : (
+            <p className="text-sm text-slate-900">
+              Add <span className="font-semibold">{gap.skill}</span>
+              <span className="text-slate-500"> · often requested in your field</span>
+            </p>
+          )}
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-brand-500" style={{ width: `${(gap.jobs_unlocked / maxUnlocked) * 100}%` }} />
           </div>
-          <p className="mt-1 text-xs text-slate-500">Asked for in {gap.demand} active jobs</p>
+          <p className="mt-1 text-xs text-slate-500">Asked for in {gap.demand} job{gap.demand === 1 ? "" : "s"} similar to yours</p>
         </div>
         <ChevronDown className={clsx("h-4 w-4 shrink-0 text-slate-400 transition", open && "rotate-180")} />
       </button>
@@ -66,14 +74,20 @@ function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocke
         <div className="grid gap-4 border-t border-slate-100 p-4 sm:grid-cols-2">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Jobs you would unlock</p>
-            <ul className="mt-2 space-y-1.5">
-              {gap.sample_jobs.map((j) => (
-                <li key={j.id} className="flex items-center justify-between gap-2 text-sm">
-                  <Link to={`/app/jobs/${j.id}`} className="truncate text-slate-700 hover:text-brand-700">{j.title}</Link>
-                  <span className="shrink-0 rounded bg-emerald-50 px-1.5 text-xs font-semibold text-emerald-700">{j.score}</span>
-                </li>
-              ))}
-            </ul>
+            {gap.sample_jobs.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-500">
+                None yet on its own, but jobs similar to yours keep asking for it. Combine it with other skills on this list.
+              </p>
+            ) : (
+              <ul className="mt-2 space-y-1.5">
+                {gap.sample_jobs.map((j) => (
+                  <li key={j.id} className="flex items-center justify-between gap-2 text-sm">
+                    <Link to={`/app/jobs/${j.id}`} className="truncate text-slate-700 hover:text-brand-700">{j.title}</Link>
+                    <span className="shrink-0 rounded bg-emerald-50 px-1.5 text-xs font-semibold text-emerald-700">{j.score}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Learn it for free</p>
@@ -141,7 +155,7 @@ export default function SkillGap() {
     <>
       <PageHeader
         title="Skill Gap Radar"
-        subtitle={`Based on ${data.total_active_jobs} active jobs · updated ${timeAgo(data.generated_at)}`}
+        subtitle={`Your field: the ${data.field_jobs} jobs most similar to your profile (out of ${data.total_active_jobs} active) · updated ${timeAgo(data.generated_at)}`}
         actions={
           <Button variant="secondary" loading={refreshing} icon={<RefreshCw className="h-4 w-4" />}
             onClick={async () => { setRefreshing(true); await load(true); setRefreshing(false); }}>
@@ -154,8 +168,8 @@ export default function SkillGap() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <Card className="p-5">
-          <h2 className="font-semibold text-slate-900">You vs the market</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Top {data.radar.length} most requested skills. Demand is scaled so the most requested skill = 100.</p>
+          <h2 className="font-semibold text-slate-900">You vs your field</h2>
+          <p className="mt-0.5 text-xs text-slate-500">Top {data.radar.length} skills requested by jobs similar to yours. Demand is scaled so the most requested skill = 100.</p>
           <div className="mt-2 h-80">
             <ResponsiveContainer>
               <RadarChart data={data.radar} outerRadius="72%">
@@ -194,13 +208,13 @@ export default function SkillGap() {
                 <TrendingUp className="h-4 w-4 text-brand-600" /> Skills that unlock the most jobs
               </h2>
               <p className="mt-0.5 text-xs text-slate-500">
-                You match {data.baseline_matches} jobs today (score ≥ {data.threshold}). Each number below is measured by re-scoring every job with that skill added to your profile.
+                Only skills from your own field of work. You match {data.baseline_matches} jobs today (score ≥ {data.threshold}). Each number below is measured by re-scoring every job with that skill added to your profile.
               </p>
             </div>
           </div>
           <div className="mt-4 space-y-3">
             {data.gaps.length === 0 ? (
-              <EmptyState icon={<RadarIcon className="h-6 w-6" />} title="No single skill unlocks new matches right now">
+              <EmptyState icon={<RadarIcon className="h-6 w-6" />} title="No missing skills in your field right now">
                 Check back after new jobs arrive.
               </EmptyState>
             ) : (

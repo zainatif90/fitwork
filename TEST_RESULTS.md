@@ -143,12 +143,34 @@ Test accounts created by these checks were deleted afterwards.
 | 14 | AI miscopied the portfolio link (`https://github.zainatif90`) | Live proposal check | `fix_links()` corrects near-miss links to the real one and removes invented links; new test |
 | 15 | Himalayas batch failed to save: 20 of 85 job IDs were longer than the 100-character column | Live database check (0 Himalayas jobs) + server log `StringDataRightTruncation` | `fit_to_columns()`: too-long IDs become a stable SHA-256 fingerprint (all sources); new test |
 | 16 | Himalayas returned the same jobs on every page (its search ignores `offset`) | 85 fetched but only 17 new; compared pages | Paging with `page=1,2,3`; live: 92 unique Himalayas jobs |
+| 17 | Skill Gap suggested skills from other fields (a QA tester was told to learn PHP, Illustrator, Photoshop, Graphic Design) | User report with screenshot; reproduced on live data | Gaps now come only from the user's field: the 200 most similar jobs that also share one of the user's skills (tags or title); "unlocked" counts only jobs in that field; reposts counted once. Before/after table in section 5d |
+
+## 5d. Skill Gap: before and after the "your field only" fix (live data, 1 November 2026)
+Read-only run on the production database (3,074 active jobs), same 5 test profiles, top 5 suggestions:
+
+| Profile (skills) | Before (whole market) | After (own field only) |
+|---|---|---|
+| QA tester (Manual Testing, QA, Bug Reporting, Test Cases, Jira) | PHP, Adobe Illustrator, Excel, Photoshop, Graphic Design | Android, Mobile App Development, iOS, Mobile App Testing, CI/CD |
+| Automation (Python, Web Scraping, Automation, Selenium, Zapier) | Video Production, Video Editing, Graphic Design, PHP, Adobe Illustrator | AWS, Node.js, Django, SQL, JavaScript |
+| React developer (React, TypeScript, Node.js) | Video Production, Social Media Marketing, Adobe Illustrator, Video Editing, Data Entry | PHP, Python, CI/CD, PostgreSQL, React Native |
+| Logo designer (Logo Design, Adobe Illustrator, Brand Identity) | PHP, Data Entry, Social Media Marketing, Video Production, Web Development | Photoshop, Illustration, Adobe InDesign, Brochure Design, Packaging Design |
+| Content writer (Content Writing, Blog Writing, Copywriting, SEO) | Adobe Illustrator, Social Media Marketing, Video Production, Video Editing, Photoshop | Social Media Marketing, Digital Marketing, Content Strategy, Technical Writing, Article Writing |
+
+What we measured on the way (why similarity alone was not enough):
+- MiniLM gives any two job-like texts a similarity of about 0.3: a social-media job scored 0.39 against a React
+  profile, higher than Shopify jobs (0.30–0.36). So "your field" also requires sharing at least one of your skills.
+- Live QA jobs are tagged "Testing / QA" and "Software Testing" (now the same skill as "QA"); titles such as
+  "QA Tester (Manual Testing, SaaS)" are also used to decide a job's field.
+- One "CAD Engineer - AI Trainer" role was posted 14 times and made SolidWorks look like 14 Python jobs;
+  identical reposts are now counted once.
+- Without the field rule, "AWS" for a QA tester "unlocked" technical-support and DevOps jobs; now it unlocks none.
+Compute time per profile on 3,074 jobs: 250–290 ms on a laptop (cached for 1 hour).
 
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.
 - Win-rate charts stay empty until members record real won/lost outcomes; no outcomes are invented.
 - Proposal generation needs an `LLM_API_KEY`; without it users get a clearly-labelled template draft.
 - Load test ran on a development laptop; free-tier cloud hosting will be slower (see deployment notes).
-- Skill Gap "jobs unlocked" measures how many more jobs the model would rank ≥ 60 if the skill were on the profile.
-  It does not check whether the person can realistically learn that skill, so popular skills from other fields
-  (e.g. marketing for a developer) can appear. The sample jobs shown let the user judge.
+- Skill Gap "jobs unlocked" measures how many more jobs in the user's field the model would rank ≥ 60 if the skill
+  were on the profile. "Your field" depends on the job tags we receive: a field with few live jobs (e.g. QA testing:
+  40 jobs on 1 Nov) gives fewer suggestions, and adjacent skills (e.g. mobile development for a mobile tester) can appear.
