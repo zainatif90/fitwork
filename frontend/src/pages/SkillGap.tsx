@@ -172,7 +172,7 @@ export default function SkillGap() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card className="min-w-0 p-5">
           <h2 className="font-semibold text-slate-900">You vs your field</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Top {data.radar.length} skills requested by jobs similar to yours. Taller pillar = asked for more often (the number is the job count).</p>
+          <p className="mt-0.5 text-xs text-slate-500">The {data.radar.length} skills that jobs similar to yours ask for most: which ones you already have, and which ones you're missing.</p>
           {/* 3D radar: each pillar = one skill; height = how often jobs in your field ask for it */}
           <div className="relative mt-2 overflow-hidden rounded-2xl bg-hero">
             <div className="bg-grid pointer-events-none absolute inset-0 opacity-70" />
@@ -181,12 +181,7 @@ export default function SkillGap() {
             ) : (
               <p className="relative px-6 py-16 text-center text-sm text-slate-300">Not enough skills in your field to draw the radar yet.</p>
             )}
-            <div className="relative flex flex-wrap justify-center gap-4 pb-4 text-xs text-slate-300">
-              <span className="inline-flex items-center gap-1.5"><span className="h-3 w-1.5 rounded-full bg-gradient-to-t from-brand-600 to-fuchsia-300" /> Skill you're missing</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-3 w-1.5 rounded-full bg-gradient-to-t from-emerald-500 to-teal-200" /> Skill you have</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 bg-pink-500" /> Your coverage</span>
-              <span className="text-slate-400">Move your mouse over it to turn it</span>
-            </div>
+            <p className="relative pb-3 text-center text-xs text-slate-400">Taller tower = more jobs in your field ask for it · move your mouse over the chart to turn it</p>
           </div>
           {data.your_skills.length > 0 && (
             <div className="mt-4 border-t border-slate-100 pt-4">
