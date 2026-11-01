@@ -29,7 +29,12 @@ export default function Settings({ extra }: { extra?: ReactNode }) {
 
   return (
     <>
-      <PageHeader icon={<SettingsIcon />} title="Settings" subtitle="Your account and freelancer profile." />
+      <PageHeader icon={<SettingsIcon />} title="Settings" subtitle="Your account and freelancer profile."
+        actions={
+          <Link to="/onboarding" className="shine inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-slate-900 shadow-lg transition hover:-translate-y-0.5">
+            <Pencil className="h-4 w-4" /> {profile ? "Edit profile & skills" : "Set up your profile"}
+          </Link>
+        } />
       <div className="stagger-children space-y-6">
         <Card className="p-6">
           <h2 className="font-semibold text-slate-900">Account</h2>
@@ -45,8 +50,8 @@ export default function Settings({ extra }: { extra?: ReactNode }) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-slate-900">Freelancer profile</h2>
-            <Link to="/onboarding" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-              <Pencil className="h-3.5 w-3.5" /> {profile ? "Edit" : "Set up"}
+            <Link to="/onboarding" className="shine btn-3d inline-flex items-center gap-1.5 rounded-xl bg-gradient-animated px-4 py-2 text-sm font-semibold text-white">
+              <Pencil className="h-3.5 w-3.5" /> {profile ? "Edit profile & skills" : "Set up profile"}
             </Link>
           </div>
           {profile ? (

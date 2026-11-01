@@ -159,12 +159,15 @@ export default function SkillGap() {
         icon={<RadarIcon />}
         title="Skill Gap Radar"
         subtitle={`Your field: the ${data.field_jobs} jobs most similar to your profile (out of ${data.total_active_jobs} active) · updated ${timeAgo(data.generated_at)}`}
-        actions={
-          <Button variant="secondary" loading={refreshing} icon={<RefreshCw className="h-4 w-4" />}
+        actions={<>
+          <Link to="/onboarding" className="shine btn-3d inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-animated px-4 text-sm font-semibold text-white">
+              <UserCog className="h-4 w-4" /> Add skills
+            </Link>
+            <Button variant="secondary" loading={refreshing} icon={<RefreshCw className="h-4 w-4" />}
             onClick={async () => { setRefreshing(true); await load(true); setRefreshing(false); }}>
             Recalculate
           </Button>
-        }
+        </>}
       />
 
       {data.coverage_message && <Alert tone="success" className="mb-6">{data.coverage_message}</Alert>}

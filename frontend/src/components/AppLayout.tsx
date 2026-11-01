@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Briefcase, LogOut, Menu, Radar, Settings, Users, X } from "lucide-react";
+import { Briefcase, LogOut, Menu, Radar, Settings, UserCog, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -42,6 +42,7 @@ export function AppLayout() {
     { to: "/app", label: "Matches", icon: Briefcase, end: true },
     { to: "/app/skill-gap", label: "Skill Gap", icon: Radar },
     { to: "/app/agency", label: "Agency", icon: Users },
+    { to: "/onboarding", label: "My Profile & Skills", icon: UserCog },
     { to: "/app/settings", label: "Settings", icon: Settings },
   ];
 

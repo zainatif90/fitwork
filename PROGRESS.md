@@ -37,3 +37,4 @@ Deadline: 19 November 2026
 - [x] 1 Nov: vivid theme + 3D: dark animated sidebar, gradient canvas, glass cards, banner headers on every page, 3D gyroscope orbs, 3D card deck, 3D press buttons, tilt glare.
 - [x] 1 Nov: smoother motion (frame-based tilt, no glass blur, lighter glows) and a 3D Skill Gap radar (pillars on a turning holographic floor).
 - [x] 1 Nov: Skill Gap 3D chart redesigned as a 'skill skyline': 3D towers in two zones (have / missing), numbered with a key, turns with the mouse.
+- [x] 1 Nov: profile editing made visible: sidebar 'My Profile & Skills', buttons on Settings, Matches and Skill Gap.
