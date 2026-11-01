@@ -39,7 +39,8 @@ export default function Register() {
   const rawFrom = (location.state as { from?: string } | null)?.from;
   const from = rawFrom?.startsWith("/invite/") ? rawFrom : undefined;
 
-  const [role, setRole] = useState<AccountType>("freelancer");
+  // "/register?type=agency" (from the landing page) starts with Agency Owner selected
+  const [role, setRole] = useState<AccountType>(new URLSearchParams(location.search).get("type") === "agency" ? "agency_owner" : "freelancer");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

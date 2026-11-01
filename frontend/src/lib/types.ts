@@ -44,6 +44,7 @@ export interface Breakdown {
   recency: number;
   cosine: number;
   budget_known: boolean;
+  fit_gate: number;
   weights: { semantic: number; budget_fit: number; recency: number };
 }
 

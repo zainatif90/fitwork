@@ -4,20 +4,21 @@ import { ArrowLeft, CheckCircle2, Clock, DollarSign, ExternalLink, MapPin, Messa
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { PlatformBadge, ScoreBar, SkillChips } from "../components/MatchParts";
+import { PlatformBadge, ScoreRing, SkillChips } from "../components/MatchParts";
 import { ProposalPanel } from "../components/ProposalPanel";
 import { Alert, Card, Spinner } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { formatBudget, scoreTone, timeAgo } from "../lib/format";
 import type { JobDetail as JobDetailData, Outcome } from "../lib/types";
 
-function BreakdownRow({ label, value, weight, note }: { label: string; value: number; weight: number; note: string }) {
+function BreakdownRow({ label, value, weight, note, gate = 1 }: { label: string; value: number; weight: number; note: string; gate?: number }) {
   return (
     <div>
-      <div className="flex items-baseline justify-between text-sm">
+      <div className="flex items-baseline justify-between gap-2 text-sm">
         <span className="font-medium text-slate-700">{label}</span>
         <span className="tabular-nums text-slate-500">
-          {Math.round(value * 100)}/100 × {Math.round(weight * 100)}% = <span className="font-semibold text-slate-900">{(value * weight * 100).toFixed(1)}</span>
+          {Math.round(value * 100)}/100 × {Math.round(weight * 100)}%{gate < 1 && <> × {gate.toFixed(2)}</>} ={" "}
+          <span className="font-semibold text-slate-900">{(value * weight * gate * 100).toFixed(1)}</span>
         </span>
       </div>
       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -112,13 +113,13 @@ export default function JobDetail() {
               {job.client_country && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{job.client_country}</span>}
               {!job.is_active && <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">No longer active</span>}
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{job.title}</h1>
-            <p className="mt-2 inline-flex items-center gap-1 font-medium text-slate-700">
-              <DollarSign className="h-4 w-4 text-slate-400" />
+            <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{job.title}</h1>
+            <p className="mt-2 flex items-center gap-1 text-lg font-semibold text-slate-800">
+              <DollarSign className="h-4 w-4 text-emerald-500" />
               {formatBudget(job)}
             </p>
             {job.url && (
-              <a href={job.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+              <a href={job.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-brand-gradient px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:brightness-110">
                 Open on platform <ExternalLink className="h-3.5 w-3.5" />
               </a>
             )}
@@ -141,21 +142,24 @@ export default function JobDetail() {
         <aside className="space-y-6">
           {match && tone ? (
             <Card className="p-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-slate-900">Match Score</h2>
-                <span className={clsx("rounded-md px-2 py-0.5 text-xs font-medium", tone.bg, tone.text)}>{tone.label}</span>
+              <h2 className="text-sm font-semibold text-slate-900">Match Score</h2>
+              <div className="mt-4 flex items-center gap-5">
+                <ScoreRing score={match.score} size={104} />
+                <p className="text-sm leading-relaxed text-slate-600">{match.reason}.</p>
               </div>
-              <div className="mt-3">
-                <ScoreBar score={match.score} size="lg" />
-              </div>
-              <p className="mt-3 text-sm text-slate-600">{match.reason}.</p>
               <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
                 <BreakdownRow label="Semantic similarity" value={match.breakdown.semantic} weight={match.breakdown.weights.semantic}
                   note={`Cosine similarity ${match.breakdown.cosine.toFixed(2)}, calibrated to 0–100`} />
-                <BreakdownRow label="Budget fit" value={match.breakdown.budget_fit} weight={match.breakdown.weights.budget_fit}
+                <BreakdownRow label="Budget fit" value={match.breakdown.budget_fit} weight={match.breakdown.weights.budget_fit} gate={match.breakdown.fit_gate}
                   note={match.breakdown.budget_known ? "Compared with your hourly rate" : "Budget unknown — neutral value"} />
-                <BreakdownRow label="Recency" value={match.breakdown.recency} weight={match.breakdown.weights.recency}
-                  note={["freelancer", "upwork", "himalayas", "remotive", "jobicy"].includes(job.source) ? "Newer jobs get fewer competing applicants" : "Not a live job — neutral value"} />
+                <BreakdownRow label="Recency" value={match.breakdown.recency} weight={match.breakdown.weights.recency} gate={match.breakdown.fit_gate}
+                  note={["freelancer", "upwork", "himalayas", "remotive", "jobicy"].includes(job.source) ? "Newer jobs get fewer competing applicants"
+                    : job.source === "csv" ? "Seed snapshot (28 Oct) — may be closed, so no freshness credit" : "Not a live job — neutral value"} />
+                {match.breakdown.fit_gate < 1 && (
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    This job is a weak fit for your skills, so budget and freshness only count {Math.round(match.breakdown.fit_gate * 100)}%.
+                  </p>
+                )}
               </div>
             </Card>
           ) : (

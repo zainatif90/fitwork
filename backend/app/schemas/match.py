@@ -18,6 +18,7 @@ class Breakdown(BaseModel):
     recency: float      # 0-1 (0.5 = not a live job)
     cosine: float       # raw cosine similarity, for transparency
     budget_known: bool
+    fit_gate: float = 1.0  # share of budget + recency credit the job gets (1 = full; < 1 for weak fits)
     weights: Weights
 
 

@@ -1,11 +1,11 @@
 /** Matches dashboard (UC-3): top 5 jobs with Match Score, reason and skills, plus quick stats. */
-import { Briefcase, ClipboardPaste, Gauge, Radar, RefreshCw, Sparkles, Target, UserCog } from "lucide-react";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { ArrowRight, Briefcase, ClipboardPaste, Radar, RefreshCw, Sparkles, UserCog } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { AddJobModal } from "../components/AddJobModal";
 import { JobCard } from "../components/MatchParts";
-import { Alert, Button, Card, EmptyState, PageHeader, Spinner } from "../components/ui";
+import { Alert, Card, EmptyState, PageHeader, Spinner } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { sourceName, timeAgo } from "../lib/format";
@@ -17,17 +17,9 @@ type State =
   | { kind: "error"; message: string }
   | { kind: "ready"; data: MatchesResponse };
 
-function Stat({ icon, label, value, hint }: { icon: ReactNode; label: string; value: ReactNode; hint?: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="rounded-lg bg-brand-50 p-2 text-brand-600">{icon}</div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="text-xl font-semibold text-slate-900">{value}</p>
-        {hint && <p className="text-xs text-slate-500">{hint}</p>}
-      </div>
-    </div>
-  );
+function greeting(): string {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
 export default function Dashboard() {
@@ -85,20 +77,44 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHeader
-        title="Your top matches"
-        subtitle={data ? `Updated ${timeAgo(data.generated_at)} · ranked from ${data.stats.candidates_considered} closest jobs` : undefined}
-        actions={
-          <>
-            <Button variant="secondary" icon={<ClipboardPaste className="h-4 w-4" />} onClick={() => setAddOpen(true)}>
-              Paste a job
-            </Button>
-            <Button onClick={onRefresh} loading={refreshing} icon={<RefreshCw className="h-4 w-4" />}>
-              Refresh matches
-            </Button>
-          </>
-        }
-      />
+      {/* Welcome banner with the key numbers */}
+      <div className="bg-hero relative mb-6 overflow-hidden rounded-3xl p-6 text-white shadow-lift sm:p-8">
+        <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_right,black_10%,transparent_70%)]" />
+        <div className="relative flex flex-wrap items-start justify-between gap-6">
+          <div>
+            <p className="text-sm font-medium text-brand-200">{greeting()}, {firstName}</p>
+            <h1 className="mt-1 text-3xl font-extrabold sm:text-4xl">Your top matches</h1>
+            {data && (
+              <p className="mt-2 text-sm text-slate-300">
+                Updated {timeAgo(data.generated_at)} · ranked from the {data.stats.candidates_considered} jobs closest to your profile
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setAddOpen(true)}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium backdrop-blur hover:bg-white/15">
+              <ClipboardPaste className="h-4 w-4" /> Paste a job
+            </button>
+            <button onClick={onRefresh} disabled={refreshing}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-900 shadow hover:bg-brand-50 disabled:opacity-70">
+              <RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Refresh matches
+            </button>
+          </div>
+        </div>
+        <div className="relative mt-7 grid grid-cols-3 gap-3 sm:max-w-2xl">
+          {[
+            { label: "Strong matches", value: data?.stats.strong_matches ?? 0, hint: "score 75+" },
+            { label: "Average top-5 score", value: data?.stats.average_score ?? 0, hint: "out of 100" },
+            { label: "Top source", value: sourceName(data?.stats.top_source ?? null), hint: "for your top 5" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur sm:p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
+              <p className="mt-1 truncate font-display text-lg font-bold sm:text-2xl" title={String(s.value)}>{s.value}</p>
+              <p className="text-[11px] text-slate-400">{s.hint}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {justSaved && <Alert tone="success" className="mb-6">Profile saved. Your matches are now based on your new profile.</Alert>}
       {state.kind === "error" && <Alert tone="error" className="mb-6">{state.message}</Alert>}
@@ -119,12 +135,6 @@ export default function Dashboard() {
         </section>
 
         <aside className="space-y-4">
-          <Card className="space-y-5 p-5">
-            <h2 className="text-sm font-semibold text-slate-900">Quick stats</h2>
-            <Stat icon={<Target className="h-4 w-4" />} label="Strong matches" value={data?.stats.strong_matches ?? 0} hint="Score 75+ among the closest jobs" />
-            <Stat icon={<Gauge className="h-4 w-4" />} label="Average score" value={data?.stats.average_score ?? 0} hint="Across your top 5" />
-            <Stat icon={<Briefcase className="h-4 w-4" />} label="Top source" value={sourceName(data?.stats.top_source ?? null)} />
-          </Card>
           <Card className="p-5">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
               <Sparkles className="h-4 w-4 text-brand-600" /> How the Match Score works
@@ -136,14 +146,13 @@ export default function Dashboard() {
             </ul>
             <p className="mt-3 text-xs text-slate-500">It's a fit score, not a promise you will win the job.</p>
           </Card>
-          <Link to="/app/skill-gap" className="block">
-            <Card className="flex items-center gap-3 p-4 transition hover:border-brand-200">
-              <Radar className="h-5 w-5 text-brand-600" />
-              <div className="text-sm">
-                <p className="font-medium text-slate-900">Skill Gap Radar</p>
-                <p className="text-slate-500">Find the skill that unlocks more jobs</p>
-              </div>
-            </Card>
+          <Link to="/app/skill-gap" className="group block">
+            <div className="relative overflow-hidden rounded-2xl bg-brand-gradient p-5 text-white shadow-lift transition group-hover:-translate-y-0.5">
+              <Radar className="absolute -right-4 -top-4 h-24 w-24 text-white/10" />
+              <p className="font-display font-bold">Skill Gap Radar</p>
+              <p className="mt-1 text-sm text-brand-100">Find the one skill from your field that unlocks the most new jobs.</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold">Open radar <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
+            </div>
           </Link>
         </aside>
       </div>

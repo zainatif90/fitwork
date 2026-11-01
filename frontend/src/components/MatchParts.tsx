@@ -1,6 +1,6 @@
 /** Small pieces used on the matches list and the job detail page. */
 import clsx from "clsx";
-import { Clock, DollarSign, MessageSquare } from "lucide-react";
+import { ArrowRight, Clock, DollarSign, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { formatBudget, platformLabel, scoreTone, timeAgo } from "../lib/format";
@@ -50,39 +50,65 @@ export function SkillChips({ matched, missing, max = 6 }: { matched: string[]; m
   );
 }
 
+/** Circular Match Score: the ring fills to the score, coloured by fit (green / amber / red). */
+export function ScoreRing({ score, size = 64, label = true }: { score: number; size?: number; label?: boolean }) {
+  const tone = scoreTone(score);
+  const stroke = size >= 90 ? 9 : 6;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const color = score >= 75 ? "#10b981" : score >= 50 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative" style={{ width: size, height: size }} role="img" aria-label={`Match Score ${score} out of 100, ${tone.label}`}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#eef2f7" strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
+            strokeDasharray={circumference} strokeDashoffset={circumference * (1 - score / 100)}
+            style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.22, 1, 0.36, 1)" }} />
+        </svg>
+        <span className={clsx("absolute inset-0 flex items-center justify-center font-display font-bold tabular-nums text-slate-900",
+          size >= 90 ? "text-3xl" : "text-lg")}>{score}</span>
+      </div>
+      {label && <span className={clsx("rounded-full px-2 py-0.5 text-[11px] font-semibold", tone.bg, tone.text)}>{tone.label}</span>}
+    </div>
+  );
+}
+
 export function JobCard({ match, rank }: { match: Match; rank: number }) {
   const { job } = match;
   return (
-    <Card className="group p-5 transition hover:border-brand-200 hover:shadow-md">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <Card className="group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lift sm:p-6">
+      {rank === 1 && <div className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" aria-hidden />}
+      <div className="flex gap-4 sm:gap-6">
         <div className="min-w-0 flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">{rank}</span>
+          <div className="mb-2.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className={clsx("flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold",
+              rank === 1 ? "bg-brand-gradient text-white shadow-glow" : "bg-slate-100 text-slate-700")}>#{rank}</span>
             <PlatformBadge source={job.source} url={job.url} />
             <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{timeAgo(job.posted_at)}</span>
             {job.proposals_count != null && (
               <span className="inline-flex items-center gap-1"><MessageSquare className="h-3 w-3" />{job.proposals_count} proposals</span>
             )}
           </div>
-          <Link to={`/app/jobs/${job.id}`} className="block text-base font-semibold text-slate-900 group-hover:text-brand-700">
+          <Link to={`/app/jobs/${job.id}`} className="block font-display text-lg font-bold leading-snug text-slate-900 group-hover:text-brand-700">
+            <span className="absolute inset-0" aria-hidden />
             {job.title}
           </Link>
-          <p className="mt-1 flex items-center gap-1 text-sm font-medium text-slate-700">
-            <DollarSign className="h-3.5 w-3.5 text-slate-400" />
+          <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-slate-700">
+            <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
             {formatBudget(job)}
           </p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">{match.reason}.</p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <SkillChips matched={match.matched_skills} missing={match.missing_skills} />
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 transition group-hover:gap-2">
+              View details <ArrowRight className="h-4 w-4" />
+            </span>
+          </div>
         </div>
-        <div className="w-full sm:w-auto sm:text-right">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Match Score</p>
-          <ScoreBar score={match.score} />
+        <div className="shrink-0">
+          <ScoreRing score={match.score} />
         </div>
-      </div>
-      <p className="mt-3 text-sm text-slate-600">{match.reason}.</p>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <SkillChips matched={match.matched_skills} missing={match.missing_skills} />
-        <Link to={`/app/jobs/${job.id}`} className="text-sm font-medium text-brand-600 hover:text-brand-700">
-          View details →
-        </Link>
       </div>
     </Card>
   );

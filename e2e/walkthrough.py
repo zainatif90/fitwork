@@ -84,11 +84,11 @@ with sync_playwright() as p:
     # 3. Dashboard
     page.wait_for_url("**/app")
     expect(page.get_by_text("Your top matches")).to_be_visible(timeout=15000)
-    page.get_by_text("View details →").first.wait_for()
+    page.get_by_text("View details", exact=True).first.wait_for()
     shot(page, "04_dashboard")
 
     # 4. Job detail + proposal (fallback, no LLM key)
-    page.get_by_text("View details →").first.click()
+    page.locator("a[href^=\"/app/jobs/\"]").first.click()
     page.get_by_text("Match Score").first.wait_for()
     page.get_by_role("button", name="Generate proposal").click()
     page.get_by_label("Proposal draft").wait_for(timeout=40000)

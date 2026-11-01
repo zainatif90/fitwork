@@ -31,3 +31,4 @@ Deadline: 19 November 2026
 - [x] 1 Nov: Skill Gap now only suggests skills from the user's own field (200 most similar jobs that share one of
   their skills; reposts counted once; QA spellings merged). Before/after on live data in TEST_RESULTS.md 5d; 177 tests.
 - [x] 1 Nov: fixed all 34 bugs from the full review (security limits, sessions, agency, matching, UI); 208 tests, E2E 11/11.
+- [x] 1 Nov: UI/UX redesign: landing page, gradient design system, score rings, dashboard banner, new auth panel; E2E 11/11.

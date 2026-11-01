@@ -9,6 +9,7 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import JobDetail from "./pages/JobDetail";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Register from "./pages/Register";
@@ -23,7 +24,7 @@ const SkillGap = lazy(() => import("./pages/SkillGap"));
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/app" replace />} />
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
       <Route path="/verify" element={<VerifyEmail />} />

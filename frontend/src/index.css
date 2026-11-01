@@ -1,16 +1,41 @@
 @import "tailwindcss";
 
-/* Design tokens: one brand colour (indigo) + slate neutrals + status colours for scores. */
+/*
+ * Design tokens.
+ * Brand: indigo -> violet gradient. Neutrals: slate. Status colours (green / amber / red) only for scores.
+ * Display font (headings): Plus Jakarta Sans. Body font: Inter.
+ */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --color-brand-50: #eef2ff;
   --color-brand-100: #e0e7ff;
   --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
   --color-brand-500: #6366f1;
   --color-brand-600: #4f46e5;
   --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
   --color-brand-900: #312e81;
+  --color-brand-950: #1e1b4b;
+
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.04), 0 16px 32px -12px rgb(79 70 229 / 0.25);
+  --shadow-glow: 0 8px 24px -6px rgb(99 102 241 / 0.55);
+
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
 }
 
 html,
@@ -23,8 +48,49 @@ body {
   @apply bg-slate-50 text-slate-800 antialiased;
 }
 
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+/* Brand gradient used on primary buttons, the logo and highlights */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
+
+@utility text-gradient {
+  background-image: linear-gradient(90deg, #a5b4fc 0%, #c4b5fd 45%, #f0abfc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Dark hero background: deep indigo with soft colour glows and a faint grid */
+@utility bg-hero {
+  background-color: #0b0a1f;
+  background-image:
+    radial-gradient(60rem 30rem at 85% -10%, rgb(124 58 237 / 0.35), transparent 60%),
+    radial-gradient(50rem 30rem at 0% 20%, rgb(79 70 229 / 0.35), transparent 60%),
+    radial-gradient(40rem 20rem at 50% 110%, rgb(236 72 153 / 0.15), transparent 60%);
+}
+
+@utility bg-grid {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
 /* Visible keyboard focus everywhere (accessibility) */
 :focus-visible {
   outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -86,6 +86,7 @@ def score_job(profile: Profile, job: Job, cosine: float, now: datetime | None = 
             "recency": round(parts.recency, 3),
             "cosine": round(parts.cosine, 3),
             "budget_known": parts.budget_known,
+            "fit_gate": round(scoring.fit_gate(parts.semantic), 3),
             "weights": {"semantic": settings.W_SEM, "budget_fit": settings.W_BUDGET, "recency": settings.W_RECENCY},
         },
         "reason": scoring.build_reason(parts, matched, job.source, job.posted_at, now),

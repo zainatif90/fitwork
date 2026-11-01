@@ -1,47 +1,64 @@
 import { Gauge, Sparkles, Target, Users } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
+import { ScoreRing } from "./MatchParts";
 import { Logo } from "./ui";
 
 const points = [
-  { icon: Target, title: "Top 5 matches, explained", text: "Every job gets a 0-100 Match Score with the reason behind it." },
-  { icon: Sparkles, title: "AI proposal drafts", text: "Start each proposal from a draft built on your real skills." },
-  { icon: Users, title: "Agency Mode", text: "Route each job to the teammate who fits it best." },
-  { icon: Gauge, title: "Skill Gap Radar", text: "See which skill would unlock the most new jobs." },
+  { icon: Target, title: "Top 5 matches, explained", text: "A 0-100 Match Score with the reason behind it." },
+  { icon: Sparkles, title: "AI proposal drafts", text: "Built only from your real skills and portfolio." },
+  { icon: Users, title: "Agency Mode", text: "Each job goes to the teammate who fits it best." },
+  { icon: Gauge, title: "Skill Gap Radar", text: "The one skill that unlocks the most jobs in your field." },
 ];
 
 /** Split-screen layout for login/register: brand panel on the left, form on the right. */
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-full">
-      <aside className="relative hidden w-[44%] max-w-xl flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-indigo-500 p-10 text-white lg:flex">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-white/5" />
-        <Logo light />
+    <div className="flex min-h-full bg-white">
+      <aside className="bg-hero relative hidden w-[46%] max-w-2xl flex-col justify-between overflow-hidden p-10 text-white lg:flex">
+        <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
+        <Link to="/" className="relative w-fit"><Logo light /></Link>
+
         <div className="relative">
-          <h2 className="text-3xl font-semibold leading-tight">Find the freelance jobs that actually fit you.</h2>
-          <ul className="mt-8 space-y-5">
+          <h2 className="text-4xl font-extrabold leading-tight">
+            Find the freelance jobs <span className="text-gradient">that actually fit you.</span>
+          </h2>
+
+          {/* Product preview (illustrative example, not real data) */}
+          <div className="animate-float mt-8 max-w-sm rounded-2xl border border-white/10 bg-white/[0.07] p-4 shadow-2xl backdrop-blur-md">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full bg-white p-1"><ScoreRing score={92} size={56} label={false} /></div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-brand-200">Example match</p>
+                <p className="truncate font-semibold">React dashboard for a SaaS startup</p>
+                <p className="text-xs text-brand-100">Matches your React and TypeScript skills · budget fits your rate</p>
+              </div>
+            </div>
+          </div>
+
+          <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-5">
             {points.map(({ icon: Icon, title: t, text }) => (
               <li key={t} className="flex gap-3">
-                <span className="mt-0.5 rounded-lg bg-white/15 p-2">
-                  <Icon className="h-4 w-4" />
+                <span className="mt-0.5 h-fit rounded-xl bg-white/10 p-2 ring-1 ring-white/15">
+                  <Icon className="h-4 w-4 text-brand-200" />
                 </span>
                 <div>
-                  <p className="font-medium">{t}</p>
-                  <p className="text-sm text-brand-100">{text}</p>
+                  <p className="text-sm font-semibold">{t}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-300">{text}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
-        <p className="relative text-xs text-brand-200">Final Year Project · FitWork</p>
+        <p className="relative text-xs text-slate-400">Live jobs from Freelancer.com, Himalayas, Remotive and Jobicy</p>
       </aside>
 
       <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8">
-        <div className="w-full max-w-md">
-          <Logo className="mb-8 lg:hidden" />
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+        <div className="animate-fade-up w-full max-w-md">
+          <Link to="/" className="mb-8 block w-fit lg:hidden"><Logo /></Link>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">{title}</h1>
+          <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
           <div className="mt-8">{children}</div>
         </div>
       </main>
