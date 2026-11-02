@@ -5,6 +5,7 @@ import { AppLayout } from "./components/AppLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { GuestRoute, ProtectedRoute } from "./components/ProtectedRoute";
 import { FullPageSpinner } from "./components/ui";
+import { useFreshVersion } from "./lib/useFreshVersion";
 import AcceptInvite from "./pages/AcceptInvite";
 import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -22,6 +23,7 @@ const Agency = lazy(() => import("./pages/Agency"));
 const SkillGap = lazy(() => import("./pages/SkillGap"));
 
 export default function App() {
+  useFreshVersion();
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
