@@ -239,3 +239,20 @@ def test_bug24_a_final_result_cannot_be_changed(client: TestClient, team: dict, 
     assert client.post(url, json={"status": "won"}, headers=py_h).status_code == 200
     assert client.post(url, json={"status": "applied"}, headers=py_h).status_code == 400
     assert client.post(url, json={"status": "lost"}, headers=py_h).status_code == 400
+
+
+def test_freelancer_can_start_an_agency_later(client: TestClient) -> None:
+    body = register(client, email="solo@example.com", verified=True)
+    token = body["access_token"]
+    assert client.get("/api/agency/me", headers=auth_header(token)).status_code == 403  # plain freelancer
+    res = client.post("/api/agency/start", headers=auth_header(token))
+    assert res.status_code == 201, res.text
+    assert res.json()["role"] == "owner"
+    assert client.get("/api/auth/me", headers=auth_header(token)).json()["role"] == "agency_owner"
+    # Now they can invite like any owner, and cannot "start" a second time
+    assert client.post("/api/agency/invite", json={"email": "mate@example.com"}, headers=auth_header(token)).status_code == 201
+    assert client.post("/api/agency/start", headers=auth_header(token)).status_code == 403
+
+
+def test_agency_member_cannot_start_an_agency(client: TestClient, team: dict) -> None:
+    assert client.post("/api/agency/start", headers=auth_header(team["py"])).status_code == 403

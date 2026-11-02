@@ -403,6 +403,45 @@ function MemberQueue({ agency }: { agency: AgencyData }) {
 
 // ---------------------------------------------------------------- Page
 
+function StartAgency() {
+  const { reloadUser } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function start() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api("/agency/start", { method: "POST" });
+      await reloadUser(); // role is now agency_owner, so the page switches to the owner view
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not start your agency. Please try again.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <PageHeader icon={<Users />} title="Agency Mode" />
+      <EmptyState icon={<Users className="h-6 w-6" />} title="Work as a team">
+        <span className="block">
+          Start your own agency, invite your teammates by email, and FitWork suggests which teammate each job fits best.
+          Your own profile and matches stay the same.
+        </span>
+        <span className="mt-4 block">
+          <Button onClick={start} loading={busy}>
+            <UserPlus className="h-4 w-4" /> Start my agency
+          </Button>
+        </span>
+        {error && <span className="mt-3 block text-sm text-red-600">{error}</span>}
+        <span className="mt-4 block text-xs text-slate-500">
+          Want to join someone else's team instead? Ask the agency owner for an invite link and open it while logged in.
+        </span>
+      </EmptyState>
+    </>
+  );
+}
+
 export default function Agency() {
   const { user } = useAuth();
   const [agency, setAgency] = useState<AgencyData | null>(null);
@@ -414,17 +453,7 @@ export default function Agency() {
     api<AgencyData>("/agency/me").then(setAgency).catch((err) => setError(err instanceof ApiError ? err.message : "Could not load your agency."));
   }, [isAgencyUser]);
 
-  if (!isAgencyUser) {
-    return (
-      <>
-        <PageHeader icon={<Users />} title="Agency Mode" />
-        <EmptyState icon={<Users className="h-6 w-6" />} title="Agency Mode is for teams">
-          Agency owners invite their team, and FitWork routes every job to the teammate with the best Match Score.
-          If your agency owner sends you an invite link, open it while logged in to join.
-        </EmptyState>
-      </>
-    );
-  }
+  if (!isAgencyUser) return <StartAgency />;
   if (error) return <Alert tone="error">{error}</Alert>;
   if (!agency) return <SkeletonList rows={2} />;
   return agency.role === "owner" ? <OwnerAgency agency={agency} /> : <MemberQueue agency={agency} />;

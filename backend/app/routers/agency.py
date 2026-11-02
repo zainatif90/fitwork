@@ -71,6 +71,19 @@ def my_agency(user: User = Depends(require_roles("agency_owner", "agency_member"
     return {"id": str(agency.id), "name": agency.name, "role": "member", "owner_name": owner.full_name if owner else ""}
 
 
+@router.post("/start", response_model=AgencyOut, status_code=status.HTTP_201_CREATED)
+def start_agency(user: User = Depends(require_roles("freelancer")), db: Session = Depends(get_db)) -> dict:
+    # A solo freelancer can turn their account into an agency owner later (the role is not only a sign-up choice).
+    # Their profile and personal matches stay as they are.
+    if db.scalar(select(AgencyMember).where(AgencyMember.user_id == user.id, AgencyMember.status == "active")):
+        raise HTTPException(status_code=409, detail="You are already in an agency")
+    user.role = "agency_owner"
+    db.commit()
+    agency = agency_service.get_or_create_agency(db, user)
+    return {"id": str(agency.id), "name": agency.name, "role": "owner", "owner_name": user.full_name,
+            "members": agency_service.list_members(db, agency)}
+
+
 @router.put("/me", response_model=AgencyOut)
 def rename_agency(data: AgencyRenameIn, user: User = Depends(owner_only), db: Session = Depends(get_db)) -> dict:
     agency = agency_service.get_or_create_agency(db, user)
