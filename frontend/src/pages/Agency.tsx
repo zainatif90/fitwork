@@ -1,131 +1,237 @@
 /**
  * Agency Mode (UC-4).
- * Owner: team table, routing panel (approve / override), assigned jobs, win-rate chart.
- * Member: "My Job Queue" with decline, status updates and a link to generate a proposal.
+ * Owner: hero with team numbers, a setup checklist, and four tabs:
+ *   Routing (who should get each job, approve or pick someone else), Pipeline (Assigned -> Applied -> Won/Lost),
+ *   Team (invite, members, pending invites), Performance (win-rate chart + per-member results).
+ * Member: their own job queue with progress steps, proposal link, status updates and decline.
+ * Freelancer: explains Agency Mode and lets them start their own agency.
  */
 import clsx from "clsx";
-import { AlertTriangle, ArrowRight, Check, Inbox, RefreshCw, Sparkles, UserPlus, Users, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import {
+  BarChart3, Briefcase, CheckCircle2, Circle, Crown, FileText, Inbox, KanbanSquare, Mail, RefreshCw, Route,
+  Send, Sparkles, Target, Trophy, UserPlus, Users, X,
+} from "lucide-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 
+import { HeroStat, ProgressSteps, ScorePill, StatusBadge, Tabs } from "../components/agency/parts";
+import { Pipeline } from "../components/agency/Pipeline";
+import { RoutingCard } from "../components/agency/RoutingCard";
+import { TeamPanel } from "../components/agency/TeamPanel";
 import { PlatformBadge } from "../components/MatchParts";
-import { Alert, Badge, Button, Card, EmptyState, PageHeader, SkeletonList } from "../components/ui";
+import { Aurora } from "../components/Motion";
+import { Orb3D } from "../components/Orb3D";
+import { Alert, Button, Card, CountUp, EmptyState, SkeletonList } from "../components/ui";
 import { WinRateChart } from "../components/WinRateChart";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { formatBudget, scoreTone, timeAgo } from "../lib/format";
-import type { Agency as AgencyData, Assignment, AssignmentStatus, RoutingRecommendation, TeamStats } from "../lib/types";
+import { formatBudget, timeAgo } from "../lib/format";
+import type { Agency as AgencyData, Assignment, RoutingRecommendation, TeamStats } from "../lib/types";
 
-function ScorePill({ score }: { score: number }) {
-  const tone = scoreTone(score);
-  return <span className={clsx("rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums", tone.bg, tone.text)}>{score}</span>;
-}
-
-const STATUS_STYLE: Record<AssignmentStatus, string> = {
-  recommended: "bg-slate-100 text-slate-600",
-  assigned: "bg-brand-50 text-brand-700",
-  declined: "bg-slate-100 text-slate-500",
-  applied: "bg-sky-50 text-sky-700",
-  won: "bg-emerald-50 text-emerald-700",
-  lost: "bg-red-50 text-red-700",
-};
-
-function StatusBadge({ status }: { status: AssignmentStatus }) {
-  return <Badge className={clsx("capitalize", STATUS_STYLE[status])}>{status}</Badge>;
-}
-
-// ---------------------------------------------------------------- Owner
-
-function RoutingCard({ rec, onAssign }: { rec: RoutingRecommendation; onAssign: (jobId: string, memberId: string) => Promise<void> }) {
-  const [override, setOverride] = useState(false);
-  const [choice, setChoice] = useState(rec.alternatives[0]?.member_id ?? "");
-  const [busy, setBusy] = useState(false);
-
-  async function assign(memberId: string) {
-    setBusy(true);
-    try {
-      await onAssign(rec.job.id, memberId);
-    } finally {
-      setBusy(false);
-    }
-  }
-
+/** Shared dark banner for the agency pages. */
+function AgencyHero({ eyebrow, title, subtitle, actions, children }: {
+  eyebrow: string; title: string; subtitle: string; actions?: ReactNode; children?: ReactNode;
+}) {
   return (
-    <div className="rounded-lg border border-slate-200 p-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-        <PlatformBadge source={rec.job.source} url={rec.job.url} />
-        <span>{formatBudget(rec.job)}</span>
-        <span>· {timeAgo(rec.job.posted_at)}</span>
-        {rec.rerouted_after_decline && <Badge className="bg-amber-50 text-amber-700">Re-routed after decline</Badge>}
-        {rec.low_team_fit && (
-          <Badge className="bg-red-50 text-red-700">
-            <AlertTriangle className="mr-1 h-3 w-3" /> Low Team Fit
-          </Badge>
-        )}
+    <div className="bg-hero relative mb-6 overflow-hidden rounded-3xl p-6 text-white shadow-lift sm:p-8">
+      <Aurora />
+      <Orb3D size={200} className="absolute -bottom-14 -right-10 hidden opacity-90 lg:block" />
+      <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_right,black_10%,transparent_70%)]" />
+      <div className="relative flex flex-wrap items-start justify-between gap-6">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-brand-200"><Crown className="h-4 w-4" /> {eyebrow}</p>
+          <h1 className="mt-1 break-words text-3xl font-extrabold tracking-tight sm:text-4xl">{title}</h1>
+          <p className="mt-2 max-w-xl text-sm text-slate-300">{subtitle}</p>
+        </div>
+        {actions && <div className="flex flex-wrap gap-2 lg:mr-36">{actions}</div>}
       </div>
-      <Link to={`/app/jobs/${rec.job.id}`} className="mt-1.5 block font-medium text-slate-900 hover:text-brand-700">
-        {rec.job.title}
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-slate-500">This job</span>
-        <ArrowRight className="h-4 w-4 text-slate-400" />
-        <span className="font-semibold text-slate-900">{rec.recommended.name}</span>
-        <ScorePill score={rec.recommended.score} />
-        {rec.alternatives.length > 0 && (
-          <span className="text-xs text-slate-500">
-            next: {rec.alternatives.slice(0, 2).map((a) => `${a.name.split(" ")[0]} ${a.score}`).join(", ")}
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-slate-500">{rec.recommended.reason}.</p>
-      {rec.low_team_fit && rec.missing_skills.length > 0 && (
-        <p className="mt-1 text-xs text-red-700">Nobody in the team has: {rec.missing_skills.join(", ")}</p>
-      )}
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {!override ? (
-          <>
-            <Button size="sm" onClick={() => assign(rec.recommended.member_id)} loading={busy} icon={<Check className="h-3.5 w-3.5" />}>
-              Approve
-            </Button>
-            {rec.alternatives.length > 0 && (
-              <Button size="sm" variant="secondary" onClick={() => setOverride(true)}>Override</Button>
-            )}
-          </>
-        ) : (
-          <>
-            <select value={choice} onChange={(e) => setChoice(e.target.value)} className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm" aria-label="Assign to">
-              {rec.alternatives.map((a) => (
-                <option key={a.member_id} value={a.member_id}>{a.name} ({a.score})</option>
-              ))}
-            </select>
-            <Button size="sm" onClick={() => assign(choice)} loading={busy}>Assign</Button>
-            <Button size="sm" variant="ghost" onClick={() => setOverride(false)}>Cancel</Button>
-          </>
-        )}
-      </div>
+      {children && <div className="relative mt-7 grid grid-cols-2 gap-3 lg:max-w-3xl lg:grid-cols-4">{children}</div>}
     </div>
   );
 }
 
-function OwnerAgency({ agency }: { agency: AgencyData }) {
+const heroButton = "inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium backdrop-blur transition hover:bg-white/15";
+const heroPrimary = "shine inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-900 shadow transition hover:-translate-y-0.5 hover:bg-brand-50 disabled:opacity-70";
+
+// ---------------------------------------------------------------- Owner
+
+type OwnerTab = "routing" | "pipeline" | "team" | "performance";
+const OWNER_TABS: OwnerTab[] = ["routing", "pipeline", "team", "performance"];
+
+/** The four things an owner needs before Agency Mode is useful. Hidden once all are done. */
+function SetupChecklist({ agency, stats, assignments, onInvite }: {
+  agency: AgencyData; stats: TeamStats; assignments: Assignment[]; onInvite: () => void;
+}) {
+  const steps = [
+    { done: agency.members.length > 0, title: "Invite a teammate", text: "Send an invite link by email." },
+    { done: stats.members.length > 0, title: "Teammate joins", text: "They open the link and join your agency." },
+    { done: stats.members.length > 0 && stats.members.every((m) => m.has_profile), title: "Profiles completed", text: "Each teammate adds their skills, so FitWork can match them." },
+    { done: assignments.length > 0, title: "Assign your first job", text: "Approve a suggestion in the Routing tab." },
+  ];
+  const doneCount = steps.filter((s) => s.done).length;
+  if (doneCount === steps.length) return null;
+
+  return (
+    <Card className="mb-6 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-900">Set up your agency</h2>
+          <p className="text-sm text-slate-500">{doneCount} of {steps.length} done</p>
+        </div>
+        {!steps[0].done && <Button onClick={onInvite} icon={<UserPlus className="h-4 w-4" />}>Invite a teammate</Button>}
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-brand-gradient transition-all duration-700" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+      </div>
+      <ol className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {steps.map((s, i) => (
+          <li key={s.title} className={clsx("flex gap-3 rounded-xl p-3", s.done ? "bg-emerald-50/70" : "bg-slate-50")}>
+            {s.done ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" /> : <Circle className="h-5 w-5 shrink-0 text-slate-300" />}
+            <div className="min-w-0">
+              <p className={clsx("text-sm font-semibold", s.done ? "text-emerald-800" : "text-slate-800")}>{i + 1}. {s.title}</p>
+              <p className="text-xs text-slate-500">{s.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </Card>
+  );
+}
+
+function RoutingTab({ recs, hasMembers, onAssign, goToTeam }: {
+  recs: RoutingRecommendation[]; hasMembers: boolean; onAssign: (jobId: string, memberId: string) => Promise<void>; goToTeam: () => void;
+}) {
+  const [filter, setFilter] = useState<"all" | "strong" | "low">("all");
+  const shown = recs.filter((r) => filter === "all" || (filter === "strong" ? r.recommended.score >= 75 : r.low_team_fit));
+  const counts = { all: recs.length, strong: recs.filter((r) => r.recommended.score >= 75).length, low: recs.filter((r) => r.low_team_fit).length };
+
+  if (!hasMembers) {
+    return (
+      <EmptyState icon={<Route className="h-6 w-6" />} title="No teammates to route jobs to yet">
+        <span className="block">Invite your team first. As soon as someone joins and fills in their skills, FitWork suggests who should take each job.</span>
+        <span className="mt-4 block"><Button onClick={goToTeam} icon={<UserPlus className="h-4 w-4" />}>Invite a teammate</Button></span>
+      </EmptyState>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-600">
+          FitWork compares every open job with every teammate's profile and suggests the <strong>best fit</strong>. Approve it, or choose someone else.
+        </p>
+        <div className="flex gap-1.5">
+          {([["all", "All"], ["strong", "Strong fit 75+"], ["low", "Low team fit"]] as const).map(([id, label]) => (
+            <button key={id} onClick={() => setFilter(id)}
+              className={clsx("rounded-full px-3 py-1 text-xs font-medium transition",
+                filter === id ? "bg-slate-900 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50")}>
+              {label} <span className="tabular-nums opacity-70">{counts[id]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {shown.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center text-sm text-slate-500">
+          {recs.length === 0
+            ? "No open jobs fit your team right now. New jobs arrive every few hours; check back later or press Refresh."
+            : "No jobs in this filter."}
+        </p>
+      ) : (
+        <div className="stagger-children space-y-4">
+          {shown.map((r) => <RoutingCard key={r.job.id} rec={r} onAssign={onAssign} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PerformanceTab({ stats, assignments }: { stats: TeamStats; assignments: Assignment[] }) {
+  const rows = stats.members.map((m) => {
+    const mine = assignments.filter((a) => a.member_id === m.member_id);
+    const count = (s: string) => mine.filter((a) => a.status === s).length;
+    const won = count("won");
+    const lost = count("lost");
+    return { ...m, total: mine.filter((a) => a.status !== "declined").length, applied: count("applied"), won, lost,
+      rate: won + lost > 0 ? Math.round((won / (won + lost)) * 100) : null };
+  }).sort((a, b) => b.won - a.won || b.total - a.total);
+
+  return (
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] [&>*]:min-w-0">
+      <Card className="p-5">
+        <h3 className="font-semibold text-slate-900">Win rate over time</h3>
+        <p className="mt-0.5 text-xs text-slate-500">Each week: jobs won ÷ (won + lost), from the results your teammates report.</p>
+        <div className="mt-4">
+          {stats.has_outcomes ? <WinRateChart stats={stats} /> : (
+            <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+              No won or lost jobs yet. When teammates mark jobs as won or lost, this chart fills in.
+            </p>
+          )}
+        </div>
+      </Card>
+      <Card className="overflow-hidden">
+        <div className="px-5 pt-5">
+          <h3 className="font-semibold text-slate-900">Results by teammate</h3>
+          <p className="mt-0.5 text-xs text-slate-500">All jobs assigned through FitWork (declined jobs not counted).</p>
+        </div>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[460px] text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-5 py-2.5">Teammate</th>
+                <th className="px-3 py-2.5 text-right">Assigned</th>
+                <th className="px-3 py-2.5 text-right">Applied</th>
+                <th className="px-3 py-2.5 text-right">Won</th>
+                <th className="px-3 py-2.5 text-right">Lost</th>
+                <th className="px-5 py-2.5 text-right">Win rate</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((r, i) => (
+                <tr key={r.member_id} className="hover:bg-brand-50/40">
+                  <td className="px-5 py-3 font-medium text-slate-900">
+                    {i === 0 && r.won > 0 && <Trophy className="mr-1.5 inline h-4 w-4 text-amber-500" aria-label="Most wins" />}{r.name}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums">{r.total}</td>
+                  <td className="px-3 py-3 text-right tabular-nums">{r.applied}</td>
+                  <td className="px-3 py-3 text-right tabular-nums text-emerald-700">{r.won}</td>
+                  <td className="px-3 py-3 text-right tabular-nums text-rose-700">{r.lost}</td>
+                  <td className="px-5 py-3 text-right font-semibold tabular-nums">{r.rate == null ? <span className="text-slate-400">—</span> : `${r.rate}%`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function OwnerAgency({ initial }: { initial: AgencyData }) {
+  const [agency, setAgency] = useState(initial);
   const [recs, setRecs] = useState<RoutingRecommendation[] | null>(null);
   const [stats, setStats] = useState<TeamStats | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const tabParam = params.get("tab") as OwnerTab | null;
+  const tab: OwnerTab = tabParam && OWNER_TABS.includes(tabParam) ? tabParam : "routing";
+  const setTab = (t: OwnerTab) => setParams(t === "routing" ? {} : { tab: t }, { replace: true });
 
   const load = useCallback(async () => {
     try {
-      const [r, s, a] = await Promise.all([
+      const [a, r, s, list] = await Promise.all([
+        api<AgencyData>("/agency/me"),
         api<RoutingRecommendation[]>("/agency/routing"),
         api<TeamStats>("/agency/members/stats"),
         api<Assignment[]>("/agency/assignments"),
       ]);
+      setAgency(a);
       setRecs(r);
       setStats(s);
-      setAssignments(a);
+      setAssignments(list);
+      setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not load agency data.");
     }
@@ -137,161 +243,77 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
 
   async function assign(jobId: string, memberId: string) {
     setError(null);
+    setNotice(null);
     try {
-      await api("/agency/assign", { method: "POST", body: { job_id: jobId, member_id: memberId } });
+      const a = await api<Assignment>("/agency/assign", { method: "POST", body: { job_id: jobId, member_id: memberId } });
+      setNotice(`Assigned "${a.job.title}" to ${a.member_name}. It now shows in their job queue.`);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not assign the job.");
     }
   }
 
-  const activeMembers = agency.members.filter((m) => m.status === "active").length;
+  const pending = agency.members.filter((m) => m.status === "invited").length;
+  const inProgress = assignments.filter((a) => a.status === "assigned" || a.status === "applied").length;
+  const won = assignments.filter((a) => a.status === "won").length;
+  const lost = assignments.filter((a) => a.status === "lost").length;
+  const ready = stats && recs;
 
   return (
     <>
-      <PageHeader
-        icon={<Users />}
+      <AgencyHero
+        eyebrow="Your agency"
         title={agency.name}
-        subtitle={`${activeMembers} active member${activeMembers === 1 ? "" : "s"} · jobs are routed to the teammate with the highest Match Score`}
+        subtitle="FitWork matches every open job to each teammate's skills and suggests who should take it."
         actions={
           <>
-            <Link to="/app/settings#agency" className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-              <UserPlus className="h-4 w-4" /> Invite member
-            </Link>
-            <Button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false); }} loading={refreshing} icon={<RefreshCw className="h-4 w-4" />}>
-              Refresh
-            </Button>
+            <Link to="/app/settings#agency" className={heroButton}>Rename</Link>
+            <button onClick={() => setTab("team")} className={heroButton}><UserPlus className="h-4 w-4" /> Invite</button>
+            <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false); }} disabled={refreshing} className={heroPrimary}>
+              <RefreshCw className={clsx("h-4 w-4", refreshing && "animate-spin")} /> Refresh
+            </button>
           </>
         }
-      />
+      >
+        <HeroStat icon={<Users />} label="Team" value={<CountUp value={stats?.members.length ?? 0} />}
+          hint={pending ? `${pending} invite${pending === 1 ? "" : "s"} pending` : "active teammates"} />
+        <HeroStat icon={<Route />} label="To assign" value={<CountUp value={recs?.length ?? 0} />} hint="jobs with a suggestion" />
+        <HeroStat icon={<Briefcase />} label="In progress" value={<CountUp value={inProgress} />} hint="assigned or applied" />
+        <HeroStat icon={<Trophy />} label="Win rate" value={won + lost ? <><CountUp value={Math.round((won / (won + lost)) * 100)} />%</> : "—"}
+          hint={won + lost ? `${won} won · ${lost} lost` : "no results yet"} />
+      </AgencyHero>
+
       {error && <Alert tone="error" className="mb-6">{error}</Alert>}
+      {notice && <Alert tone="success" className="mb-6">{notice}</Alert>}
 
-      {!stats || !recs ? (
-        <SkeletonList rows={2} />
-      ) : stats.members.length === 0 ? (
-        <EmptyState icon={<Users className="h-6 w-6" />} title="Invite your first team member">
-          Members join with an invite link and complete their own profile. Then FitWork routes each job to the best person.{" "}
-          <Link to="/app/settings#agency" className="font-medium text-brand-600 hover:underline">Invite a member →</Link>
-        </EmptyState>
-      ) : (
-        <div className="stagger-children space-y-6">
-          <Card className="overflow-hidden">
-            <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="font-semibold text-slate-900">Team</h2>
-            </div>
-            {/* Phones: one card per member (the table is too wide for a phone screen) */}
-            <ul className="divide-y divide-slate-100 sm:hidden">
-              {stats.members.map((m) => (
-                <li key={m.member_id} className="space-y-2 px-5 py-4">
-                  <div className="min-w-0">
-                    <p className="font-medium text-slate-900">{m.name}</p>
-                    <p className="truncate text-xs text-slate-500">{m.email}</p>
-                  </div>
-                  {m.has_profile ? (
-                    <div className="flex flex-wrap gap-1">{m.top_skills.map((s) => <Badge key={s}>{s}</Badge>)}</div>
-                  ) : (
-                    <span className="text-xs text-amber-700">Profile not completed yet</span>
-                  )}
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {[
-                      { label: "Active", value: m.active_assignments },
-                      { label: "Win rate 30d", value: m.win_rate_30d == null ? "—" : `${Math.round(m.win_rate_30d * 100)}%` },
-                      { label: "Routed today", value: m.routed_today },
-                    ].map((x) => (
-                      <div key={x.label} className="rounded-xl bg-brand-50/60 px-2 py-1.5">
-                        <p className="font-display text-base font-bold text-slate-900">{x.value}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-500">{x.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="hidden overflow-x-auto sm:block">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-5 py-2.5">Name</th>
-                    <th className="px-5 py-2.5">Top skills</th>
-                    <th className="px-5 py-2.5 text-right">Active</th>
-                    <th className="px-5 py-2.5 text-right">Win rate (30d)</th>
-                    <th className="px-5 py-2.5 text-right">Routed today</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {stats.members.map((m) => (
-                    <tr key={m.member_id} className="transition-colors hover:bg-brand-50/40">
-                      <td className="px-5 py-3">
-                        <p className="font-medium text-slate-900">{m.name}</p>
-                        <p className="text-xs text-slate-500">{m.email}</p>
-                      </td>
-                      <td className="px-5 py-3">
-                        {m.has_profile ? (
-                          <div className="flex flex-wrap gap-1">{m.top_skills.map((s) => <Badge key={s}>{s}</Badge>)}</div>
-                        ) : (
-                          <span className="text-xs text-amber-700">Profile not completed yet</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 text-right tabular-nums">{m.active_assignments}</td>
-                      <td className="px-5 py-3 text-right tabular-nums">
-                        {m.win_rate_30d == null ? <span className="text-slate-400">—</span> : `${Math.round(m.win_rate_30d * 100)}% (${m.decided_30d})`}
-                      </td>
-                      <td className="px-5 py-3 text-right tabular-nums">{m.routed_today}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px] [&>*]:min-w-0">
-            <Card className="p-5">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-slate-900">Routing recommendations</h2>
-                <span className="text-xs text-slate-500">{recs.length} jobs</span>
-              </div>
-              <div className="stagger-children mt-4 space-y-3">
-                {recs.length === 0 ? (
-                  <p className="text-sm text-slate-500">No unassigned jobs fit your team right now. Members need completed profiles to be routed jobs.</p>
-                ) : (
-                  recs.map((r) => <RoutingCard key={r.job.id} rec={r} onAssign={assign} />)
-                )}
-              </div>
-            </Card>
-
-            <div className="space-y-6">
-              <Card className="p-5">
-                <h2 className="font-semibold text-slate-900">Win rate over time</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Weekly won ÷ (won + lost), from members' real outcomes.</p>
-                <div className="mt-4">
-                  {stats.has_outcomes ? (
-                    <WinRateChart stats={stats} />
-                  ) : (
-                    <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                      No won or lost jobs yet. When members mark jobs as won or lost, this chart fills in.
-                    </p>
-                  )}
-                </div>
-              </Card>
-
-              <Card className="p-5">
-                <h2 className="font-semibold text-slate-900">Assigned jobs</h2>
-                <ul className="mt-3 divide-y divide-slate-100">
-                  {assignments.length === 0 && <li className="py-2 text-sm text-slate-500">Nothing assigned yet.</li>}
-                  {assignments.slice(0, 10).map((a) => (
-                    <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <div className="min-w-0">
-                        <Link to={`/app/jobs/${a.job.id}`} className="block truncate text-sm font-medium text-slate-900 hover:text-brand-700">{a.job.title}</Link>
-                        <p className="text-xs text-slate-500">{a.member_name} · {timeAgo(a.updated_at)}</p>
-                      </div>
-                      <StatusBadge status={a.status} />
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </div>
+      {!ready ? <SkeletonList rows={2} /> : (
+        <>
+          <SetupChecklist agency={agency} stats={stats} assignments={assignments} onInvite={() => setTab("team")} />
+          <Tabs<OwnerTab>
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { id: "routing", label: "Routing", count: recs.length, icon: <Route /> },
+              { id: "pipeline", label: "Pipeline", count: inProgress, icon: <KanbanSquare /> },
+              { id: "team", label: "Team", count: agency.members.length, icon: <Users /> },
+              { id: "performance", label: "Performance", icon: <BarChart3 /> },
+            ]}
+          />
+          <div key={tab} className="animate-fade-up">
+            {tab === "routing" && <RoutingTab recs={recs} hasMembers={stats.members.length > 0} onAssign={assign} goToTeam={() => setTab("team")} />}
+            {tab === "pipeline" && (assignments.length === 0 ? (
+              <EmptyState icon={<KanbanSquare className="h-6 w-6" />} title="No jobs assigned yet">
+                Approve a suggestion in the Routing tab and it appears here, moving from Assigned to Applied to Won or Lost.
+              </EmptyState>
+            ) : <Pipeline assignments={assignments} />)}
+            {tab === "team" && <TeamPanel agency={agency} stats={stats} reload={load} />}
+            {tab === "performance" && (stats.members.length === 0 ? (
+              <EmptyState icon={<BarChart3 className="h-6 w-6" />} title="No teammates yet">
+                Once your team starts winning and losing jobs, their results show here.
+              </EmptyState>
+            ) : <PerformanceTab stats={stats} assignments={assignments} />)}
           </div>
-        </div>
+        </>
       )}
     </>
   );
@@ -299,11 +321,87 @@ function OwnerAgency({ agency }: { agency: AgencyData }) {
 
 // ---------------------------------------------------------------- Member
 
+function QueueCard({ a, onStatus, onDecline }: {
+  a: Assignment;
+  onStatus: (id: string, s: "applied" | "won" | "lost") => Promise<void>;
+  onDecline: (id: string) => Promise<void>;
+}) {
+  const [confirm, setConfirm] = useState<"won" | "lost" | "decline" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const open = a.status === "assigned" || a.status === "applied";
+
+  async function run(fn: () => Promise<void>) {
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+      setConfirm(null);
+    }
+  }
+
+  return (
+    <Card className={clsx("relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lift", !open && "opacity-90")}>
+      <span className={clsx("absolute inset-y-0 left-0 w-1",
+        a.status === "won" ? "bg-emerald-500" : a.status === "lost" ? "bg-rose-400" : "bg-brand-gradient")} />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <PlatformBadge source={a.job.source} url={a.job.url} />
+            <span className="font-medium text-slate-700">{formatBudget(a.job)}</span>
+            <span>· assigned {timeAgo(a.created_at)}</span>
+          </div>
+          <Link to={`/app/jobs/${a.job.id}`} className="mt-1.5 block font-display text-base font-bold text-slate-900 hover:text-brand-700 sm:text-lg">{a.job.title}</Link>
+          <p className="mt-1 line-clamp-2 text-sm text-slate-600">{a.job.description_preview}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {a.score != null && <ScorePill score={a.score} />}
+          <StatusBadge status={a.status} />
+        </div>
+      </div>
+
+      <div className="mt-4"><ProgressSteps status={a.status} /></div>
+
+      {open && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+          {confirm ? (
+            <span className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-slate-700">
+                {confirm === "decline" ? "Decline this job? FitWork suggests the next best teammate to your owner."
+                  : `Mark as ${confirm}? This is final and counts in your win rate.`}
+              </span>
+              <Button size="sm" variant={confirm === "won" ? "primary" : "danger"} loading={busy}
+                onClick={() => run(() => (confirm === "decline" ? onDecline(a.id) : onStatus(a.id, confirm)))}>
+                Yes, {confirm === "decline" ? "decline" : `mark ${confirm}`}
+              </Button>
+              <button onClick={() => setConfirm(null)} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Cancel"><X className="h-4 w-4" /></button>
+            </span>
+          ) : (
+            <>
+              <Link to={`/app/jobs/${a.job.id}`} className="shine inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand-gradient px-3 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5">
+                <Sparkles className="h-3.5 w-3.5" /> Write proposal
+              </Link>
+              {a.status === "assigned" && (
+                <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => onStatus(a.id, "applied"))} icon={<Send className="h-3.5 w-3.5" />}>
+                  I applied
+                </Button>
+              )}
+              <Button size="sm" variant="secondary" onClick={() => setConfirm("won")} icon={<Trophy className="h-3.5 w-3.5 text-emerald-600" />}>Won</Button>
+              <Button size="sm" variant="secondary" onClick={() => setConfirm("lost")}>Lost</Button>
+              {a.status === "assigned" && <Button size="sm" variant="ghost" onClick={() => setConfirm("decline")}>Decline</Button>}
+            </>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function MemberQueue({ agency }: { agency: AgencyData }) {
   const [queue, setQueue] = useState<Assignment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState<string | null>(null);
+  const [tab, setTab] = useState<"active" | "done">("active");
 
   const load = useCallback(async () => {
     try {
@@ -321,8 +419,7 @@ function MemberQueue({ agency }: { agency: AgencyData }) {
     setError(null);
     try {
       const res = await api<{ next_recommendation: RoutingRecommendation | null }>(`/agency/assignments/${id}/decline`, { method: "POST" });
-      setNotice(res.next_recommendation ? `Declined. FitWork suggested ${res.next_recommendation.recommended.name} to your agency owner instead.` : "Declined.");
-      setConfirming(null);
+      setNotice(res.next_recommendation ? `Declined. FitWork suggested ${res.next_recommendation.recommended.name} to ${agency.owner_name} instead.` : "Declined.");
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not decline.");
@@ -333,75 +430,64 @@ function MemberQueue({ agency }: { agency: AgencyData }) {
     setError(null);
     try {
       await api(`/agency/assignments/${id}/status`, { method: "POST", body: { status } });
+      setNotice(status === "won" ? "Congratulations on the win!" : status === "applied" ? "Marked as applied. Good luck!" : "Marked as lost. The next one is yours.");
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not update.");
     }
   }
 
+  const items = queue ?? [];
+  const count = (s: string) => items.filter((a) => a.status === s).length;
+  const active = items.filter((a) => a.status === "assigned" || a.status === "applied");
+  const done = items.filter((a) => a.status === "won" || a.status === "lost");
+  const decided = count("won") + count("lost");
+  const shown = tab === "active" ? active : done;
+
   return (
     <>
-      <PageHeader icon={<Inbox />} title="My Job Queue" subtitle={`Jobs ${agency.owner_name} assigned to you at ${agency.name}`} />
+      <AgencyHero eyebrow={`Team member · ${agency.name}`} title="My job queue"
+        subtitle={`Jobs ${agency.owner_name} assigned to you because they fit your profile best. Write a proposal, apply, then report the result.`}
+        actions={<Link to="/onboarding" className={heroButton}><FileText className="h-4 w-4" /> Update my skills</Link>}>
+        <HeroStat icon={<Target />} label="To do" value={<CountUp value={count("assigned")} />} hint="not applied yet" />
+        <HeroStat icon={<Send />} label="Applied" value={<CountUp value={count("applied")} />} hint="waiting for the client" />
+        <HeroStat icon={<Trophy />} label="Won" value={<CountUp value={count("won")} />} hint={`${count("lost")} lost`} />
+        <HeroStat icon={<BarChart3 />} label="Win rate" value={decided ? <><CountUp value={Math.round((count("won") / decided) * 100)} />%</> : "—"}
+          hint={decided ? `from ${decided} result${decided === 1 ? "" : "s"}` : "no results yet"} />
+      </AgencyHero>
+
       {error && <Alert tone="error" className="mb-4">{error}</Alert>}
       {notice && <Alert tone="success" className="mb-4">{notice}</Alert>}
-      {!queue ? (
-        <SkeletonList rows={2} />
-      ) : queue.length === 0 ? (
-        <EmptyState icon={<Inbox className="h-6 w-6" />} title="Your queue is empty">
-          When your agency owner assigns you a job, it appears here. Keep your{" "}
-          <Link to="/onboarding" className="font-medium text-brand-600 hover:underline">profile</Link> up to date so you get the right jobs.
-        </EmptyState>
-      ) : (
-        <div className="stagger-children space-y-4">
-          {queue.map((a) => (
-            <Card key={a.id} className="p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lift">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <PlatformBadge source={a.job.source} url={a.job.url} />
-                    <span>{formatBudget(a.job)}</span>
-                    <span>· assigned {timeAgo(a.created_at)}</span>
-                  </div>
-                  <Link to={`/app/jobs/${a.job.id}`} className="mt-1.5 block font-semibold text-slate-900 hover:text-brand-700">{a.job.title}</Link>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-600">{a.job.description_preview}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {a.score != null && <ScorePill score={a.score} />}
-                  <StatusBadge status={a.status} />
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Link to={`/app/jobs/${a.job.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand-600 px-3 text-sm font-medium text-white hover:bg-brand-700">
-                  <Sparkles className="h-3.5 w-3.5" /> Generate proposal
-                </Link>
-                {a.status === "assigned" && <Button size="sm" variant="secondary" onClick={() => setStatus(a.id, "applied")}>Mark applied</Button>}
-                {(a.status === "assigned" || a.status === "applied") && (
-                  <>
-                    <Button size="sm" variant="secondary" onClick={() => setStatus(a.id, "won")}>Won</Button>
-                    <Button size="sm" variant="secondary" onClick={() => setStatus(a.id, "lost")}>Lost</Button>
-                  </>
-                )}
-                {a.status === "assigned" && (
-                  confirming === a.id ? (
-                    <span className="inline-flex items-center gap-2 text-sm">
-                      <span className="text-slate-600">Decline this job?</span>
-                      <Button size="sm" variant="danger" onClick={() => decline(a.id)}>Yes, decline</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setConfirming(null)}><X className="h-3.5 w-3.5" /></Button>
-                    </span>
-                  ) : (
-                    <Button size="sm" variant="ghost" onClick={() => setConfirming(a.id)}>Decline</Button>
-                  )
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
+
+      {!queue ? <SkeletonList rows={2} /> : (
+        <>
+          <Tabs<"active" | "done">
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { id: "active", label: "Active", count: active.length, icon: <Inbox /> },
+              { id: "done", label: "Finished", count: done.length, icon: <CheckCircle2 /> },
+            ]}
+          />
+          {shown.length === 0 ? (
+            <EmptyState icon={<Inbox className="h-6 w-6" />} title={tab === "active" ? "No open jobs right now" : "No finished jobs yet"}>
+              {tab === "active" ? (
+                <>When {agency.owner_name} assigns you a job, it appears here. Keep your{" "}
+                  <Link to="/onboarding" className="font-medium text-brand-600 hover:underline">skills</Link> up to date so you get the right jobs.</>
+              ) : "Jobs you mark as won or lost move here."}
+            </EmptyState>
+          ) : (
+            <div key={tab} className="stagger-children space-y-4">
+              {shown.map((a) => <QueueCard key={a.id} a={a} onStatus={setStatus} onDecline={decline} />)}
+            </div>
+          )}
+        </>
       )}
     </>
   );
 }
 
-// ---------------------------------------------------------------- Page
+// ---------------------------------------------------------------- Freelancer (no agency yet)
 
 function StartAgency() {
   const { reloadUser } = useAuth();
@@ -420,27 +506,44 @@ function StartAgency() {
     }
   }
 
+  const steps = [
+    { icon: <Mail />, title: "Invite your team", text: "Send each teammate a one-time invite link by email." },
+    { icon: <Route />, title: "FitWork suggests who fits", text: "Every job is compared with every teammate's skills and gets a Match Score." },
+    { icon: <Trophy />, title: "Assign and track", text: "Approve with one click, then follow each job from Assigned to Won." },
+  ];
+
   return (
     <>
-      <PageHeader icon={<Users />} title="Agency Mode" />
-      <EmptyState icon={<Users className="h-6 w-6" />} title="Work as a team">
-        <span className="block">
-          Start your own agency, invite your teammates by email, and FitWork suggests which teammate each job fits best.
-          Your own profile and matches stay the same.
-        </span>
-        <span className="mt-4 block">
-          <Button onClick={start} loading={busy}>
-            <UserPlus className="h-4 w-4" /> Start my agency
-          </Button>
-        </span>
-        {error && <span className="mt-3 block text-sm text-red-600">{error}</span>}
-        <span className="mt-4 block text-xs text-slate-500">
-          Want to join someone else's team instead? Ask the agency owner for an invite link and open it while logged in.
-        </span>
-      </EmptyState>
+      <AgencyHero eyebrow="Agency Mode" title="Work as a team"
+        subtitle="Run a small freelance team? Start an agency and FitWork tells you which teammate each job fits best. Your own profile and matches stay the same."
+        actions={<button onClick={start} disabled={busy} className={heroPrimary}>
+          {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Start my agency
+        </button>} />
+      {error && <Alert tone="error" className="mb-6">{error}</Alert>}
+      <div className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-3">
+        {steps.map((s, i) => (
+          <Card key={s.title} className="p-6 transition duration-200 hover:-translate-y-1 hover:shadow-lift">
+            <div className="flex items-center gap-3">
+              <span className="rounded-2xl bg-brand-gradient p-3 text-white shadow-glow [&>svg]:h-5 [&>svg]:w-5">{s.icon}</span>
+              <span className="font-display text-3xl font-extrabold text-brand-100">0{i + 1}</span>
+            </div>
+            <h3 className="mt-4 font-display text-lg font-bold text-slate-900">{s.title}</h3>
+            <p className="mt-1 text-sm text-slate-600">{s.text}</p>
+          </Card>
+        ))}
+      </div>
+      <Card className="mt-6 flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="font-semibold text-slate-900">Ready to build your team?</h3>
+          <p className="text-sm text-slate-500">Want to join someone else's team instead? Ask the agency owner for an invite link and open it while logged in.</p>
+        </div>
+        <Button onClick={start} loading={busy} icon={<UserPlus className="h-4 w-4" />} className="shrink-0">Start my agency</Button>
+      </Card>
     </>
   );
 }
+
+// ---------------------------------------------------------------- Page
 
 export default function Agency() {
   const { user } = useAuth();
@@ -456,5 +559,6 @@ export default function Agency() {
   if (!isAgencyUser) return <StartAgency />;
   if (error) return <Alert tone="error">{error}</Alert>;
   if (!agency) return <SkeletonList rows={2} />;
-  return agency.role === "owner" ? <OwnerAgency agency={agency} /> : <MemberQueue agency={agency} />;
+  return agency.role === "owner" ? <OwnerAgency initial={agency} /> : <MemberQueue agency={agency} />;
 }
+

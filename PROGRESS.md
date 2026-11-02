@@ -41,3 +41,4 @@ Deadline: 19 November 2026
 - [x] 1 Nov: skill spelling variants merged automatically (E-commerce = eCommerce); example job per Skill Gap skill; phone layout fixes (3D chart fits, dashboard tiles, agency team cards, text truncation).
 - [x] 1 Nov: fully responsive: audited 13 page states x 7 widths (320-1920 px), 0 issues after fixing grids, score row and button wrapping.
 - 2 Nov 2026: Agency page lets a freelancer start their own agency (POST /api/agency/start); 2 tests.
+- 2 Nov 2026: Agency Mode redesign: owner hero stats, setup checklist, tabs (Routing with teammate comparison, Pipeline board, Team with inline invites/resend/remove, Performance), member queue with progress steps and confirmations.
