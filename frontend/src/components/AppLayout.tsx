@@ -1,10 +1,11 @@
 import clsx from "clsx";
-import { Briefcase, LogOut, Menu, Radar, Settings, UserCog, Users, X } from "lucide-react";
+import { Briefcase, LogOut, Menu, MessagesSquare, Radar, Settings, UserCog, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { useChatUnread } from "../lib/useChatUnread";
 import type { Role } from "../lib/types";
 import { Logo } from "./ui";
 
@@ -38,10 +39,13 @@ export function AppLayout() {
     };
   }, [mobileOpen]);
 
+  const isAgencyUser = user?.role === "agency_owner" || user?.role === "agency_member";
+  const unread = useChatUnread(isAgencyUser);
   const nav = [
     { to: "/app", label: "Matches", icon: Briefcase, end: true },
     { to: "/app/skill-gap", label: "Skill Gap", icon: Radar },
     { to: "/app/agency", label: "Agency", icon: Users },
+    ...(isAgencyUser ? [{ to: "/app/chat", label: "Team Chat", icon: MessagesSquare, badge: unread }] : []),
     { to: "/onboarding", label: "My Profile & Skills", icon: UserCog },
     { to: "/app/settings", label: "Settings", icon: Settings },
   ];
@@ -74,7 +78,7 @@ export function AppLayout() {
       </div>
       <nav className="relative flex-1 space-y-1.5 px-3 py-6">
         <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Menu</p>
-        {nav.map(({ to, label, icon: Icon, end }) => (
+        {nav.map(({ to, label, icon: Icon, end, badge }) => (
           <NavLink
             key={to}
             to={to}
@@ -89,6 +93,10 @@ export function AppLayout() {
           >
             <Icon className="h-4 w-4" />
             {label}
+            {!!badge && (
+              <span className="animate-pop-in ml-auto rounded-full bg-fuchsia-500 px-1.5 text-[11px] font-bold tabular-nums text-white shadow-glow"
+                aria-label={`${badge} unread`}>{badge > 99 ? "99+" : badge}</span>
+            )}
           </NavLink>
         ))}
       </nav>

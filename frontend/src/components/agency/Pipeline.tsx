@@ -3,6 +3,7 @@
  * Members move their own jobs forward; the owner watches progress here.
  */
 import clsx from "clsx";
+import { MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { timeAgo } from "../../lib/format";
@@ -50,7 +51,13 @@ export function Pipeline({ assignments }: { assignments: Assignment[] }) {
                           <span className="block text-[11px] text-slate-400">{timeAgo(a.updated_at)}</span>
                         </span>
                       </span>
-                      {a.score != null && <ScorePill score={a.score} />}
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {a.score != null && <ScorePill score={a.score} />}
+                        <Link to={`/app/chat?c=job-${a.job.id}`} aria-label={`Discuss ${a.job.title} with ${a.member_name}`} title="Discuss"
+                          className="rounded-lg p-1 text-slate-400 transition hover:bg-brand-50 hover:text-brand-700">
+                          <MessageSquare className="h-4 w-4" />
+                        </Link>
+                      </span>
                     </div>
                   </li>
                 ))}

@@ -171,3 +171,31 @@ export interface TokenResponse {
   token_type: string;
   user: User;
 }
+
+// ---------- Team chat ----------
+
+export interface ChatChannel {
+  key: string; // "team", "job-<job id>" or "dm-<user id>"
+  kind: "team" | "job" | "direct";
+  title: string;
+  subtitle: string;
+  member_id: string | null;
+  unread: number;
+  last_message: string | null;
+  last_at: string | null;
+}
+
+export interface ChatChannels {
+  me: string;
+  channels: ChatChannel[];
+  unread_total: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender_id: string | null;
+  sender_name: string;
+  kind: "text" | "call";
+  body: string;
+  created_at: string;
+}

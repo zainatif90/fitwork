@@ -19,7 +19,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.routers import admin, agency, auth, jobs, matches, profile, proposals, skill_gap, skills
+from app.routers import admin, agency, auth, chat, jobs, matches, profile, proposals, skill_gap, skills
 from app.services import embeddings
 from app.services.bootstrap import start_bootstrap
 from app.services.scheduler import start_scheduler, stop_scheduler
@@ -119,6 +119,7 @@ app.include_router(skills.router, prefix=API_PREFIX)
 app.include_router(jobs.router, prefix=API_PREFIX)
 app.include_router(matches.router, prefix=API_PREFIX)
 app.include_router(proposals.router, prefix=API_PREFIX)
+app.include_router(chat.router, prefix=API_PREFIX)
 app.include_router(agency.router, prefix=API_PREFIX)
 app.include_router(skill_gap.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)

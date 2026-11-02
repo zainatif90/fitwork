@@ -8,7 +8,7 @@
  */
 import clsx from "clsx";
 import {
-  BarChart3, Briefcase, CheckCircle2, Circle, Crown, FileText, Inbox, KanbanSquare, Mail, RefreshCw, Route,
+  BarChart3, Briefcase, CheckCircle2, Circle, Crown, FileText, Inbox, KanbanSquare, Mail, MessageSquare, RefreshCw, Route,
   Send, Sparkles, Target, Trophy, UserPlus, Users, X,
 } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
@@ -269,6 +269,7 @@ function OwnerAgency({ initial }: { initial: AgencyData }) {
           <>
             <Link to="/app/settings#agency" className={heroButton}>Rename</Link>
             <button onClick={() => setTab("team")} className={heroButton}><UserPlus className="h-4 w-4" /> Invite</button>
+            <Link to="/app/chat" className={heroButton}><MessageSquare className="h-4 w-4" /> Team chat</Link>
             <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false); }} disabled={refreshing} className={heroPrimary}>
               <RefreshCw className={clsx("h-4 w-4", refreshing && "animate-spin")} /> Refresh
             </button>
@@ -381,6 +382,9 @@ function QueueCard({ a, onStatus, onDecline }: {
               <Link to={`/app/jobs/${a.job.id}`} className="shine inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand-gradient px-3 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5">
                 <Sparkles className="h-3.5 w-3.5" /> Write proposal
               </Link>
+              <Link to={`/app/chat?c=job-${a.job.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-50">
+                <MessageSquare className="h-3.5 w-3.5" /> Discuss
+              </Link>
               {a.status === "assigned" && (
                 <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => onStatus(a.id, "applied"))} icon={<Send className="h-3.5 w-3.5" />}>
                   I applied
@@ -448,7 +452,10 @@ function MemberQueue({ agency }: { agency: AgencyData }) {
     <>
       <AgencyHero eyebrow={`Team member · ${agency.name}`} title="My job queue"
         subtitle={`Jobs ${agency.owner_name} assigned to you because they fit your profile best. Write a proposal, apply, then report the result.`}
-        actions={<Link to="/onboarding" className={heroButton}><FileText className="h-4 w-4" /> Update my skills</Link>}>
+        actions={<>
+          <Link to="/app/chat" className={heroButton}><MessageSquare className="h-4 w-4" /> Team chat</Link>
+          <Link to="/onboarding" className={heroButton}><FileText className="h-4 w-4" /> Update my skills</Link>
+        </>}>
         <HeroStat icon={<Target />} label="To do" value={<CountUp value={count("assigned")} />} hint="not applied yet" />
         <HeroStat icon={<Send />} label="Applied" value={<CountUp value={count("applied")} />} hint="waiting for the client" />
         <HeroStat icon={<Trophy />} label="Won" value={<CountUp value={count("won")} />} hint={`${count("lost")} lost`} />

@@ -16,6 +16,7 @@ import Onboarding from "./pages/Onboarding";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
+import TeamChat from "./pages/TeamChat";
 import VerifyEmail from "./pages/VerifyEmail";
 
 // The chart pages pull in Recharts (large), so they are loaded only when opened.
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="jobs/:id" element={<JobDetail />} />
         <Route path="skill-gap" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><SkillGap /></Suspense></ErrorBoundary>} />
         <Route path="agency" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><Agency /></Suspense></ErrorBoundary>} />
+        <Route path="chat" element={<TeamChat />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

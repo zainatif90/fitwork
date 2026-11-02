@@ -75,6 +75,8 @@ FitWork is a web platform that collects freelance job listings and matches them 
 - An agency owner can also have their own profile and personal matches.
 - A freelancer who accepts an invite becomes agency_member. A member belongs to one agency only.
 - Agency routing candidate jobs = union of each active member's top 20 matches.
+- Team Chat (extra feature, not in the SRS): agency channel, job threads (owner + assignee), direct messages.
+  Polling, not WebSockets. Calls = a random Jitsi Meet link posted by the server (no audio/video on our side).
 
 ## Folder structure
 - /frontend - React app
@@ -88,7 +90,8 @@ FitWork is a web platform that collects freelance job listings and matches them 
 - Run uvicorn with a single worker. The scheduler also takes a Redis lock so a fetch never runs twice.
 - Rate limits use Redis (or the in-memory store): failed logins 5/min per IP+email and 10/15 min per email;
   reset emails 3/hour per address; sign-ups 10/hour per IP; invites 10/day (verified owners only);
-  pasted jobs 20/day and 200 total; AI proposals 20/day (template fallbacks are free).
+  pasted jobs 20/day and 200 total; AI proposals 20/day (template fallbacks are free);
+  chat messages 30/min and calls 10/hour per user.
   The client IP comes from CF-Connecting-IP or the LAST X-Forwarded-For entry, never the first.
 - Never return stack traces to users; log them server-side.
 
