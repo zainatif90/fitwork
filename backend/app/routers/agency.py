@@ -3,13 +3,17 @@ Agency Mode endpoints (UC-4).
 
 Role rules (enforced here, not only in the UI):
 - Only the agency owner can invite, see routing, assign or override, and see team stats.
-- A member only sees and acts on their own job queue.
+- A member only sees and acts on their own job queue. The owner can take jobs too (when they have a profile),
+  so "my queue" and status updates work for the owner's own assignments as well.
+- The owner can take a job back (unassign) or give it to someone else (reassign); a member can leave;
+  the owner can close the agency.
 """
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -24,12 +28,14 @@ from app.schemas.agency import (
     AssignIn,
     AssignmentOut,
     AssignmentStatusIn,
+    CloseAgencyIn,
     DeclineOut,
     InviteIn,
     InviteInfoOut,
     InviteOut,
     InviteTokenIn,
     MemberRow,
+    ReassignIn,
     RoutingRecommendation,
     TeamStatsOut,
 )
@@ -43,9 +49,24 @@ router = APIRouter(prefix="/agency", tags=["agency"])
 
 owner_only = require_roles("agency_owner")
 member_only = require_roles("agency_member")
+team_only = require_roles("agency_owner", "agency_member")
 
-# Status changes a member may make (forward only; won and lost are final)
-NEXT_STATUSES: dict[str, tuple[str, ...]] = {"assigned": ("applied", "won", "lost"), "applied": ("won", "lost")}
+# Status changes allowed (forward only; won and lost are final). A job can only be won or lost after
+# applying for it, so "Applied" is never skipped and the pipeline stays truthful.
+NEXT_STATUSES: dict[str, tuple[str, ...]] = {"assigned": ("applied",), "applied": ("won", "lost")}
+
+
+def _can_take_jobs(db: Session, agency: Agency, user_id: uuid.UUID) -> bool:
+    """The owner and the active members can be given jobs."""
+    if user_id == agency.owner_id:
+        return True
+    return db.scalar(select(AgencyMember).where(
+        AgencyMember.agency_id == agency.id, AgencyMember.user_id == user_id, AgencyMember.status == "active")) is not None
+
+
+def _score_for(db: Session, user_id: uuid.UUID, job: Job) -> int | None:
+    profile = get_profile(db, user_id)
+    return (score_single_job(db, profile, job) or {}).get("score") if profile else None
 
 
 def _assignment_out(db: Session, a: Assignment) -> dict[str, Any]:
@@ -129,20 +150,31 @@ def remove(member_row_id: uuid.UUID, user: User = Depends(owner_only), db: Sessi
     agency_service.remove_member(db, agency_service.get_or_create_agency(db, user), member_row_id)
 
 
+@router.post("/leave", status_code=status.HTTP_204_NO_CONTENT)
+def leave(user: User = Depends(member_only), db: Session = Depends(get_db)) -> None:
+    """A member leaves the agency and becomes a solo freelancer again. Their open jobs go back to routing."""
+    agency_service.leave_agency(db, user)
+
+
+@router.post("/close", status_code=status.HTTP_204_NO_CONTENT)
+def close(data: CloseAgencyIn, user: User = Depends(owner_only), db: Session = Depends(get_db)) -> None:
+    """The owner closes the agency (must type its name to confirm). Everyone becomes a solo freelancer."""
+    agency_service.close_agency(db, user, data.confirm_name)
+
+
 # ---------- Routing (owner) ----------
 
 @router.get("/routing", response_model=list[RoutingRecommendation])
-def routing(user: User = Depends(owner_only), db: Session = Depends(get_db)) -> list[dict]:
-    return compute_routing(db, agency_service.get_or_create_agency(db, user))
+def routing(limit: int = Query(default=20, ge=1, le=200), user: User = Depends(owner_only),
+            db: Session = Depends(get_db)) -> list[dict]:
+    return compute_routing(db, agency_service.get_or_create_agency(db, user), limit=limit)
 
 
 @router.post("/assign", response_model=AssignmentOut, status_code=status.HTTP_201_CREATED)
 def assign(data: AssignIn, user: User = Depends(owner_only), db: Session = Depends(get_db)) -> dict:
     """Approve the recommendation or override it by choosing another member."""
     agency = agency_service.get_or_create_agency(db, user)
-    is_member = db.scalar(select(AgencyMember).where(
-        AgencyMember.agency_id == agency.id, AgencyMember.user_id == data.member_id, AgencyMember.status == "active"))
-    if not is_member:
+    if not _can_take_jobs(db, agency, data.member_id):
         raise HTTPException(status_code=400, detail="That person is not an active member of your agency")
     job = db.get(Job, data.job_id)
     if job is None or job.source == "manual":
@@ -153,8 +185,7 @@ def assign(data: AssignIn, user: User = Depends(owner_only), db: Session = Depen
                                           Assignment.status.in_(TAKEN_STATUSES))):
         raise HTTPException(status_code=409, detail="This job is already assigned in your agency")
 
-    profile = get_profile(db, data.member_id)
-    score = (score_single_job(db, profile, job) or {}).get("score") if profile else None
+    score = _score_for(db, data.member_id, job)
     # Reuse a pending "recommended" row for this member if one exists (created after a decline)
     assignment = db.scalar(select(Assignment).where(
         Assignment.agency_id == agency.id, Assignment.job_id == job.id,
@@ -165,9 +196,53 @@ def assign(data: AssignIn, user: User = Depends(owner_only), db: Session = Depen
     assignment.status = "assigned"
     assignment.score = score
     assignment.assigned_by = user.id
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:  # two requests raced; the database index let only the first one through
+        db.rollback()
+        raise HTTPException(status_code=409, detail="This job is already assigned in your agency") from None
     db.refresh(assignment)
     return _assignment_out(db, assignment)
+
+
+def _owned_assignment(db: Session, user: User, assignment_id: uuid.UUID) -> tuple[Assignment, Agency]:
+    agency = agency_service.get_or_create_agency(db, user)
+    a = db.get(Assignment, assignment_id)
+    if a is None or a.agency_id != agency.id or a.status not in TAKEN_STATUSES:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return a, agency
+
+
+@router.delete("/assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def unassign(assignment_id: uuid.UUID, user: User = Depends(owner_only), db: Session = Depends(get_db)) -> None:
+    """The owner takes a job back (e.g. the teammate is away). It returns to Routing. Results are final."""
+    a, _ = _owned_assignment(db, user, assignment_id)
+    if a.status not in ("assigned", "applied"):
+        raise HTTPException(status_code=400, detail=f"A job that is '{a.status}' is finished and stays in the history")
+    db.delete(a)
+    db.commit()
+
+
+@router.post("/assignments/{assignment_id}/reassign", response_model=AssignmentOut)
+def reassign(assignment_id: uuid.UUID, data: ReassignIn, user: User = Depends(owner_only),
+             db: Session = Depends(get_db)) -> dict:
+    """Give a job that nobody has applied to yet to another teammate."""
+    a, agency = _owned_assignment(db, user, assignment_id)
+    if a.status != "assigned":
+        raise HTTPException(status_code=400, detail="Only jobs nobody has applied to yet can be given to someone else")
+    if data.member_id == a.member_id:
+        raise HTTPException(status_code=400, detail="This job is already with that person")
+    if not _can_take_jobs(db, agency, data.member_id):
+        raise HTTPException(status_code=400, detail="That person is not an active member of your agency")
+    job = db.get(Job, a.job_id)
+    if job is None or not job.is_active:
+        raise HTTPException(status_code=400, detail="This job has closed and can no longer be reassigned")
+    a.member_id = data.member_id
+    a.score = _score_for(db, data.member_id, job)
+    a.assigned_by = user.id
+    db.commit()
+    db.refresh(a)
+    return _assignment_out(db, a)
 
 
 @router.get("/assignments", response_model=list[AssignmentOut])
@@ -179,14 +254,15 @@ def all_assignments(user: User = Depends(owner_only), db: Session = Depends(get_
 
 
 @router.get("/members/stats", response_model=TeamStatsOut)
-def stats(user: User = Depends(owner_only), db: Session = Depends(get_db)) -> dict:
-    return agency_service.member_stats(db, agency_service.get_or_create_agency(db, user))
+def stats(tz: int = Query(default=0, ge=-840, le=840, description="Viewer's minutes ahead of UTC (Pakistan: 300)"),
+          user: User = Depends(owner_only), db: Session = Depends(get_db)) -> dict:
+    return agency_service.member_stats(db, agency_service.get_or_create_agency(db, user), tz_minutes=tz)
 
 
-# ---------- Member queue ----------
+# ---------- My job queue (members, and the owner for jobs given to themself) ----------
 
 def _my_assignment(db: Session, user: User, assignment_id: uuid.UUID) -> tuple[Assignment, Agency]:
-    agency, _ = agency_service.agency_of_member(db, user)
+    agency = agency_service.agency_of(db, user)
     a = db.get(Assignment, assignment_id)
     if a is None or a.member_id != user.id or a.agency_id != agency.id:
         raise HTTPException(status_code=404, detail="Assignment not found")
@@ -194,8 +270,8 @@ def _my_assignment(db: Session, user: User, assignment_id: uuid.UUID) -> tuple[A
 
 
 @router.get("/queue", response_model=list[AssignmentOut])
-def my_queue(user: User = Depends(member_only), db: Session = Depends(get_db)) -> list[dict]:
-    agency, _ = agency_service.agency_of_member(db, user)
+def my_queue(user: User = Depends(team_only), db: Session = Depends(get_db)) -> list[dict]:
+    agency = agency_service.agency_of(db, user)
     rows = db.scalars(select(Assignment).where(
         Assignment.agency_id == agency.id, Assignment.member_id == user.id,
         Assignment.status.in_(TAKEN_STATUSES)).order_by(Assignment.updated_at.desc()))
@@ -203,7 +279,7 @@ def my_queue(user: User = Depends(member_only), db: Session = Depends(get_db)) -
 
 
 @router.post("/assignments/{assignment_id}/decline", response_model=DeclineOut)
-def decline(assignment_id: uuid.UUID, user: User = Depends(member_only), db: Session = Depends(get_db)) -> dict:
+def decline(assignment_id: uuid.UUID, user: User = Depends(team_only), db: Session = Depends(get_db)) -> dict:
     a, agency = _my_assignment(db, user, assignment_id)
     if a.status not in ("assigned", "recommended"):
         raise HTTPException(status_code=400, detail=f"You cannot decline a job that is already '{a.status}'")
@@ -215,9 +291,12 @@ def decline(assignment_id: uuid.UUID, user: User = Depends(member_only), db: Ses
 
 
 @router.post("/assignments/{assignment_id}/status", response_model=AssignmentOut)
-def update_status(assignment_id: uuid.UUID, data: AssignmentStatusIn, user: User = Depends(member_only),
+def update_status(assignment_id: uuid.UUID, data: AssignmentStatusIn, user: User = Depends(team_only),
                   db: Session = Depends(get_db)) -> dict:
     a, _ = _my_assignment(db, user, assignment_id)
+    job = db.get(Job, a.job_id)
+    if a.status == "assigned" and data.status == "applied" and job is not None and not job.is_active:
+        raise HTTPException(status_code=400, detail="This job has closed, so you can't apply any more. Decline it to clear it from your queue.")
     # Only forward moves: assigned -> applied -> won/lost. A final result cannot be changed later,
     # otherwise past win rates would change.
     allowed = NEXT_STATUSES.get(a.status, ())

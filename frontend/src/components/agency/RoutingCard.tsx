@@ -7,6 +7,7 @@ import { AlertTriangle, Check, ChevronDown, Clock, RotateCcw, Sparkles, UserChec
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useAuth } from "../../lib/auth";
 import { formatBudget, scoreTone, timeAgo } from "../../lib/format";
 import type { RoutingRecommendation } from "../../lib/types";
 import { PlatformBadge, ScoreRing } from "../MatchParts";
@@ -17,7 +18,9 @@ export function RoutingCard({ rec, onAssign }: {
   rec: RoutingRecommendation;
   onAssign: (jobId: string, memberId: string) => Promise<void>;
 }) {
+  const { user } = useAuth();
   const candidates = [rec.recommended, ...rec.alternatives];
+  const label = (c: { member_id: string; name: string }) => (c.member_id === user?.id ? `${c.name} (you)` : c.name);
   const [choice, setChoice] = useState(rec.recommended.member_id);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -80,7 +83,7 @@ export function RoutingCard({ rec, onAssign }: {
           <div className="mt-2 flex items-center gap-3">
             <Avatar id={chosen.member_id} name={chosen.name} size="lg" />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-slate-900">{chosen.name}</p>
+              <p className="truncate font-semibold text-slate-900">{label(chosen)}</p>
               <p className="line-clamp-2 text-xs text-slate-500">{chosen.reason}</p>
             </div>
             <ScoreRing score={chosen.score} size={52} label={false} />
@@ -109,7 +112,7 @@ export function RoutingCard({ rec, onAssign }: {
                         >
                           <Avatar id={c.member_id} name={c.name} size="sm" />
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-medium text-slate-800">{c.name}</span>
+                            <span className="block truncate text-xs font-medium text-slate-800">{label(c)}</span>
                             <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-slate-200">
                               <span className={clsx("block h-full rounded-full", tone.bar)} style={{ width: `${c.score}%` }} />
                             </span>
@@ -125,7 +128,7 @@ export function RoutingCard({ rec, onAssign }: {
           )}
 
           <Button className="mt-4 w-full" onClick={assign} loading={busy} icon={<UserCheck className="h-4 w-4" />}>
-            Assign to {chosen.name.split(" ")[0]}
+            {chosen.member_id === user?.id ? "Take this job myself" : `Assign to ${chosen.name.split(" ")[0]}`}
           </Button>
         </div>
       </div>

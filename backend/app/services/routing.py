@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -41,12 +41,15 @@ class TeamMember:
 
 
 def team_members(db: Session, agency: Agency) -> list[TeamMember]:
-    """Active members that have a profile with a ready embedding."""
+    """
+    Everyone who can take jobs and has a profile with a ready embedding: the active members, and the owner
+    too when the owner has filled in a profile (in small agencies the owner often does client work as well).
+    """
+    active = select(AgencyMember.user_id).where(AgencyMember.agency_id == agency.id, AgencyMember.status == "active")
     rows = db.execute(
         select(User, Profile)
-        .join(AgencyMember, AgencyMember.user_id == User.id)
         .join(Profile, Profile.user_id == User.id)
-        .where(AgencyMember.agency_id == agency.id, AgencyMember.status == "active")
+        .where(or_(User.id == agency.owner_id, User.id.in_(active)))
         .order_by(User.full_name)
     ).all()
     team = []
@@ -149,6 +152,8 @@ def compute_routing(db: Session, agency: Agency, limit: int = 20) -> list[dict[s
 
 def next_best_after_decline(db: Session, agency: Agency, job: Job) -> dict[str, Any] | None:
     """After a decline: recommend the best member who has not declined this job, and record it."""
+    if not job.is_active:
+        return None  # the job has closed: nobody else should be sent to it
     team = team_members(db, agency)
     _, declined = _assignment_state(db, agency.id)
     rec = recommend_for_job(job, team, declined.get(job.id, set()), datetime.now(timezone.utc))

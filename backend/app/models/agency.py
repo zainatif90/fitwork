@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,6 +10,7 @@ from app.core.database import Base
 ASSIGNMENT_STATUSES = ("recommended", "assigned", "declined", "applied", "won", "lost")
 # An assignment in one of these states means the job is "taken" inside the agency
 TAKEN_STATUSES = ("assigned", "applied", "won", "lost")
+INVITE_VALID_DAYS = 7  # an invite link stops working after this; "Resend" makes a fresh one
 
 
 class Agency(Base):
@@ -35,6 +36,8 @@ class AgencyMember(Base):
     # We store only a SHA-256 hash of the invite token, never the token itself
     invite_token_hash: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     invited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # When the current invite link was made (first invite or the latest resend); it expires INVITE_VALID_DAYS later
+    invite_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     joined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
@@ -42,7 +45,12 @@ class Assignment(Base):
     """A job routed to a member: recommended -> assigned -> applied -> won / lost (or declined)."""
 
     __tablename__ = "assignments"
-    __table_args__ = (CheckConstraint(f"status IN {ASSIGNMENT_STATUSES}", name="ck_assignments_status"),)
+    __table_args__ = (
+        CheckConstraint(f"status IN {ASSIGNMENT_STATUSES}", name="ck_assignments_status"),
+        # The database itself refuses a second "taken" row for the same job in one agency (even if two requests race)
+        Index("uq_assignments_taken_job", "agency_id", "job_id", unique=True,
+              postgresql_where=text(f"status IN {TAKEN_STATUSES}")),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agency_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("agencies.id", ondelete="CASCADE"), index=True)

@@ -43,3 +43,4 @@ Deadline: 19 November 2026
 - 2 Nov 2026: Agency page lets a freelancer start their own agency (POST /api/agency/start); 2 tests.
 - 2 Nov 2026: Agency Mode redesign: owner hero stats, setup checklist, tabs (Routing with teammate comparison, Pipeline board, Team with inline invites/resend/remove, Performance), member queue with progress steps and confirmations.
 - 2 Nov 2026: Team Chat (extra feature): agency channel, job threads, direct messages, unread badge, Jitsi 'Meet now' calls; migration 0009; 8 tests.
+- 2 Nov 2026: Agency SQA audit: 17 findings reproduced and fixed (H1-H2, M1-M6, L1-L9); migration 0010; 16 tests in test_agency_audit.py; 245 tests pass; results table in TEST_RESULTS.md section 7b.

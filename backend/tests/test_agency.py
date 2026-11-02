@@ -157,6 +157,8 @@ def test_stats_and_win_rate(client: TestClient, team: dict, jobs: dict) -> None:
     owner_h = auth_header(team["owner"])
     py_id = member_id(client, team["py"])
     a = client.post("/api/agency/assign", json={"job_id": jobs["py"], "member_id": py_id}, headers=owner_h).json()
+    # A job is applied for first, then won (since the 2 Nov audit "Applied" cannot be skipped)
+    client.post(f"/api/agency/assignments/{a['id']}/status", json={"status": "applied"}, headers=auth_header(team["py"]))
     client.post(f"/api/agency/assignments/{a['id']}/status", json={"status": "won"}, headers=auth_header(team["py"]))
     stats = client.get("/api/agency/members/stats", headers=owner_h).json()
     pyra = next(m for m in stats["members"] if m["member_id"] == py_id)

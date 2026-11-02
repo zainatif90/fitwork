@@ -30,8 +30,9 @@ TC-7 uses 520 jobs labelled `source = synthetic` that exist **only in the test d
 after every test). The real-data performance numbers are in sections 3 and 4.
 
 ## 2. Full automated test suite
-Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **208 passed, 0 failed (58 s)** (1 Nov 2026).
-The table below is the original breakdown; new files since: test_auth_sessions.py, test_review_fixes.py, test_job_boards.py.
+Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **245 passed, 0 failed (89 s)** (2 Nov 2026).
+The table below is the original breakdown; new files since: test_auth_sessions.py, test_review_fixes.py, test_job_boards.py,
+test_chat.py (Team Chat, 8), test_agency_audit.py (agency SQA audit fixes, 16).
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -193,6 +194,37 @@ Live checks after deploying (1 Nov 2026): the **same walk-through on the live si
 with fake IPs: 3 sent, then 429; a faked CF-Connecting-IP header is refused by Cloudflare (403); HEAD /api/health 200;
 index.html served with Cache-Control: no-cache.
 
+## 7b. Agency Mode + Team Chat SQA audit (2 November 2026)
+Method: read all agency/chat code (server and website), then ran each suspicion as a real request against the test
+database (14 probes) and measured routing time on the real local job data (3 members: about 0.05 s per call).
+Every finding below was reproduced before it was fixed, and each fix has a test in `test_agency_audit.py`
+(name in brackets). Browser checks after the fixes: walk-through 11 / 11 steps, 0 JavaScript errors; agency pages at
+390 px and 1440 px with no sideways scrolling; reassign, take back, closed job, archived chat and owner jobs tried by hand.
+
+| # | Severity | Found (reproduced) | Fix |
+|---|---|---|---|
+| H1 | High | Owner page counted only the latest 100 assignments: 105 in the database, 100 on the page | Server returns totals and per-person results over all assignments (`test_h1_…`) |
+| H2 | High | A job that closed on its platform stayed "Assigned" and could still be marked "applied" | Job summary has `is_active`; page shows "Closed"; applying is refused; declining a closed job is not re-routed (`test_h2_…`) |
+| M1 | Medium | Owner could not take a job back or give it to someone else; a member could not leave; an agency could not be closed | `DELETE /agency/assignments/{id}`, `POST …/reassign`, `POST /agency/leave`, `POST /agency/close` (type the name to confirm) (`test_m1_…` ×4) |
+| M2 | Medium | A removed member's won job counted in the banner but not in the results table | Results include people who left, marked "(left)"; banner and table use the same server totals (`test_m2_…`) |
+| M3 | Medium | Removing a member made the owner's own chat history with them answer 404 | History stays readable (read-only, "Archived"); new messages are refused (`test_m3_…`) |
+| M4 | Medium | Routing returned at most 20 jobs and "To assign" looked like a total | `?limit=` up to 200; the page loads 200 and shows 20 at a time with "Show more" (`test_m4_…`) |
+| M5 | Medium | The owner's own profile was never used: a logo job went "Low team fit" to a React developer (score 14) while the owner is a logo designer | Owner with a profile is routed jobs too, has "My jobs", can update status (`test_m5_…`) |
+| M6 | Medium | Chat polled "after the newest timestamp"; a message saved a moment later with an earlier timestamp was never shown in an open chat | Each poll overlaps 15 s and drops messages already shown, then sorts by time |
+| L1 | Low | Agency name "   " was saved as an empty name | Length checked after trimming (`test_l1_…`) |
+| L2 | Low | Invite errors told whether an email belonged to an agency owner or member | One message for both cases (`test_l2_…`) |
+| L3 | Low | Invite links never expired | Links expire after 7 days; page shows "Link expired"; Resend makes a new one (`test_l3_…`) |
+| L4 | Low | A member could mark "Won" without ever applying | assigned → applied → won/lost only (`test_l4_…`) |
+| L5 | Low | A removed member's open tab showed "Not allowed for your role" | Page refreshes the role and shows the right view |
+| L6 | Low | Banner said "Team 3", tab said "Team 4" (tab counted pending invites) | Both count active members; pending invites shown separately |
+| L7 | Low | No database rule against two "taken" rows for one job (parallel test: 4 tries → 1 success, so defence in depth) | Partial unique index `uq_assignments_taken_job` (migration 0010) (`test_l7_…`) |
+| L8 | Low | Tabs had no keyboard arrows and no tab panel for screen readers | WAI-ARIA tabs: arrows, Home/End, `aria-controls`, `role="tabpanel"` |
+| L9 | Low | "Assigned today" reset at 05:00 in Pakistan (UTC midnight) | Stats take the viewer's time zone (`?tz=`) (`test_l9_…`) |
+
+Checked and found correct: members cannot open other members' jobs or chats (IDOR), other agencies see nothing,
+every route needs a login, invite links are single-use and email-bound and an old link stops working after Resend,
+decline re-routes to the next best member, results are final, chat text cannot run as HTML, rate limits work.
+
 ## 8. Known limitations (not hidden)
 - Match Score weights (0.70 / 0.15 / 0.15) are heuristic, not learned. Won/lost feedback is stored for a future model.
 - Win-rate charts stay empty until members record real won/lost outcomes; no outcomes are invented.
@@ -201,3 +233,5 @@ index.html served with Cache-Control: no-cache.
 - Skill Gap "jobs unlocked" measures how many more jobs in the user's field the model would rank ≥ 60 if the skill
   were on the profile. "Your field" depends on the job tags we receive: a field with few live jobs (e.g. QA testing:
   40 jobs on 1 Nov) gives fewer suggestions, and adjacent skills (e.g. mobile development for a mobile tester) can appear.
+- Team Chat uses polling (every 4 s in an open chat), not push: a new message can take a few seconds to appear.
+  Video calls are Jitsi Meet links; the person starting a call may be asked by Jitsi to sign in with Google/GitHub.

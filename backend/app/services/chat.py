@@ -6,6 +6,8 @@ Who can see what (checked on every request, never only in the UI):
 - a job thread: the owner and the member(s) the job is assigned to.
 - a direct chat: only the two people in it, and both must be in the same agency.
 A channel the user may not open answers 404, so nobody can find out that it exists.
+History is kept: when someone leaves, the people still in the agency can still READ their old direct chat
+(and the owner the job threads), but nobody can write there any more ("archived").
 
 Calls: the server makes a random Jitsi Meet room link (free, open source, nothing to install).
 The browser opens it in a new tab; FitWork itself never handles audio or video.
@@ -31,11 +33,7 @@ PAGE_SIZE = 50
 
 
 def agency_for(db: Session, user: User) -> Agency:
-    if user.role == "agency_owner":
-        return agency_service.get_or_create_agency(db, user)
-    if user.role == "agency_member":
-        return agency_service.agency_of_member(db, user)[0]
-    raise HTTPException(status_code=403, detail="Team chat is for agency teams. Start or join an agency first.")
+    return agency_service.agency_of(db, user)
 
 
 def people(db: Session, agency: Agency) -> dict[uuid.UUID, User]:
@@ -55,28 +53,41 @@ def _job_assignees(db: Session, agency: Agency, job_id: uuid.UUID) -> list[uuid.
         Assignment.agency_id == agency.id, Assignment.job_id == job_id, Assignment.status.in_(TAKEN_STATUSES))))
 
 
-def resolve(db: Session, agency: Agency, user: User, key: str) -> str:
+def _has_messages(db: Session, agency: Agency, channel: str) -> bool:
+    return db.scalar(select(ChatMessage.id).where(ChatMessage.agency_id == agency.id, ChatMessage.channel == channel)
+                     .limit(1)) is not None
+
+
+def resolve(db: Session, agency: Agency, user: User, key: str) -> tuple[str, bool]:
     """
     Turn a key from the URL ("team", "job-<job id>", "dm-<other user id>") into the stored channel name,
-    after checking that this user may open it.
+    after checking that this user may open it. Returns (channel, writable): archived chats are read-only.
     """
     not_found = HTTPException(status_code=404, detail="Chat not found")
     if key == "team":
-        return "team"
+        return "team", True
     kind, _, raw = key.partition("-")
     try:
         ref = uuid.UUID(raw)
     except ValueError:
         raise not_found from None
     if kind == "job":
+        channel = f"job:{ref}"
         assignees = _job_assignees(db, agency, ref)
-        if not assignees or (user.id != agency.owner_id and user.id not in assignees):
-            raise not_found
-        return f"job:{ref}"
+        if assignees and (user.id == agency.owner_id or user.id in assignees):
+            return channel, True
+        if user.id == agency.owner_id and _has_messages(db, agency, channel):
+            return channel, False  # the job was taken back or its teammate left: history only
+        raise not_found
     if kind == "dm":
-        if ref == user.id or ref not in people(db, agency):
+        if ref == user.id:
             raise not_found
-        return _dm_channel(user.id, ref)
+        channel = _dm_channel(user.id, ref)
+        if ref in people(db, agency):
+            return channel, True
+        if _has_messages(db, agency, channel):
+            return channel, False  # the other person left the agency: history only
+        raise not_found
     raise not_found
 
 
@@ -136,8 +147,26 @@ def list_channels(db: Session, agency: Agency, user: User) -> list[dict[str, Any
             "subtitle": "Agency owner" if uid == agency.owner_id else "Team member", "member_id": str(uid),
         })
 
+    # Archived: old chats with people who left, and (for the owner) threads of jobs no longer assigned
+    listed = {c["channel"] for c in channels}
+    old = set(db.scalars(select(ChatMessage.channel).where(ChatMessage.agency_id == agency.id).distinct())) - listed
+    gone: dict[uuid.UUID, str] = {}
+    for ch in old:
+        if ch.startswith("dm:") and str(user.id) in ch.split(":")[1:]:
+            other = uuid.UUID(next(x for x in ch.split(":")[1:] if x != str(user.id)))
+            gone[other] = ch
+    for u in db.scalars(select(User).where(User.id.in_(gone))) if gone else []:
+        channels.append({"key": f"dm-{u.id}", "channel": gone[u.id], "kind": "direct", "title": u.full_name,
+                         "subtitle": "Left the agency · read-only", "member_id": str(u.id), "archived": True})
+    if is_owner:
+        job_ids = [uuid.UUID(ch[4:]) for ch in old if ch.startswith("job:")]
+        for job in db.scalars(select(Job).where(Job.id.in_(job_ids))) if job_ids else []:
+            channels.append({"key": f"job-{job.id}", "channel": f"job:{job.id}", "kind": "job", "title": job.title,
+                             "subtitle": "No longer assigned · read-only", "member_id": None, "archived": True})
+
     unread, last = _unread_and_last(db, agency, user, [c["channel"] for c in channels])
     for c in channels:
+        c.setdefault("archived", False)
         name = c.pop("channel")  # stored channel name stays on the server; the browser uses "key"
         m = last.get(name)
         c["unread"] = unread.get(name, 0)
@@ -183,7 +212,10 @@ def mark_read(db: Session, agency: Agency, user: User, channel: str) -> None:
     db.commit()
 
 
-def post_message(db: Session, agency: Agency, user: User, channel: str, body: str, kind: str = "text") -> dict[str, Any]:
+def post_message(db: Session, agency: Agency, user: User, channel: str, body: str, kind: str = "text",
+                 writable: bool = True) -> dict[str, Any]:
+    if not writable:
+        raise HTTPException(status_code=403, detail="This conversation is archived, so new messages can't be sent")
     m = ChatMessage(agency_id=agency.id, channel=channel, sender_id=user.id, kind=kind, body=body)
     db.add(m)
     db.commit()

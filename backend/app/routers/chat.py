@@ -29,6 +29,7 @@ class ChannelOut(BaseModel):
     title: str
     subtitle: str
     member_id: str | None  # the other person, for direct chats
+    archived: bool = False  # read-only history (the person left, or the job is no longer assigned)
     unread: int
     last_message: str | None
     last_at: datetime | None
@@ -81,23 +82,24 @@ def unread(user: User = Depends(get_current_user), db: Session = Depends(get_db)
 def messages(key: str, after: datetime | None = Query(default=None), user: User = Depends(get_current_user),
              db: Session = Depends(get_db)) -> list[dict]:
     agency = chat.agency_for(db, user)
-    return chat.get_messages(db, agency, user, chat.resolve(db, agency, user, key), after)
+    channel, _ = chat.resolve(db, agency, user, key)
+    return chat.get_messages(db, agency, user, channel, after)
 
 
 @router.post("/channels/{key}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
 def send(key: str, data: MessageIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     agency = chat.agency_for(db, user)
-    channel = chat.resolve(db, agency, user, key)
+    channel, writable = chat.resolve(db, agency, user, key)
     if hit_rate_limit(f"rl:chat:{user.id}", MESSAGES_PER_MINUTE, 60):
         raise HTTPException(status_code=429, detail="You are sending messages too fast. Please wait a moment.")
-    return chat.post_message(db, agency, user, channel, data.body)
+    return chat.post_message(db, agency, user, channel, data.body, writable=writable)
 
 
 @router.post("/channels/{key}/call", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
 def start_call(key: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     """Posts a 'call' message with a fresh Jitsi Meet link; everyone in the chat can join from it."""
     agency = chat.agency_for(db, user)
-    channel = chat.resolve(db, agency, user, key)
+    channel, writable = chat.resolve(db, agency, user, key)
     if hit_rate_limit(f"rl:call:{user.id}", CALLS_PER_HOUR, 3600):
         raise HTTPException(status_code=429, detail=f"You can start up to {CALLS_PER_HOUR} calls an hour.")
-    return chat.post_message(db, agency, user, channel, chat.new_call_link(), kind="call")
+    return chat.post_message(db, agency, user, channel, chat.new_call_link(), kind="call", writable=writable)

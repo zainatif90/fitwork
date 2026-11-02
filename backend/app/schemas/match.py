@@ -35,6 +35,7 @@ class JobSummary(BaseModel):
     proposals_count: int | None
     posted_at: datetime
     url: str | None
+    is_active: bool = True  # False once the job has closed (expired on its platform)
 
 
 class MatchOut(BaseModel):

@@ -74,7 +74,10 @@ FitWork is a web platform that collects freelance job listings and matches them 
 - freelancer (solo), agency_owner, agency_member.
 - An agency owner can also have their own profile and personal matches.
 - A freelancer who accepts an invite becomes agency_member. A member belongs to one agency only.
-- Agency routing candidate jobs = union of each active member's top 20 matches.
+- Agency routing candidate jobs = union of each active member's top 20 matches. The owner is routed jobs too
+  when the owner has a profile. Status flow: assigned -> applied -> won/lost (Applied cannot be skipped).
+  Owner can take a job back or reassign it (before anyone applied); members can leave; owner can close the agency.
+  Invite links expire after 7 days. Team totals are counted on the server over ALL assignments.
 - Team Chat (extra feature, not in the SRS): agency channel, job threads (owner + assignee), direct messages.
   Polling, not WebSockets. Calls = a random Jitsi Meet link posted by the server (no audio/video on our side).
 

@@ -109,6 +109,7 @@ def job_summary(job: Job) -> dict[str, Any]:
         "proposals_count": job.proposals_count,
         "posted_at": job.posted_at.isoformat(),
         "url": job.url,
+        "is_active": job.is_active,
     }
 
 

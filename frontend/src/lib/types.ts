@@ -61,6 +61,7 @@ export interface JobSummary {
   proposals_count: number | null;
   posted_at: string;
   url: string | null;
+  is_active?: boolean; // false once the job has closed on its platform
 }
 
 export interface MatchScore {
@@ -106,8 +107,9 @@ export interface AgencyMemberRow {
   email: string;
   name: string | null;
   status: "invited" | "active";
-  invited_at: string;
+  invited_at: string; // when the current invite link was sent
   joined_at: string | null;
+  invite_expired: boolean;
 }
 
 export interface Agency {
@@ -152,6 +154,7 @@ export interface TeamMemberStats {
   member_id: string;
   name: string;
   email: string;
+  is_owner: boolean; // the owner is listed when they have a profile (they can take jobs too)
   top_skills: string[];
   has_profile: boolean;
   active_assignments: number;
@@ -160,8 +163,20 @@ export interface TeamMemberStats {
   routed_today: number;
 }
 
+export interface MemberResults {
+  member_id: string;
+  name: string;
+  current: boolean; // false = has left the agency
+  assigned: number;
+  applied: number;
+  won: number;
+  lost: number;
+}
+
 export interface TeamStats {
   members: TeamMemberStats[];
+  results: MemberResults[];
+  totals: Record<"assigned" | "applied" | "won" | "lost" | "declined", number>;
   win_rate_series: Array<{ week: string } & Record<string, number | null | string>>;
   has_outcomes: boolean;
 }
@@ -180,6 +195,7 @@ export interface ChatChannel {
   title: string;
   subtitle: string;
   member_id: string | null;
+  archived: boolean; // read-only history: the person left, or the job is no longer assigned
   unread: number;
   last_message: string | null;
   last_at: string | null;

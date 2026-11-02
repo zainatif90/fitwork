@@ -1,7 +1,7 @@
 /** Small building blocks shared by the agency owner and member views. */
 import clsx from "clsx";
 import { CheckCircle2, Circle, Send, Trophy, XCircle, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 import { scoreTone } from "../../lib/format";
 import type { AssignmentStatus } from "../../lib/types";
@@ -110,20 +110,40 @@ export function HeroStat({ label, value, hint, icon }: { label: string; value: R
   );
 }
 
-/** Pill-style tab bar. Scrolls sideways on narrow phones instead of squeezing. */
-export function Tabs<T extends string>({ tabs, value, onChange }: {
+/**
+ * Pill-style tab bar. Scrolls sideways on narrow phones instead of squeezing.
+ * Keyboard: Left/Right arrows move between tabs, Home/End jump to the first/last (WAI-ARIA tabs pattern).
+ * Wrap the content in <TabPanel> with the same idPrefix so screen readers know which tab it belongs to.
+ */
+export function Tabs<T extends string>({ tabs, value, onChange, idPrefix, label }: {
   tabs: { id: T; label: string; count?: number; icon: ReactNode }[];
   value: T;
   onChange: (id: T) => void;
+  idPrefix: string;
+  label: string;
 }) {
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const i = tabs.findIndex((t) => t.id === value);
+    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    const target = tabs[(next + tabs.length) % tabs.length];
+    onChange(target.id);
+    document.getElementById(`${idPrefix}-tab-${target.id}`)?.focus();
+  }
+
   return (
     <div className="-mx-1 mb-5 overflow-x-auto px-1 pb-1">
-      <div role="tablist" className="inline-flex min-w-max gap-1 rounded-2xl border border-white/70 bg-white/80 p-1 shadow-soft ring-1 ring-brand-100/60 backdrop-blur">
+      <div role="tablist" aria-label={label} onKeyDown={onKeyDown}
+        className="inline-flex min-w-max gap-1 rounded-2xl border border-white/70 bg-white/80 p-1 shadow-soft ring-1 ring-brand-100/60 backdrop-blur">
         {tabs.map((t) => (
           <button
             key={t.id}
+            id={`${idPrefix}-tab-${t.id}`}
             role="tab"
             aria-selected={value === t.id}
+            aria-controls={`${idPrefix}-panel`}
+            tabIndex={value === t.id ? 0 : -1}
             onClick={() => onChange(t.id)}
             className={clsx(
               "inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition [&>svg]:h-4 [&>svg]:w-4",
@@ -140,5 +160,24 @@ export function Tabs<T extends string>({ tabs, value, onChange }: {
         ))}
       </div>
     </div>
+  );
+}
+
+export function TabPanel({ idPrefix, value, children }: { idPrefix: string; value: string; children: ReactNode }) {
+  return (
+    <div key={value} id={`${idPrefix}-panel`} role="tabpanel" aria-labelledby={`${idPrefix}-tab-${value}`} tabIndex={0}
+      className="animate-fade-up focus:outline-none">
+      {children}
+    </div>
+  );
+}
+
+/** "Closed" label for a job that has expired on its platform. */
+export function ClosedBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-semibold text-white"
+      title="This job has closed on its platform and can no longer be applied to">
+      Closed
+    </span>
   );
 }

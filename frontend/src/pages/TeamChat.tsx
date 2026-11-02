@@ -2,12 +2,15 @@
  * Team Chat (agency owners and members), laid out like a team messaging app:
  * conversations on the left (Team channel, job threads, direct messages), the open conversation on the right.
  *
- * New messages arrive by polling: every 4 s for the open conversation (only new ones, using ?after=),
- * every 15 s for the conversation list. Polling pauses while the browser tab is hidden.
+ * New messages arrive by polling: every 4 s for the open conversation, every 15 s for the conversation list.
+ * Polling pauses while the browser tab is hidden. Each poll asks for messages from 15 s before the newest one
+ * we have (and drops the ones we already show): two messages sent at almost the same moment can be saved in
+ * a different order than their timestamps, and without this overlap one of them could be skipped.
+ * Archived conversations (someone left, or a job is no longer assigned) are read-only.
  * "Meet now" posts a Jitsi Meet video-call link into the conversation and opens it in a new tab.
  */
 import clsx from "clsx";
-import { ArrowLeft, Briefcase, ExternalLink, Hash, MessagesSquare, Search, SendHorizontal, Users, Video } from "lucide-react";
+import { Archive, ArrowLeft, Briefcase, ExternalLink, Hash, MessagesSquare, Search, SendHorizontal, Users, Video } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -22,6 +25,7 @@ import type { ChatChannel, ChatChannels, ChatMessage } from "../lib/types";
 const MESSAGE_POLL_MS = 4000;
 const CHANNEL_POLL_MS = 15000;
 const MAX_LENGTH = 2000;
+const POLL_OVERLAP_MS = 15000;
 
 /** Runs `fn` every `ms` while the tab is visible (and once right away when it becomes visible again). */
 function usePolling(fn: () => void, ms: number, enabled = true) {
@@ -158,7 +162,9 @@ function Conversation({ channel, me, onBack, onActivity }: {
     if (incoming.length === 0) return;
     setMessages((cur) => {
       const known = new Set((cur ?? []).map((m) => m.id));
-      return [...(cur ?? []), ...incoming.filter((m) => !known.has(m.id))];
+      const fresh = incoming.filter((m) => !known.has(m.id));
+      if (fresh.length === 0) return cur;
+      return [...(cur ?? []), ...fresh].sort((a, b) => a.created_at.localeCompare(b.created_at));
     });
   }, []);
 
@@ -177,9 +183,11 @@ function Conversation({ channel, me, onBack, onActivity }: {
   usePolling(() => {
     if (!messages) return;
     const last = messages[messages.length - 1];
-    const query = last ? `?after=${encodeURIComponent(last.created_at)}` : "";
+    const since = last ? new Date(new Date(last.created_at).getTime() - POLL_OVERLAP_MS).toISOString() : null;
+    const query = since ? `?after=${encodeURIComponent(since)}` : "";
     api<ChatMessage[]>(`${base}/messages${query}`).then((list) => {
-      if (list.length) { add(list); onActivity(); }
+      const known = new Set(messages.map((m) => m.id));
+      if (list.some((m) => !known.has(m.id))) { add(list); onActivity(); }
     }).catch(() => undefined); // a missed poll is fine; the next one catches up
   }, MESSAGE_POLL_MS, messages !== null);
 
@@ -255,10 +263,10 @@ function Conversation({ channel, me, onBack, onActivity }: {
             <ExternalLink className="h-4 w-4" /> Job
           </Link>
         )}
-        <button onClick={startCall} disabled={calling}
+        {!channel.archived && <button onClick={startCall} disabled={calling}
           className="shine inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-gradient px-3 text-sm font-semibold text-white shadow-glow transition hover:-translate-y-0.5 disabled:opacity-70">
           {calling ? <Spinner className="h-4 w-4" /> : <Video className="h-4 w-4" />} <span className="hidden sm:inline">Meet now</span>
-        </button>
+        </button>}
       </header>
 
       <div ref={scroller} className="flex-1 overflow-y-auto px-3 pb-4 sm:px-6"
@@ -278,6 +286,13 @@ function Conversation({ channel, me, onBack, onActivity }: {
         {messages && messages.length > 0 && <MessageList messages={messages} me={me} />}
       </div>
 
+      {channel.archived ? (
+        <div className="border-t border-slate-200/70 bg-slate-50 px-5 py-4 text-center text-sm text-slate-500">
+          {channel.kind === "direct"
+            ? `${channel.title.split(" ")[0]} has left the agency. You can read this conversation, but not reply.`
+            : "This job is no longer assigned in your agency. The conversation is kept for your records."}
+        </div>
+      ) : (
       <div className="border-t border-slate-200/70 bg-white/85 p-3 backdrop-blur sm:px-5">
         {error && <Alert tone="error" className="mb-2">{error}</Alert>}
         <div className="flex items-end gap-2 rounded-2xl border border-slate-300 bg-white p-1.5 pl-3 shadow-soft transition focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/15">
@@ -302,6 +317,7 @@ function Conversation({ channel, me, onBack, onActivity }: {
           Enter to send · Shift + Enter for a new line{text.length > MAX_LENGTH - 200 && ` · ${MAX_LENGTH - text.length} characters left`}
         </p>
       </div>
+      )}
     </section>
   );
 }
@@ -345,7 +361,7 @@ function ChannelGroup({ title, icon, items, active, onPick }: {
 }
 
 export default function TeamChat() {
-  const { user } = useAuth();
+  const { user, reloadUser } = useAuth();
   const [data, setData] = useState<ChatChannels | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -360,8 +376,12 @@ export default function TeamChat() {
         setError(null);
         window.dispatchEvent(new CustomEvent(CHAT_UNREAD_EVENT, { detail: d.unread_total })); // keep the sidebar badge in sync
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load your chats."));
-  }, []);
+      .catch((err) => {
+        // Removed from the team or the agency was closed: refresh the role so the page explains it
+        if (err instanceof ApiError && (err.status === 403 || err.status === 404)) void reloadUser();
+        setError(err instanceof ApiError ? err.message : "Could not load your chats.");
+      });
+  }, [reloadUser]);
 
   useEffect(() => {
     if (isAgencyUser) loadChannels();
@@ -412,8 +432,9 @@ export default function TeamChat() {
             {!data ? <div className="flex justify-center p-8"><Spinner className="h-5 w-5 text-brand-600" /></div> : (
               <>
                 <ChannelGroup title="Channels" icon={<Hash />} items={filtered.filter((c) => c.kind === "team")} active={activeKey} onPick={pick} />
-                <ChannelGroup title="Job threads" icon={<Briefcase />} items={filtered.filter((c) => c.kind === "job")} active={activeKey} onPick={pick} />
-                <ChannelGroup title="Direct messages" icon={<Users />} items={filtered.filter((c) => c.kind === "direct")} active={activeKey} onPick={pick} />
+                <ChannelGroup title="Job threads" icon={<Briefcase />} items={filtered.filter((c) => c.kind === "job" && !c.archived)} active={activeKey} onPick={pick} />
+                <ChannelGroup title="Direct messages" icon={<Users />} items={filtered.filter((c) => c.kind === "direct" && !c.archived)} active={activeKey} onPick={pick} />
+                <ChannelGroup title="Archived" icon={<Archive />} items={filtered.filter((c) => c.archived)} active={activeKey} onPick={pick} />
                 {filtered.length === 0 && <p className="p-6 text-center text-sm text-slate-500">No conversations match “{query}”.</p>}
                 {data.channels.length === 1 && (
                   <p className="mx-2 mt-2 rounded-xl bg-brand-50/70 p-3 text-xs text-slate-600">
