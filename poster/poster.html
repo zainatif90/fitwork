@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FitWork Poster</title>
+<!-- FitWork A1 poster (594 x 841 mm). Canvas is 2245 x 3179 CSS px = A1 at 96 dpi.
+     Render: see poster/README.md (headless Chromium -> PDF for print, PNG for screens). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=block" rel="stylesheet">
+<style>
+  @page { size: 594mm 841mm; margin: 0; }
+  :root {
+    --bg: #07051a; --ink: #f5f3ff; --muted: #b9b4d9; --dim: #7d77a8;
+    --indigo: #6366f1; --violet: #8b5cf6; --pink: #ec4899; --cyan: #22d3ee; --amber: #f59e0b; --green: #34d399;
+    --card: rgba(255,255,255,0.055); --line: rgba(255,255,255,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 2245px; height: 3179px; background: var(--bg); }
+  body { font-family: Inter, system-ui, sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .poster { position: relative; width: 2245px; height: 3179px; overflow: hidden; padding: 110px 120px 0; isolation: isolate; }
+
+  /* ---------- background: aurora + grid + rings ---------- */
+  .aurora { position: absolute; inset: 0; z-index: -3;
+    background:
+      radial-gradient(900px 700px at 88% 6%, rgba(139,92,246,0.55), transparent 65%),
+      radial-gradient(800px 650px at 4% 14%, rgba(79,70,229,0.50), transparent 65%),
+      radial-gradient(1000px 700px at 70% 46%, rgba(236,72,153,0.20), transparent 65%),
+      radial-gradient(900px 700px at 10% 62%, rgba(34,211,238,0.14), transparent 65%),
+      radial-gradient(1100px 800px at 60% 100%, rgba(124,58,237,0.45), transparent 65%),
+      var(--bg); }
+  .grid { position: absolute; inset: 0; z-index: -2; opacity: .5;
+    background-image: linear-gradient(rgba(255,255,255,.045) 2px, transparent 2px), linear-gradient(90deg, rgba(255,255,255,.045) 2px, transparent 2px);
+    background-size: 90px 90px;
+    -webkit-mask-image: radial-gradient(1400px 1200px at 50% 35%, #000 30%, transparent 85%); }
+  .halo { position: absolute; z-index: -1; border-radius: 50%; border: 2px solid rgba(196,181,253,.10); }
+
+  .mono { font-family: "JetBrains Mono", monospace; }
+  .grad { background: linear-gradient(92deg, #a5b4fc 0%, #c4b5fd 30%, #f0abfc 62%, #fda4af 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* ---------- top bar ---------- */
+  .top { display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 28px; }
+  .logo { width: 110px; height: 110px; border-radius: 30px; display: grid; place-items: center;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed 55%, #db2777); box-shadow: 0 20px 60px rgba(124,58,237,.55), inset 0 2px 0 rgba(255,255,255,.35); }
+  .brand-name { font-family: "Space Grotesk"; font-weight: 700; font-size: 84px; letter-spacing: -2px; }
+  .brand-sub { font-size: 27px; color: var(--muted); margin-top: 2px; letter-spacing: .5px; }
+  .pill { font-family: "JetBrains Mono"; font-size: 26px; letter-spacing: 3px; text-transform: uppercase; color: #e9d5ff;
+    padding: 18px 34px; border-radius: 999px; border: 2px solid rgba(196,181,253,.35); background: rgba(139,92,246,.14); }
+
+  /* ---------- headline ---------- */
+  .eyebrow { margin-top: 50px; font-size: 34px; color: #c4b5fd; letter-spacing: 1px; }
+  .eyebrow b { color: #fff; }
+  h1 { font-family: "Space Grotesk"; font-weight: 700; font-size: 214px; line-height: .9; letter-spacing: -8px; margin-top: 28px; }
+  h1 .l2 { display: block; }
+  .lede { margin-top: 44px; font-size: 42px; line-height: 1.38; color: #ddd8fb; max-width: 1960px; font-weight: 400; }
+  .lede b { color: #fff; font-weight: 700; }
+
+  /* ---------- hero: meaning space + match cards ---------- */
+  .hero { margin-top: 52px; display: grid; grid-template-columns: 1150px 1fr; gap: 44px; height: 850px; }
+  .panel { position: relative; border-radius: 48px; background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
+    border: 2px solid var(--line); box-shadow: 0 40px 120px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.08); overflow: hidden; }
+  .panel-label { position: absolute; top: 40px; left: 48px; font-size: 24px; letter-spacing: 4px; text-transform: uppercase; color: #c4b5fd; }
+  .space svg { position: absolute; inset: 0; }
+  .space-caption { position: absolute; left: 48px; right: 48px; bottom: 40px; font-size: 30px; line-height: 1.4; color: var(--muted); }
+  .space-caption b { color: #fff; }
+
+  .cards { padding: 98px 40px 0; display: flex; flex-direction: column; gap: 22px; }
+  .mcard { position: relative; border-radius: 34px; padding: 28px 32px; background: rgba(12,9,38,.72); border: 2px solid rgba(255,255,255,.10);
+    display: grid; grid-template-columns: 136px 1fr; gap: 28px; align-items: center; }
+  .mcard.best { border: 3px solid transparent;
+    background: linear-gradient(rgba(14,10,44,.92), rgba(14,10,44,.92)) padding-box, linear-gradient(120deg, #6366f1, #a855f7, #ec4899, #f59e0b) border-box;
+    box-shadow: 0 0 80px rgba(168,85,247,.45); }
+  .mcard.dim { opacity: .62; transform: scale(.97); }
+  .ring { width: 136px; height: 136px; position: relative; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring span { position: absolute; inset: 0; display: grid; place-items: center; font-family: "Space Grotesk"; font-weight: 700; font-size: 50px; }
+  .mtitle { font-family: "Space Grotesk"; font-size: 40px; font-weight: 600; line-height: 1.15; }
+  .mreason { font-size: 26px; color: var(--muted); margin-top: 10px; line-height: 1.35; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .chip { font-size: 21px; padding: 7px 16px; border-radius: 999px; font-weight: 600; }
+  .ok { background: rgba(52,211,153,.14); color: #6ee7b7; border: 1.5px solid rgba(52,211,153,.35); }
+  .miss { background: rgba(245,158,11,.12); color: #fcd34d; border: 1.5px solid rgba(245,158,11,.35); }
+  .tag { position: absolute; top: -18px; right: 30px; font-family: "JetBrains Mono"; font-size: 20px; letter-spacing: 2px; padding: 8px 18px; border-radius: 999px;
+    background: linear-gradient(90deg, #7c3aed, #db2777); color: #fff; }
+
+  /* ---------- section titles ---------- */
+  .sec { margin-top: 60px; display: flex; align-items: baseline; gap: 28px; }
+  .sec .num { font-family: "JetBrains Mono"; font-size: 28px; color: #f0abfc; letter-spacing: 3px; }
+  .sec h2 { font-family: "Space Grotesk"; font-size: 66px; font-weight: 700; letter-spacing: -2px; }
+  .sec .rule { flex: 1; height: 2px; background: linear-gradient(90deg, rgba(196,181,253,.5), transparent); align-self: center; }
+
+  /* ---------- pipeline ---------- */
+  .pipe { margin-top: 46px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 26px; position: relative; }
+  .pipe::before { content: ""; position: absolute; left: 60px; right: 60px; top: 66px; height: 4px; z-index: 0;
+    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #f59e0b, #34d399); opacity: .8; border-radius: 4px; }
+  .step { position: relative; z-index: 1; }
+  .sicon { width: 132px; height: 132px; border-radius: 40px; display: grid; place-items: center; background: #120d33; border: 3px solid rgba(255,255,255,.16); box-shadow: 0 16px 50px rgba(0,0,0,.5); }
+  .step:nth-child(1) .sicon { border-color: #6366f1; } .step:nth-child(2) .sicon { border-color: #a855f7; }
+  .step:nth-child(3) .sicon { border-color: #ec4899; } .step:nth-child(4) .sicon { border-color: #f59e0b; } .step:nth-child(5) .sicon { border-color: #34d399; }
+  .step .k { margin-top: 30px; font-family: "JetBrains Mono"; font-size: 22px; color: var(--dim); letter-spacing: 3px; }
+  .step h3 { font-family: "Space Grotesk"; font-size: 46px; margin-top: 6px; }
+  .step p { font-size: 26px; color: var(--muted); line-height: 1.4; margin-top: 10px; }
+  .step p b { color: #fff; font-weight: 600; }
+
+  /* ---------- compact pipeline strip ---------- */
+  .strip { margin-top: 36px; border-radius: 38px; border: 2px solid var(--line); background: rgba(10,7,32,.6); padding: 34px 40px 36px; position: relative; }
+  .strip .panel-label { position: static; margin-bottom: 26px; }
+  .pipe { margin-top: 0; gap: 30px; }
+  .pipe::before { display: none; }
+  .sicon { width: 100px; height: 100px; border-radius: 30px; }
+  .sicon svg { width: 50px; height: 50px; }
+  .step { display: grid; grid-template-columns: 100px 1fr; gap: 22px; align-items: start; }
+  .step .k { margin-top: 2px; font-size: 19px; }
+  .step h3 { font-size: 38px; margin-top: 0; }
+  .step p { font-size: 23px; margin-top: 6px; }
+
+  /* ---------- "Why 94?" score breakdown ---------- */
+  .why { margin-top: 0; border-radius: 30px; padding: 26px 34px 28px; background: linear-gradient(120deg, rgba(79,70,229,.25), rgba(219,39,119,.18)); border: 2px solid rgba(196,181,253,.3); }
+  .why .h { display: flex; justify-content: space-between; align-items: baseline; }
+  .why .h b { font-family: "Space Grotesk"; font-size: 34px; }
+  .why .h span { font-family: "JetBrains Mono"; font-size: 20px; color: #c4b5fd; }
+  .why .bar { margin-top: 22px; height: 70px; font-size: 19px; white-space: nowrap; }
+  .why .eq { font-family: "JetBrains Mono"; font-size: 20px; color: #ddd6fe; margin-top: 16px; line-height: 1.5; }
+  .why .eq em { font-style: normal; color: #f0abfc; }
+  .why .note { font-size: 24px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+
+  /* ---------- features ---------- */
+  .strip-label { margin-top: 40px; font-size: 24px; letter-spacing: 4px; text-transform: uppercase; color: #c4b5fd; }
+  .feat-wrap { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 26px; }
+  .feat { border-radius: 38px; padding: 30px 32px; display: grid; grid-template-columns: 64px 1fr; column-gap: 20px; align-items: center; background: var(--card); border: 2px solid var(--line); position: relative; overflow: hidden; }
+  .feat::after { content: ""; position: absolute; width: 300px; height: 300px; right: -120px; top: -120px; border-radius: 50%; filter: blur(10px); opacity: .45; }
+  .feat.a::after { background: radial-gradient(#6366f1, transparent 70%); } .feat.b::after { background: radial-gradient(#ec4899, transparent 70%); }
+  .feat.c::after { background: radial-gradient(#22d3ee, transparent 70%); } .feat.d::after { background: radial-gradient(#f59e0b, transparent 70%); }
+  .feat h3 { font-family: "Space Grotesk"; font-size: 36px; line-height: 1.1; margin: 0; }
+  .feat > svg { width: 64px; height: 64px; }
+  .feat p { grid-column: 1 / -1; }
+  .feat p { font-size: 24px; color: var(--muted); line-height: 1.4; margin-top: 16px; }
+  .feat p b { color: #fff; font-weight: 600; }
+
+  .formula { margin-top: 26px; border-radius: 38px; padding: 40px 48px; background: linear-gradient(120deg, rgba(79,70,229,.22), rgba(219,39,119,.16)); border: 2px solid rgba(196,181,253,.28);
+    display: grid; grid-template-columns: 1fr 760px; gap: 50px; align-items: center; }
+  .formula .eq { font-family: "JetBrains Mono"; font-size: 34px; line-height: 1.5; color: #e9e5ff; }
+  .formula .eq em { font-style: normal; color: #f0abfc; }
+  .formula .note { font-size: 25px; color: var(--muted); margin-top: 14px; line-height: 1.4; }
+  .bar { display: flex; height: 64px; border-radius: 18px; overflow: hidden; font-family: "JetBrains Mono"; font-size: 23px; font-weight: 700; }
+  .bar div { display: grid; place-items: center; color: #fff; }
+  .legend { display: flex; justify-content: space-between; margin-top: 14px; font-size: 22px; color: var(--muted); }
+
+  /* ---------- stats ---------- */
+  .stats { margin-top: 32px; display: grid; grid-template-columns: repeat(6, 1fr); border-radius: 38px; border: 2px solid var(--line); background: rgba(8,6,28,.6); overflow: hidden; }
+  .stat { padding: 28px 28px; border-right: 2px solid var(--line); }
+  .stat:last-child { border-right: 0; }
+  .stat .v { font-family: "Space Grotesk"; font-weight: 700; font-size: 74px; letter-spacing: -3px; line-height: 1; }
+  .stat .d { font-size: 24px; color: var(--muted); margin-top: 14px; line-height: 1.35; }
+
+  /* ---------- footer ---------- */
+  .foot { position: absolute; left: 0; right: 0; bottom: 0; height: 350px; padding: 0 120px; display: grid; grid-template-columns: 300px 1fr 640px; gap: 60px; align-items: center;
+    background: linear-gradient(180deg, rgba(7,5,26,0), rgba(7,5,26,.85) 25%); }
+  .foot::before { content: ""; position: absolute; left: 120px; right: 120px; top: 6px; height: 3px; background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #f59e0b); border-radius: 3px; }
+  .qr { width: 300px; height: 300px; border-radius: 34px; background: #fff; padding: 26px; box-shadow: 0 0 0 6px rgba(168,85,247,.5), 0 0 90px rgba(168,85,247,.55); }
+  .qr img { width: 100%; height: 100%; display: block; }
+  .cta .big { font-family: "Space Grotesk"; font-size: 66px; font-weight: 700; letter-spacing: -2px; line-height: 1.02; }
+  .cta .url { font-family: "JetBrains Mono"; font-size: 32px; color: #c4b5fd; margin-top: 22px; }
+  .cta .url2 { font-family: "JetBrains Mono"; font-size: 26px; color: var(--dim); margin-top: 10px; }
+  .team { border-left: 2px solid var(--line); padding-left: 50px; }
+  .team .lbl { font-family: "JetBrains Mono"; font-size: 20px; letter-spacing: 4px; color: var(--dim); text-transform: uppercase; }
+  .team .names { font-family: "Space Grotesk"; font-size: 38px; font-weight: 600; line-height: 1.3; margin-top: 10px; }
+  .team .adv { font-family: "Space Grotesk"; font-size: 34px; font-weight: 500; margin-top: 10px; color: #f0abfc; }
+  .stack { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .stack span { font-family: "JetBrains Mono"; font-size: 18px; padding: 6px 14px; border-radius: 10px; background: rgba(255,255,255,.07); color: #d4d0f0; border: 1px solid rgba(255,255,255,.12); }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="aurora"></div>
+  <div class="grid"></div>
+  <div class="halo" style="width:1500px;height:1500px;right:-620px;top:-560px"></div>
+  <div class="halo" style="width:1100px;height:1100px;right:-420px;top:-360px"></div>
+  <div class="halo" style="width:700px;height:700px;right:-220px;top:-160px"></div>
+
+  <!-- top bar -->
+  <div class="top">
+    <div class="brand">
+      <div class="logo">
+        <svg width="62" height="62" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">FitWork</div>
+        <div class="brand-sub">NLP-based freelance job matching</div>
+      </div>
+    </div>
+    <div class="pill">Final Year Project · 2026</div>
+  </div>
+
+  <!-- headline -->
+  <div class="eyebrow mono">// <b>3,000+</b> real jobs &nbsp;·&nbsp; <b>384</b> dimensions of meaning &nbsp;·&nbsp; <b>5</b> that truly fit you</div>
+  <h1>Stop scrolling.<span class="l2 grad">Start matching.</span></h1>
+  <p class="lede">Freelancers lose hours on listings never meant for them. <b>FitWork reads every job for you</b>, understands what it
+    <i>means</i> — not just its keywords — and shows the <b>5 jobs that truly fit you</b>, each with a score you can trust and a reason you can read.</p>
+
+  <!-- hero -->
+  <div class="hero">
+    <div class="panel space">
+      <svg id="space" width="1150" height="900" viewBox="0 0 1180 920" preserveAspectRatio="xMidYMid slice"></svg>
+      <div class="panel-label mono">Inside the model · meaning-space</div>
+      <div class="space-caption">Every job and every profile becomes a point in a <b>384-dimensional space of meaning</b>.
+        Similar work lands close together — even when it uses different words. <b>Your nearest points are your best matches.</b></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-label mono">What you see · your top 5</div>
+      <div class="cards">
+        <div class="mcard best">
+          <div class="tag">BEST MATCH</div>
+          <div class="ring" data-score="94" data-color="#34d399"><span>94</span></div>
+          <div>
+            <div class="mtitle">React analytics dashboard for a SaaS startup</div>
+            <div class="mreason">Your React + TypeScript work fits closely, and the budget matches your hourly rate.</div>
+            <div class="chips"><span class="chip ok">✓ React</span><span class="chip ok">✓ TypeScript</span><span class="chip ok">✓ Tailwind</span><span class="chip miss">+ Recharts</span></div>
+          </div>
+        </div>
+        <div class="why">
+          <div class="h"><b>Why 94?</b><span>explainable by design</span></div>
+          <div class="bar">
+            <div style="width:62%;background:linear-gradient(90deg,#4f46e5,#8b5cf6)">MEANING +64</div>
+            <div style="width:19%;background:#db2777">BUDGET +15</div>
+            <div style="width:19%;background:#d97706">FRESH +15</div>
+          </div>
+          <div class="eq">score = 100 × (<em>0.70</em>·meaning + gate·(<em>0.15</em>·budget + <em>0.15</em>·freshness))</div>
+          <div class="note">An honest <b style="color:#fff">Match Score</b> — never a fake "win probability".</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <div class="strip"><div class="panel-label mono">How it works · 5 steps, repeated every 30 minutes</div>
+  <div class="pipe">
+    <div class="step">
+      <div class="sicon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+      <div><div class="k">STEP 1</div><h3>Collect</h3>
+      <p><b>Real jobs</b> from Freelancer.com and 3 job boards.</p></div>
+    </div>
+    <div class="step">
+      <div class="sicon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/></svg></div>
+      <div><div class="k">STEP 2</div><h3>Understand</h3>
+      <p><b>MiniLM</b> turns text into <b>384 numbers</b> of meaning.</p></div>
+    </div>
+    <div class="step">
+      <div class="sicon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f9a8d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><circle cx="11" cy="11" r="2" fill="#f9a8d4"/></svg></div>
+      <div><div class="k">STEP 3</div><h3>Search</h3>
+      <p><b>pgvector</b> finds the 50 nearest jobs in <b>milliseconds</b>.</p></div>
+    </div>
+    <div class="step">
+      <div class="sicon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+      <div><div class="k">STEP 4</div><h3>Score</h3>
+      <p>A <b>0–100 Match Score</b>, with the reason.</p></div>
+    </div>
+    <div class="step">
+      <div class="sicon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></div>
+      <div><div class="k">STEP 5</div><h3>Act</h3>
+      <p>AI drafts the <b>proposal</b> or picks the <b>best teammate</b>.</p></div>
+    </div>
+  </div></div>
+
+  <!-- features -->
+  <div class="strip-label mono">Four ideas · one platform</div>
+  <div class="feat-wrap">
+    <div class="feat a">
+      <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9" opacity=".35"/><path d="M12 3a9 9 0 0 1 8.5 11.9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>
+      <h3>Explainable Match Score</h3>
+      <p>Not a black box. Every score says <b>why</b>: matched skills, missing skills, budget fit.</p>
+    </div>
+    <div class="feat b">
+      <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="#f9a8d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m3 3 1.5 1.5M8 2v2M2 8h2"/></svg>
+      <h3>AI Proposal Assistant</h3>
+      <p>Drafts a proposal from your <b>real</b> profile. Strict rule: <b>no invented experience</b>.</p>
+    </div>
+    <div class="feat c">
+      <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 7.5v4M12 11.5 6.5 16M12 11.5l5.5 4.5"/></svg>
+      <h3>Agency Mode</h3>
+      <p>Runs a team? Each job is <b>routed to the teammate</b> who fits it best — with team chat built in.</p>
+    </div>
+    <div class="feat d">
+      <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 21 7v10l-9 5-9-5V7z" opacity=".4"/><path d="M12 6 17 9v5l-5 3-5-3V9z"/><circle cx="12" cy="11.5" r="1.3" fill="#fcd34d"/></svg>
+      <h3>Skill Gap Radar</h3>
+      <p>Which skill should you learn next? It measures <b>how many more jobs</b> each one would unlock.</p>
+    </div>
+  </div>
+
+  <!-- stats (all measured; see TEST_RESULTS.md) -->
+  <div class="stats">
+    <div class="stat"><div class="v grad">64 ms</div><div class="d">to rank 1,486 real jobs for one profile</div></div>
+    <div class="stat"><div class="v grad">50</div><div class="d">users at once, zero failed requests</div></div>
+    <div class="stat"><div class="v grad">245</div><div class="d">automated tests, all passing</div></div>
+    <div class="stat"><div class="v grad">3,000+</div><div class="d">real job listings analysed live</div></div>
+    <div class="stat"><div class="v grad">8 / 8</div><div class="d">SRS test cases passed</div></div>
+    <div class="stat"><div class="v grad">24/7</div><div class="d">live in the cloud, for $0</div></div>
+  </div>
+
+  <!-- footer -->
+  <div class="foot">
+    <div class="qr"><img src="qr_site.svg" alt="QR code to fitwork-zain2026.web.app"></div>
+    <div class="cta">
+      <div class="big">Curious what fits <span class="grad">you?</span><br>Scan &amp; see your top 5.</div>
+      <div class="url">fitwork-zain2026.web.app</div>
+      <div class="url2">code: github.com/zainatif90/fitwork</div>
+    </div>
+    <div class="team">
+      <div class="lbl">Project team</div>
+      <div class="names">Muhammad Zain<br>Basharat Ahmad<br>Qasim Younas</div>
+      <div class="lbl" style="margin-top:22px">FYP advisor</div>
+      <div class="adv">Mam Samia Asloob Qureshi</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Score rings on the match cards.
+document.querySelectorAll('.ring').forEach(el => {
+  const s = +el.dataset.score, c = el.dataset.color, r = 58, C = 2 * Math.PI * r;
+  el.insertAdjacentHTML('afterbegin',
+    `<svg width="136" height="136" viewBox="0 0 136 136">
+       <circle cx="68" cy="68" r="${r}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="11"/>
+       <circle cx="68" cy="68" r="${r}" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"
+               stroke-dasharray="${C * s / 100} ${C}" style="filter:drop-shadow(0 0 10px ${c})"/>
+     </svg>`);
+});
+
+// "Meaning-space" illustration: clusters of job points by field, the user's point, and links to the 5 nearest jobs.
+(function () {
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const gauss = () => { let u = 0; for (let i = 0; i < 6; i++) u += rnd(); return (u - 3) / 1.2; };
+  const svg = document.getElementById('space'); const NS = 'http://www.w3.org/2000/svg';
+  const add = (tag, attrs, parent = svg) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+
+  const defs = add('defs', {});
+  defs.innerHTML = `
+    <radialGradient id="youGlow"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#f0abfc"/><stop offset="1" stop-color="#a855f7" stop-opacity="0"/></radialGradient>
+    <linearGradient id="link" x1="0" x2="1"><stop offset="0" stop-color="#f0abfc"/><stop offset="1" stop-color="#34d399"/></linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>`;
+
+  const clusters = [
+    { name: 'WEB DEV',     x: 560, y: 470, sx: 85, sy: 70, c: '#818cf8', n: 46 },
+    { name: 'DATA & AI',   x: 860, y: 330, sx: 80, sy: 60, c: '#22d3ee', n: 34 },
+    { name: 'DESIGN',      x: 250, y: 300, sx: 80, sy: 65, c: '#f472b6', n: 34 },
+    { name: 'WRITING',     x: 240, y: 590, sx: 80, sy: 50, c: '#fbbf24', n: 30 },
+    { name: 'MARKETING',   x: 930, y: 610, sx: 80, sy: 48, c: '#a78bfa', n: 28 },
+    { name: 'MOBILE',      x: 600, y: 210, sx: 70, sy: 45, c: '#60a5fa', n: 20 },
+  ];
+  // faint constellation lines inside each cluster, then points
+  const pts = [];
+  clusters.forEach(cl => {
+    const local = [];
+    for (let i = 0; i < cl.n; i++) {
+      const p = { x: cl.x + gauss() * cl.sx, y: cl.y + gauss() * cl.sy, c: cl.c, r: 3 + rnd() * 5 };
+      if (p.y < 120 || p.y > 700) continue;   // keep clear of the caption at the bottom
+      local.push(p); pts.push(p);
+    }
+    local.forEach((p, i) => { const q = local[(i * 7 + 3) % local.length];
+      if (Math.hypot(p.x - q.x, p.y - q.y) < 90) add('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, stroke: cl.c, 'stroke-opacity': .18, 'stroke-width': 1.5 }); });
+    // WEB DEV label goes below its cluster, so it never sits under YOU's match links
+    add('text', { x: cl.x, y: cl.name === 'WEB DEV' ? cl.y + cl.sy * 2.4 : cl.y - cl.sy * 1.9, 'text-anchor': 'middle', fill: cl.c, 'fill-opacity': .75,
+      'font-family': 'JetBrains Mono', 'font-size': 20, 'letter-spacing': 4 }).textContent = cl.name;
+  });
+  pts.forEach(p => {
+    add('circle', { cx: p.x, cy: p.y, r: p.r * 2.4, fill: p.c, opacity: .16, filter: 'url(#glow)' });
+    add('circle', { cx: p.x, cy: p.y, r: p.r, fill: p.c, opacity: .9 });
+  });
+
+  // the user ("YOU") sits between web dev and data, and links to the 5 nearest job points
+  const you = { x: 620, y: 470 };
+  [70, 130, 200].forEach((r, i) => add('circle', { cx: you.x, cy: you.y, r, fill: 'none', stroke: '#f0abfc', 'stroke-opacity': .35 - i * .09, 'stroke-width': 2, 'stroke-dasharray': '6 10' }));
+  const scores = [94, 91, 87, 83, 79], angles = [200, 235, 165, 315, 35], dist = [115, 160, 175, 190, 210];
+  const near = angles.map((a, i) => ({ p: { x: you.x + Math.cos(a * Math.PI / 180) * dist[i], y: you.y + Math.sin(a * Math.PI / 180) * dist[i] } }));
+  near.forEach(({ p }, i) => {
+    add('line', { x1: you.x, y1: you.y, x2: p.x, y2: p.y, stroke: 'url(#link)', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: .95 });
+    add('circle', { cx: p.x, cy: p.y, r: 13, fill: '#34d399', opacity: .35, filter: 'url(#glow)' });
+    add('circle', { cx: p.x, cy: p.y, r: 9, fill: '#34d399', stroke: '#fff', 'stroke-width': 2.5 });
+    const dx = p.x - you.x, dy = p.y - you.y, len = Math.hypot(dx, dy) || 1;
+    const tx = p.x + dx / len * 42, ty = p.y + dy / len * 42 + 10;
+    add('text', { x: tx, y: ty, 'text-anchor': 'middle', fill: '#6ee7b7', 'font-family': 'Space Grotesk', 'font-weight': 700, 'font-size': 30 }).textContent = scores[i];
+  });
+  add('circle', { cx: you.x, cy: you.y, r: 60, fill: 'url(#youGlow)' });
+  add('circle', { cx: you.x, cy: you.y, r: 17, fill: '#fff', stroke: '#f0abfc', 'stroke-width': 5 });
+  const lab = add('g', {});
+  add('rect', { x: you.x - 62, y: you.y - 92, width: 124, height: 46, rx: 23, fill: '#fff' }, lab);
+  add('text', { x: you.x, y: you.y - 60, 'text-anchor': 'middle', fill: '#4c1d95', 'font-family': 'Space Grotesk', 'font-weight': 700, 'font-size': 26, 'letter-spacing': 2 }, lab).textContent = 'YOU';
+})();
+</script>
+</body>
+</html>

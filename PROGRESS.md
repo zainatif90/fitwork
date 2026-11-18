@@ -46,3 +46,4 @@ Deadline: 19 November 2026
 - 2 Nov 2026: Agency SQA audit: 17 findings reproduced and fixed (H1-H2, M1-M6, L1-L9); migration 0010; 16 tests in test_agency_audit.py; 245 tests pass; results table in TEST_RESULTS.md section 7b.
 - 18 Nov 2026: Code report for submission: CODE_REPORT.md (+ FitWork_Code_Report.docx / .pdf, 8 pages). Test suite re-run: 245 passed.
 - 18 Nov 2026: Final SRS v2.0 (IEEE 830 structure): SRS.md + FitWork_SRS.docx / .pdf (14 pages): 10 use cases, 66 FRs, NFRs with measured results, TC-1..TC-8, traceability matrix. Repo made public for evaluators.
+- 18 Nov 2026: A1 project poster: poster/poster.html -> FitWork_Poster.png (4490x6358) + FitWork_Poster.pdf (A1); QR code to the live site.
