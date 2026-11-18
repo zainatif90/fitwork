@@ -3,8 +3,8 @@
 | Item | Details |
 |---|---|
 | Project | FitWork: NLP-based freelance job matching platform |
-| Student(s) / Roll no. | _fill in_ |
-| Supervisor | _fill in_ |
+| Team members | Muhammad Zain (261934604), Basharat Ahmad, Qasim Younas |
+| FYP advisor | Mam Samia Asloob Qureshi |
 | Repository | https://github.com/zainatif90/fitwork |
 | Live website | https://fitwork-zain2026.web.app |
 | Live API docs | https://fitwork-api-zain2026.onrender.com/api/docs |

@@ -2,6 +2,10 @@
 
 **Live:** https://fitwork-zain2026.web.app  (API: https://fitwork-api-zain2026.onrender.com/api/docs)
 
+**Final Year Project.** Team: Muhammad Zain (261934604), Basharat Ahmad, Qasim Younas.
+FYP advisor: Mam Samia Asloob Qureshi. Code report: [CODE_REPORT.md](CODE_REPORT.md) (also as
+[Word](FitWork_Code_Report.docx) / [PDF](FitWork_Code_Report.pdf)). Test results: [TEST_RESULTS.md](TEST_RESULTS.md).
+
 FitWork collects freelance job listings and matches them to a freelancer's skill profile using NLP
 embeddings. It shows the top 5 jobs with an explainable **Match Score**, drafts proposals with an LLM,
 routes jobs to the best teammate in **Agency Mode**, and shows a **Skill Gap Radar**.
