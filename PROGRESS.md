@@ -1,4 +1,4 @@
-﻿# FitWork Progress
+# FitWork Progress
 
 Deadline: 19 November 2026
 
