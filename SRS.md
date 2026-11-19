@@ -8,7 +8,7 @@
 | Project | FitWork — Final Year Project |
 | Version | 1.0 (final, matches the delivered system) |
 | Date | 19 November 2026 |
-| Team members | Muhammad Zain (261934604), Basharat Ahmad, Qasim Younas |
+| Team members | Muhammad Zain (261934604), Basharat Ahmad (241553493), Qasim Yunus (261934621) |
 | FYP advisor | Mam Samia Asloob Qureshi |
 | Repository | https://github.com/zainatif90/fitwork |
 | Live system | https://fitwork-zain2026.web.app |
