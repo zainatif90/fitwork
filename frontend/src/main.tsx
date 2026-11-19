@@ -4,7 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
 import { AuthProvider } from "./lib/auth";
+import { installElectronClick } from "./lib/electronClick";
 import "./index.css";
+
+installElectronClick(); // clicked buttons get orbiting electrons + a glow
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
