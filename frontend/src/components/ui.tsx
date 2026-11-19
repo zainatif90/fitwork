@@ -2,7 +2,7 @@
 import clsx from "clsx";
 import { AlertCircle, CheckCircle2, Info, Loader2 } from "lucide-react";
 import { Orb3D } from "./Orb3D";
-import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useEffect, useId, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -128,20 +128,47 @@ export function Badge({ children, className }: { children: ReactNode; className?
   );
 }
 
+/*
+ * FitWork logo: a bold "F" inside a gold match-score ring (about 80% full, like a strong Match Score),
+ * with a spark where the ring ends = "the match". Royal purple -> rose -> gold tile with a glossy top.
+ * The same mark is the browser tab icon (public/favicon.svg).
+ */
+export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <svg viewBox="0 0 32 32" className={clsx(className, "drop-shadow-[0_4px_10px_rgb(219_39_119/0.35)]")} aria-hidden>
+      <defs>
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#7e22ce" />
+          <stop offset="0.6" stopColor="#db2777" />
+          <stop offset="1" stopColor="#f59e0b" />
+        </linearGradient>
+        <linearGradient id={`${id}-ring`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fef3c7" />
+          <stop offset="1" stopColor="#fbbf24" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="9" fill={`url(#${id}-bg)`} />
+      <path d="M9 0h14a9 9 0 0 1 9 9v3.5C22 9.5 10 9.5 0 12.5V9a9 9 0 0 1 9-9z" fill="#fff" opacity="0.16" />
+      <circle cx="16" cy="16" r="10.5" fill="none" stroke="#fff" strokeOpacity="0.22" strokeWidth="2.2" />
+      <circle cx="16" cy="16" r="10.5" fill="none" stroke={`url(#${id}-ring)`} strokeWidth="2.2" strokeLinecap="round"
+        strokeDasharray="52.8 66" transform="rotate(-90 16 16)" />
+      <path d="M13.6 21.2V10.8h6.2M13.6 15.9h4.6" fill="none" stroke="#fff" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="6.02" cy="12.76" r="2.3" fill="#fde68a" />
+      <circle cx="6.02" cy="12.76" r="1" fill="#fff" />
+    </svg>
+  );
+}
+
 export function Logo({ className, light }: { className?: string; light?: boolean }) {
   return (
     <div className={clsx("flex items-center gap-2", className)}>
-      <svg viewBox="0 0 32 32" className="h-8 w-8 drop-shadow-sm" aria-hidden>
-        <defs>
-          <linearGradient id="fw-logo" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#6366f1" />
-            <stop offset="1" stopColor="#8b5cf6" />
-          </linearGradient>
-        </defs>
-        <rect width="32" height="32" rx="9" fill={light ? "#fff" : "url(#fw-logo)"} />
-        <path d="M10 9h12v3.2h-8.4v3.4h7.2v3.2h-7.2V23H10z" fill={light ? "#4f46e5" : "#fff"} />
-      </svg>
-      <span className={clsx("font-display text-lg font-bold tracking-tight", light ? "text-white" : "text-slate-900")}>FitWork</span>
+      <LogoMark />
+      <span className={clsx("font-display text-lg font-extrabold tracking-tight", light ? "text-white" : "text-slate-900")}>
+        Fit<span className={clsx("bg-clip-text text-transparent", light
+          ? "bg-[linear-gradient(90deg,#fde68a,#f9a8d4)]"
+          : "bg-[linear-gradient(90deg,#9333ea,#db2777)]")}>Work</span>
+      </span>
     </div>
   );
 }

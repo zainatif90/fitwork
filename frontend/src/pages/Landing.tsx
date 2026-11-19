@@ -77,7 +77,7 @@ export default function Landing() {
           <Logo light />
           <div className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
             <a href="#features" className="hover:text-white">Features</a>
-            <a href="#how" className="hover:text-white">How it works</a>
+            <Link to="/how-it-works" className="hover:text-white">How it works</Link>
             <a href="#score" className="hover:text-white">Match Score</a>
           </div>
           <div className="flex items-center gap-2">
@@ -113,9 +113,9 @@ export default function Landing() {
                 {loggedIn ? "Go to my matches" : "Find my matches, free"}
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
               </Link>
-              <a href="#how" className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-6 py-3.5 font-semibold text-white hover:bg-white/10">
-                See how it works
-              </a>
+              <Link to="/how-it-works" className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-6 py-3.5 font-semibold text-white hover:bg-white/10">
+                Watch how it works
+              </Link>
             </div>
             <p className="mt-8 flex items-center gap-2 text-sm text-slate-400">
               <ShieldCheck className="h-4 w-4 text-emerald-400" /> Real jobs only. Your password is hashed; your data is never sold.

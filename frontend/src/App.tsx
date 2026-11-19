@@ -23,6 +23,9 @@ import VerifyEmail from "./pages/VerifyEmail";
 const loadAgency = () => import("./pages/Agency");
 const loadSkillGap = () => import("./pages/SkillGap");
 const Agency = lazy(loadAgency);
+// The animated "How it works" story is only downloaded when someone opens it
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const PublicHowItWorks = lazy(() => import("./pages/HowItWorks").then((m) => ({ default: m.PublicHowItWorks })));
 const SkillGap = lazy(loadSkillGap);
 
 // ...but they are fetched quietly once the browser is idle after the first page, so the first click on
@@ -42,6 +45,7 @@ export default function App() {
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
       <Route path="/verify" element={<VerifyEmail />} />
+      <Route path="/how-it-works" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><PublicHowItWorks /></Suspense></ErrorBoundary>} />
       <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/invite/:token" element={<ProtectedRoute><AcceptInvite /></ProtectedRoute>} />
@@ -53,6 +57,7 @@ export default function App() {
         <Route path="skill-gap" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><SkillGap /></Suspense></ErrorBoundary>} />
         <Route path="agency" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><Agency /></Suspense></ErrorBoundary>} />
         <Route path="chat" element={<TeamChat />} />
+        <Route path="how-it-works" element={<ErrorBoundary><Suspense fallback={<FullPageSpinner />}><HowItWorks /></Suspense></ErrorBoundary>} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

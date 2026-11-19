@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Briefcase, LogOut, Menu, MessagesSquare, Radar, Settings, UserCog, Users, X } from "lucide-react";
+import { Briefcase, Clapperboard, LogOut, Menu, MessagesSquare, Radar, Settings, UserCog, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -49,6 +49,7 @@ export function AppLayout() {
     { to: "/app/agency", label: "Agency", icon: Users },
     ...(isAgencyUser ? [{ to: "/app/chat", label: "Team Chat", icon: MessagesSquare, badge: unread }] : []),
     { to: "/onboarding", label: "My Profile & Skills", icon: UserCog },
+    { to: "/app/how-it-works", label: "How it works", icon: Clapperboard },
     { to: "/app/settings", label: "Settings", icon: Settings },
   ];
 
