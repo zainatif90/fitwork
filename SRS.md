@@ -6,19 +6,12 @@
 |---|---|
 | Document | Software Requirements Specification (SRS), following the IEEE 830 / ISO/IEC/IEEE 29148 structure |
 | Project | FitWork — Final Year Project |
-| Version | 2.0 (final, matches the delivered system) |
+| Version | 1.0 (final, matches the delivered system) |
 | Date | 19 November 2026 |
 | Team members | Muhammad Zain (261934604), Basharat Ahmad, Qasim Younas |
 | FYP advisor | Mam Samia Asloob Qureshi |
 | Repository | https://github.com/zainatif90/fitwork |
 | Live system | https://fitwork-zain2026.web.app |
-
-### Revision history
-
-| Version | Date | Description |
-|---|---|---|
-| 1.0 | October 2026 | Initial SRS: scope, use cases UC-1 to UC-6, test cases TC-1 to TC-8 |
-| 2.0 | 19 November 2026 | Final version aligned with the delivered system: added job-board sources, server-side sessions, password reset, Agency Mode extensions, Team Chat, measured test results and traceability |
 
 ---
 
@@ -446,7 +439,7 @@ No special hardware is required. All communication uses HTTPS in production.
 
 ### 6.2 Data sources and retention
 - Live jobs: Freelancer.com and job-board APIs; kept in the database and marked inactive after expiry.
-- Seed data: `data/jobs_seed.csv`, 494 real Freelancer.com listings captured on 28 October 2026 via the public API.
+- Seed data: `data/jobs_seed.csv`, 494 real Freelancer.com listings captured via the public API.
 - User data is stored only for the features above; passwords are never stored in plain text; invite tokens
   are stored as hashes.
 
