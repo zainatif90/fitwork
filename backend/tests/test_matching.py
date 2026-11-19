@@ -132,3 +132,26 @@ def test_job_detail_and_feedback(client: TestClient, seeded_jobs: None, react_us
 def test_unknown_job_is_404(client: TestClient, react_user: str) -> None:
     res = client.get("/api/jobs/00000000-0000-0000-0000-000000000000", headers=auth_header(react_user))
     assert res.status_code == 404
+
+
+def test_same_job_posted_twice_takes_only_one_top5_slot(client: TestClient, db: Session, react_user: str) -> None:
+    """
+    Found in the 19 Nov 2026 review: Skill Gap counted reposted jobs once, but matching did not, so one job
+    posted twice (or on two boards) could fill two of the five slots. The best copy is kept.
+    """
+    text = "Build an admin dashboard in React and TypeScript, styled with Tailwind CSS."
+    upsert_jobs(db, [
+        JobData(source=src, external_id=eid, title="React dashboard with Tailwind", description=text,
+                skills=["React.js", "TypeScript", "Tailwind CSS"], budget_min=20, budget_max=40,
+                budget_type="hourly", posted_at=NOW - timedelta(hours=1))
+        for src, eid in [("freelancer", "dup-1"), ("himalayas", "dup-2"), ("freelancer", "dup-3")]
+    ] + [
+        JobData(source="freelancer", external_id=eid, title=t, description=d, skills=s,
+                budget_min=20, budget_max=40, budget_type="hourly", posted_at=NOW - timedelta(hours=1))
+        for eid, t, d, s in JOBS[1:]
+    ])
+    res = client.get("/api/matches", headers=auth_header(react_user))
+    assert res.status_code == 200, res.text
+    titles = [m["job"]["title"] for m in res.json()["matches"]]
+    assert titles.count("React dashboard with Tailwind") == 1, titles
+    assert len(titles) == 5                                  # the freed slots go to other jobs

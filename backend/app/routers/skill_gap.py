@@ -8,7 +8,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
 from app.services.profiles import get_profile
-from app.services.skill_gap import get_skill_gap
+from app.services.skill_gap import SkillGapBusy, get_skill_gap
 
 router = APIRouter(prefix="/skill-gap", tags=["skill gap"])
 
@@ -61,4 +61,7 @@ def skill_gap(refresh: bool = Query(default=False), user: User = Depends(get_cur
     profile = get_profile(db, user.id)
     if profile is None:
         raise HTTPException(status_code=409, detail="Complete your profile to see your skill gaps")
-    return get_skill_gap(db, profile, use_cache=not refresh)
+    try:
+        return get_skill_gap(db, profile, use_cache=not refresh)
+    except SkillGapBusy:
+        raise HTTPException(status_code=503, detail="Skill Gap is busy analysing for other users. Please try again in a minute.")

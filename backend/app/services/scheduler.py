@@ -72,6 +72,27 @@ def scheduled_board_ingestion(source: str) -> None:
         db.close()
 
 
+def scheduled_purge() -> None:
+    """Daily clean-up of jobs that expired long ago (see ingestion.purge_old_jobs)."""
+    from app.services.ingestion import purge_old_jobs
+
+    db = SessionLocal()
+    try:
+        with _run_lock:
+            purge_old_jobs(db)
+    except Exception:
+        log.exception("Job purge failed")
+    finally:
+        db.close()
+
+
+def scheduled_cache_sweep() -> None:
+    """Drop expired entries from the in-memory store (REDIS_URL=memory) so they cannot pile up between restarts."""
+    sweep = getattr(redis_client, "sweep_expired", None)
+    if sweep:
+        log.info("Cache sweep removed %d expired entries", sweep())
+
+
 def keep_awake() -> None:
     """
     Free hosting plans (e.g. Render free) put the app to sleep after 15 minutes without visitors.
@@ -114,10 +135,15 @@ def start_scheduler() -> None:
                     id=f"{source}_ingestion", max_instances=1, coalesce=True,
                 )
                 log.info("Scheduler: %s fetch every %d min", source, every)
+        _scheduler.add_job(scheduled_purge, "interval", hours=24,
+                           next_run_time=datetime.now(timezone.utc) + timedelta(minutes=15),
+                           id="purge_old_jobs", max_instances=1, coalesce=True)
+        log.info("Scheduler: delete jobs expired over %d days ago, daily", settings.JOB_RETENTION_DAYS)
     if settings.KEEPALIVE_URL:
         _scheduler.add_job(keep_awake, "interval", minutes=settings.KEEPALIVE_INTERVAL_MIN,
                            id="keep_awake", max_instances=1, coalesce=True)
         log.info("Scheduler: keep-awake ping every %d min", settings.KEEPALIVE_INTERVAL_MIN)
+    _scheduler.add_job(scheduled_cache_sweep, "interval", minutes=30, id="cache_sweep", max_instances=1, coalesce=True)
     _scheduler.start()
 
 

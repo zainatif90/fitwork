@@ -10,7 +10,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, tuple_, update
+from sqlalchemy import delete, select, tuple_, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -138,6 +138,35 @@ def deactivate_stale_jobs(db: Session, now: datetime | None = None) -> int:
     return hidden
 
 
+def purge_old_jobs(db: Session, now: datetime | None = None, days: int | None = None) -> int:
+    """
+    Delete live-source jobs that expired long ago (posted more than JOB_RETENTION_DAYS ago and inactive).
+    Without this the jobs table only grew (19 Nov 2026: 8,678 active jobs plus every expired one), which
+    fills the free database and makes every full scan slower.
+    Kept: CSV seed and manual jobs, and any job a user interacted with (feedback, a proposal or an agency
+    assignment): deleting the job would delete that history too (the foreign keys cascade).
+    """
+    from app.models.agency import Assignment
+    from app.models.feedback import MatchFeedback
+    from app.models.proposal import Proposal
+
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=days or settings.JOB_RETENTION_DAYS)
+    used = select(MatchFeedback.job_id).union(select(Proposal.job_id), select(Assignment.job_id))
+    result = db.execute(
+        delete(Job).where(
+            Job.is_active.is_(False),
+            Job.source.in_(tuple(SOURCE_MAX_AGE_HOURS)),
+            Job.posted_at < cutoff,
+            Job.id.not_in(used),
+        )
+    )
+    db.commit()
+    removed = result.rowcount or 0
+    log.info("Purged %d jobs that expired before %s", removed, cutoff.date())
+    return removed
+
+
 def drop_expired(items: list[JobData], now: datetime | None = None) -> list[JobData]:
     """Skip jobs that are already too old for their source, before spending time embedding them."""
     now = now or datetime.now(timezone.utc)
@@ -152,7 +181,38 @@ def ingest_items(db: Session, source: str, items: list[JobData], started: float)
     stats.seconds = round(time.perf_counter() - started, 2)
     log.info("Ingestion run [%s]: fetched=%d inserted=%d updated=%d deactivated=%d in %.1fs",
              source, stats.fetched, stats.inserted, stats.updated, stats.deactivated, stats.seconds)
+    if stats.fetched == 0:
+        # A source that suddenly returns nothing usually changed its API or blocked us. /api/health/deep
+        # reports it when this lasts too long (see last_fetch_ok).
+        log.warning("Ingestion [%s] returned 0 jobs: the source may have changed or be down", source)
+    else:
+        record_fetch_ok(source)
     return stats
+
+
+LAST_OK_KEY = "ingest:last_ok:{}"
+
+
+def record_fetch_ok(source: str, when: datetime | None = None) -> None:
+    """Remember when a source last returned jobs (used by the deep health check)."""
+    from app.core.redis_client import redis_client
+
+    try:
+        redis_client.set(LAST_OK_KEY.format(source), (when or datetime.now(timezone.utc)).isoformat())
+    except Exception:  # health bookkeeping must never break ingestion
+        log.warning("Could not record the last successful fetch for %s", source)
+
+
+def last_fetch_ok(source: str) -> datetime | None:
+    from app.core.redis_client import redis_client
+
+    try:
+        value = redis_client.get(LAST_OK_KEY.format(source))
+    except Exception:
+        return None
+    if not value:
+        return None
+    return datetime.fromisoformat(value.decode() if isinstance(value, bytes) else value)
 
 
 def run_freelancer_ingestion(db: Session, pages: int | None = None, start_offset: int = 0) -> IngestStats:

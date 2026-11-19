@@ -106,6 +106,8 @@ class Settings(BaseSettings):
     HIMALAYAS_INTERVAL_MIN: int = 120
     REMOTIVE_INTERVAL_MIN: int = 360
     JOBICY_INTERVAL_MIN: int = 360
+    # Expired live jobs are deleted this many days after posting (daily clean-up; jobs with user history are kept)
+    JOB_RETENTION_DAYS: int = 30
 
     # --- Match Score (heuristic, tunable; see CLAUDE.md) ---
     W_SEM: float = 0.70
@@ -126,6 +128,9 @@ class Settings(BaseSettings):
     SKILL_GAP_FIELD_SIZE: int = 200           # "your field" = the 200 active jobs most similar to your profile,
     SKILL_GAP_FIELD_MIN_COSINE: float = 0.30  # each at least this similar (measured live: the top 200 were >= 0.34)
     SKILL_GAP_FIELD_MIN_JOBS: int = 5         # fewer jobs than this share a skill with you -> use similarity only
+    # Memory guard: analyse at most this many active jobs (the newest). 8,000 jobs measured at 315 MB peak for the
+    # whole server (19 Nov 2026), so 12,000 stays under the 512 MB free plan; more jobs never raise the memory.
+    SKILL_GAP_MAX_JOBS: int = 12000
 
     # --- LLM (proposals only) ---
     LLM_PROVIDER: str = "gemini"  # gemini | openai
@@ -134,6 +139,8 @@ class Settings(BaseSettings):
     LLM_THINKING_LEVEL: str = "minimal"  # minimal | low | high, empty = model default (Gemini 3.x)
     LLM_TIMEOUT_SEC: float = 30.0
     PROPOSALS_PER_DAY: int = 20
+    # All users together: protects the free LLM key's daily quota. Over it, everyone gets the free template.
+    PROPOSALS_GLOBAL_PER_DAY: int = 300
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -41,6 +41,19 @@ class MemoryStore:
             item = self._alive(key)
             return item[0] if item else None
 
+    def sweep_expired(self) -> int:
+        """
+        Remove every expired entry. `_alive` only removes an entry when someone reads it again, so entries
+        nobody reads (one-off rate-limit counters, caches of users who left) stayed in memory until a restart.
+        Called every 30 minutes by the scheduler.
+        """
+        now = time.monotonic()
+        with self._lock:
+            dead = [k for k, (_, exp) in self._data.items() if exp is not None and exp <= now]
+            for k in dead:
+                del self._data[k]
+            return len(dead)
+
     def set(self, key: str, value: Any, ex: int | None = None, nx: bool = False) -> bool:
         with self._lock:
             if nx and self._alive(key):

@@ -113,15 +113,28 @@ def job_summary(job: Job) -> dict[str, Any]:
     }
 
 
+def posting_key(title: str, description: str) -> tuple[str, str]:
+    """Two jobs with the same title and the same start of the description are the same posting (a repost,
+    or the same job on two boards). Used by matching and by Skill Gap (unique_postings)."""
+    return " ".join(title.lower().split()), " ".join(description.lower().split())[:300]
+
+
 def compute_matches(db: Session, profile: Profile, top_n: int | None = None,
                     candidates: int | None = None) -> list[dict[str, Any]]:
-    """Score the nearest candidates and return the best `top_n`, highest score first."""
+    """Score the nearest candidates and return the best `top_n`, highest score first (each posting once)."""
     embedding = ensure_profile_embedding(db, profile)
     now = datetime.now(timezone.utc)
     nearest = nearest_jobs(db, embedding, profile.user_id, candidates or settings.MATCH_CANDIDATES)
-    results = [{**score_job(profile, job, cos, now), "job": job_summary(job)} for job, cos in nearest]
+    scored = [(score_job(profile, job, cos, now), job) for job, cos in nearest]
     # Sort by score; ties broken by raw similarity so the order is stable
-    results.sort(key=lambda r: (r["score"], r["breakdown"]["cosine"]), reverse=True)
+    scored.sort(key=lambda r: (r[0]["score"], r[0]["breakdown"]["cosine"]), reverse=True)
+    results, seen = [], set()
+    for result, job in scored:
+        key = posting_key(job.title, job.description)
+        if key in seen:      # a repost of a job already listed (seen: 1 job filled 3 of the 5 slots)
+            continue
+        seen.add(key)
+        results.append({**result, "job": job_summary(job)})
     return results if top_n is None else results[:top_n]
 
 

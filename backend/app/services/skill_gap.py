@@ -18,6 +18,7 @@ Skill Gap Radar (UC-5): which missing skill, from the user's OWN field of work, 
    plus radar data for the 8 most requested skills in your field.
 Results are cached in Redis for 1 hour (cleared when the profile changes).
 """
+import threading
 import time
 import uuid
 from collections import Counter
@@ -34,7 +35,7 @@ from app.core.redis_client import cache_get, cache_set
 from app.models.job import Job
 from app.models.profile import Profile
 from app.services import embeddings, scoring
-from app.services.matching import ensure_profile_embedding
+from app.services.matching import ensure_profile_embedding, posting_key
 from app.services.skill_utils import NOT_SUGGESTED, _compact, canonical_set, canonical_skill, skills_in_text
 
 TOP_GAPS = 5
@@ -122,7 +123,8 @@ def _active_jobs(db: Session, profile: Profile) -> list[JobRow]:
     result = db.execute(select(*_LEAN_COLUMNS).where(
         Job.is_active.is_(True), Job.embedding.is_not(None),
         or_(Job.source != "manual", Job.created_by == profile.user_id),
-    ).execution_options(yield_per=100))                     # read in batches: only ~100 raw rows in memory at once
+    ).order_by(Job.posted_at.desc()).limit(settings.SKILL_GAP_MAX_JOBS)   # memory guard: newest jobs only
+     .execution_options(yield_per=100))                     # read in batches: only ~100 raw rows in memory at once
     return [JobRow(*row[:-1], embedding=np.asarray(row.embedding, dtype=np.float32)) for row in result]
 
 
@@ -134,7 +136,7 @@ def unique_postings(jobs: list[Job]) -> list[Job]:
     seen: set[tuple[str, str]] = set()
     unique = []
     for job in jobs:
-        key = (" ".join(job.title.lower().split()), " ".join(job.description.lower().split())[:300])
+        key = posting_key(job.title, job.description)
         if key not in seen:
             seen.add(key)
             unique.append(job)
@@ -252,10 +254,28 @@ def compute_skill_gap(db: Session, profile: Profile) -> dict[str, Any]:
     }
 
 
-def get_skill_gap(db: Session, profile: Profile, use_cache: bool = True) -> dict[str, Any]:
+# One calculation at a time in this server process. Each one needs ~70 MB extra at 8,000+ jobs, so several
+# users opening Skill Gap together (e.g. examiners at a demo) could push the 512 MB free server over its limit.
+# The others wait their turn (it takes seconds) and then usually find their result already cached.
+_compute_lock = threading.Lock()
+
+
+class SkillGapBusy(Exception):
+    """Raised when a calculation could not start within the wait time; the API answers 503 'try again'."""
+
+
+def get_skill_gap(db: Session, profile: Profile, use_cache: bool = True, wait_sec: float = 90) -> dict[str, Any]:
     key = f"skillgap:{profile.user_id}"
     if use_cache and (cached := cache_get(key)):
         return {**cached, "cached": True}
-    result = compute_skill_gap(db, profile)
+    if not _compute_lock.acquire(timeout=wait_sec):
+        raise SkillGapBusy()
+    try:
+        # While we waited, the same user's earlier request may already have finished.
+        if use_cache and (cached := cache_get(key)):
+            return {**cached, "cached": True}
+        result = compute_skill_gap(db, profile)
+    finally:
+        _compute_lock.release()
     cache_set(key, result, settings.SKILL_GAP_CACHE_SEC)
     return {**result, "cached": False}
