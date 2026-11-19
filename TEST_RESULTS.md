@@ -113,6 +113,29 @@ Website https://fitwork-zain2026.web.app (Firebase Hosting) + API https://fitwor
 
 Test accounts created by these checks were deleted afterwards.
 
+## 5e. Smoothness of the website (live site, real browser, 19 November 2026)
+Script: `e2e/perf_probe.py` (Playwright, Chromium, 1366x768). It registers a temporary account through the UI, visits each
+page and measures frames per second while idle and while scrolling (60 = perfectly smooth), "long tasks" (the page cannot
+react for more than 50 ms) and how many animations run. It deletes the account at the end (through Settings -> Danger zone).
+
+User report: "it is not working smoothly, it gets stuck". Cause found: 9-16 decorative animations ran non-stop on every
+page (each page banner had drifting glow blobs blurred by 48-60 px and a spinning 3D orb; flowing gradients repainted
+buttons and headings on every frame; the rainbow border kept turning) and the 3D Skill Gap chart measured every tower 60
+times a second forever. Fix ("calm motion", `frontend/src/index.css` + `Radar3D.tsx`): same colours and shapes, but still;
+movement only on hover; the chart animates only while it moves; no blur filters; `prefers-reduced-motion` respected.
+
+| Page (normal CPU) | Before: idle / scroll fps | After: idle / scroll fps |
+|---|---|---|
+| Dashboard (matches) | 25 / 28 | **58 / 60** |
+| Skill Gap | 29 / 29 | **60 / 60** |
+| Agency | 42 / 37 | **60 / 60** |
+| Settings | 40 / 37 | **60 / 60** |
+| Job detail | 60 / 60 | 60 / 60 |
+
+With the CPU slowed 4x (close to a budget laptop or phone) every page now idles and scrolls at 54-60 fps. Opening a page
+still has some short busy moments at 4x (Skill Gap: 1.6 s in total, worst 0.5 s; at normal speed: one task of 60-120 ms):
+that is React building the page, not animation.
+
 ## 6. Security checklist
 | Check | Status | Evidence |
 |---|---|---|

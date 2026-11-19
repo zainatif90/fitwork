@@ -303,3 +303,42 @@ h1, h2, h3 {
 /* 3D pieces are composited layers */
 .orb3d .orb-stage, .orb3d .ring, .orb3d .core { will-change: transform; }
 .tilt-host { will-change: transform; }
+
+/* ===================== Calm motion (19 Nov 2026) ===================== */
+/* Measured on the live site with a real browser: 9-16 animations ran NON-STOP on every page (the banner's glow
+   blobs and 3D orb, flowing gradients, the rainbow border) and pages idled at 25-42 frames per second instead of 60,
+   so scrolling and clicks felt stuck. Same colours and shapes, but they hold still; movement only on hover.
+   (These rules are outside Tailwind's layers, so they override the utilities above.) */
+
+/* Glow blobs: soft radial gradients instead of 48-60 px blur filters, and no drifting. */
+.aurora > span { animation: none; filter: none; will-change: auto; opacity: 0.6; }
+.aurora > span:nth-child(1) { background: radial-gradient(closest-side, #6366f1, transparent); }
+.aurora > span:nth-child(2) { background: radial-gradient(closest-side, #a855f7, transparent); }
+.aurora > span:nth-child(3) { background: radial-gradient(closest-side, #ec4899, transparent); opacity: 0.4; }
+
+/* Flowing gradients: still by default (they repainted the element on every frame); buttons flow on hover. */
+.bg-gradient-animated, .text-gradient-animated { animation: none; }
+.bg-gradient-animated:hover { animation: gradient-x 3s ease infinite; }
+
+/* Rainbow border on the best match: turns only while the pointer is on the card. */
+.glow-border::before { animation: none; }
+.glow-border:hover::before { animation: border-spin 4s linear infinite; }
+
+/* 3D gyroscope: keeps its 3D pose, turns only on hover. */
+.orb3d .orb-stage, .orb3d .ring, .orb3d .core { animation-play-state: paused; will-change: auto; }
+.orb3d:hover .orb-stage, .orb3d:hover .ring, .orb3d:hover .core { animation-play-state: running; }
+
+/* "Live" pulse rings: three pulses, then rest. */
+.animate-pulse-ring::before { animation-iteration-count: 3; }
+
+/* Headline words: no blur filter on entrance (the last @keyframes with a name wins). */
+@keyframes word-in { from { opacity: 0; transform: translateY(60%); } to { opacity: 1; transform: none; } }
+
+/* Tilting cards become their own GPU layer only while hovered, not all the time. */
+.tilt-host { will-change: auto; }
+.tilt-host:hover { will-change: transform; }
+
+/* Visitors who ask their system for less motion get none of the decorative animation. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

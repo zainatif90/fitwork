@@ -73,25 +73,17 @@ export function Radar3D({ data }: { data: RadarPoint[] }) {
     return () => clearTimeout(t);
   }, []);
 
-  // Turn with the mouse; gentle sway when idle. Number badges follow the tower tops on screen.
+  // Turn with the mouse; number badges follow the tower tops on screen.
+  // The animation loop only runs while something moves (towers growing, the mouse turning the chart, a resize)
+  // and stops once the chart has settled. Before 19 Nov 2026 it ran forever with an idle sway and measured every
+  // tower 60 times a second, which kept the Skill Gap page at ~29 fps.
   useEffect(() => {
     const el = stage.current;
     if (!el) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let rz = -28, rx = 58, tz = -28, tx = 58, hovering = false, frame = 0;
-    const start = performance.now();
-    const onMove = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-      const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-      hovering = true;
-      tz = -55 + x * 55;   // mouse at the left edge: -55 deg, right edge: 0 deg
-      tx = 48 + y * 20;    // top: flatter view, bottom: steeper view
-    };
-    const onLeave = () => { hovering = false; tz = -28; tx = 58; };
+    let rz = -28, rx = 58, tz = -28, tx = 58, frame = 0, running = false;
+    let busyUntil = performance.now() + 2500;           // towers grow in for ~2 s after the chart appears
     const tick = (now: number) => {
-      const sway = hovering || reduce ? 0 : Math.sin((now - start) / 1600) * 6;
-      rz += (tz + sway - rz) * 0.1;
+      rz += (tz - rz) * 0.1;
       rx += (tx - rx) * 0.1;
       el.style.setProperty("--rz", `${rz.toFixed(2)}deg`);
       el.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
@@ -102,16 +94,31 @@ export function Radar3D({ data }: { data: RadarPoint[] }) {
         const r = top.getBoundingClientRect();
         badge.style.transform = `translate(${(r.left + r.width / 2 - box.left).toFixed(1)}px, ${(r.top - box.top - 4).toFixed(1)}px) translate(-50%, -100%)`;
       });
+      const settled = Math.abs(tz - rz) < 0.05 && Math.abs(tx - rx) < 0.05 && now > busyUntil;
+      if (settled) { running = false; return; }
       frame = requestAnimationFrame(tick);
     };
+    const kick = (forMs = 0) => {
+      busyUntil = Math.max(busyUntil, performance.now() + forMs);
+      if (!running) { running = true; frame = requestAnimationFrame(tick); }
+    };
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+      tz = -55 + x * 55;   // mouse at the left edge: -55 deg, right edge: 0 deg
+      tx = 48 + y * 20;    // top: flatter view, bottom: steeper view
+      kick();
+    };
+    const onLeave = () => { tz = -28; tx = 58; kick(); };
     // Fit the floor to the available width (phones are much narrower than the chart)
-    const fit = () => el.style.setProperty("--fit", String(Math.min(1, (el.clientWidth - 16) / (floorW * 1.12))));
+    const fit = () => { el.style.setProperty("--fit", String(Math.min(1, (el.clientWidth - 16) / (floorW * 1.12)))); kick(600); };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerleave", onLeave);
-    frame = requestAnimationFrame(tick);
+    kick();
     return () => {
       ro.disconnect();
       cancelAnimationFrame(frame);
