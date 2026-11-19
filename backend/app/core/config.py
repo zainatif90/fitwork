@@ -106,6 +106,9 @@ class Settings(BaseSettings):
     HIMALAYAS_INTERVAL_MIN: int = 120
     REMOTIVE_INTERVAL_MIN: int = 360
     JOBICY_INTERVAL_MIN: int = 360
+    # Non-USD job-board salaries are converted with Frankfurter (ECB) rates, cached this long (app/services/fx.py)
+    FX_ENABLED: bool = True
+    FX_CACHE_HOURS: int = 12
     # Expired live jobs are deleted this many days after posting (daily clean-up; jobs with user history are kept)
     JOB_RETENTION_DAYS: int = 30
 

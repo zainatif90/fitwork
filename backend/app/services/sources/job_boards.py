@@ -9,8 +9,9 @@ because FitWork is for freelancers.
 | Jobicy    | jobicy.com/api/v2/remote-jobs                 | credit + "apply" goes to the original URL    |
 
 Every job keeps its original URL ("Open on platform") and shows the board's name as its badge.
-Budgets are converted to USD per hour when the board gives a pay period (hourly or yearly);
-otherwise the budget is left empty and the Match Score uses a neutral budget fit.
+Budgets are converted to USD per hour when the board gives a pay period (hourly, monthly or yearly). Other
+currencies are converted with the day's European Central Bank rate (app/services/fx.py, Frankfurter API).
+Otherwise the budget is left empty and the Match Score uses a neutral budget fit.
 """
 import html
 import logging
@@ -57,25 +58,41 @@ def to_hourly(amount: Any, period: str | None) -> float | None:
     return None
 
 
+_CURRENCY_HINTS = (("€", "EUR"), ("eur", "EUR"), ("£", "GBP"), ("gbp", "GBP"), ("₹", "INR"), ("inr", "INR"))
+
+
+def hourly_usd(lo: float | None, hi: float | None, currency: str | None) -> tuple[float | None, float | None]:
+    """Hourly amounts in any currency -> USD with today's ECB rate (fx.py). Unknown rate -> (None, None)."""
+    from app.services.fx import to_usd
+
+    lo_usd, hi_usd = to_usd(lo, currency), to_usd(hi, currency)
+    if (lo is not None and lo_usd is None) or (hi is not None and hi_usd is None):
+        return None, None  # no rate for this currency: leave the budget empty rather than guess
+    return lo_usd, hi_usd
+
+
 def parse_salary_text(text: str | None) -> tuple[float | None, float | None]:
     """
-    Remotive gives salary as free text, e.g. "70K-80K", "$60,000 - $90,000", "$40/hour".
+    Remotive gives salary as free text, e.g. "70K-80K", "$60,000 - $90,000", "$40/hour", "€50K", "₹1,80,000 per month".
     Returns an hourly (min, max) in USD, or (None, None) when it cannot be read reliably.
     """
     if not text:
         return None, None
     t = text.lower().replace(",", "")
-    if any(sym in t for sym in ("€", "£", "eur", "gbp", "inr")):
-        return None, None  # not USD: do not guess an exchange rate
+    currency = next((code for hint, code in _CURRENCY_HINTS if hint in t), "USD")
     numbers = [float(n) * (1000 if k else 1) for n, k in re.findall(r"(\d+(?:\.\d+)?)\s*(k)?", t)]
     if not numbers:
         return None, None
     lo, hi = min(numbers), max(numbers)
     if "hour" in t or "/hr" in t or hi < 300:
-        return round(lo, 2), round(hi, 2)
-    if hi >= 10000:  # a yearly salary
-        return round(lo / HOURS_PER_YEAR, 2), round(hi / HOURS_PER_YEAR, 2)
-    return None, None
+        rate = (lo, hi)
+    elif "month" in t:  # e.g. "per month": before 19 Nov 2026 this was read as a yearly salary (12x too low)
+        rate = (lo * 12 / HOURS_PER_YEAR, hi * 12 / HOURS_PER_YEAR)
+    elif hi >= 10000:  # a yearly salary
+        rate = (lo / HOURS_PER_YEAR, hi / HOURS_PER_YEAR)
+    else:
+        return None, None
+    return hourly_usd(round(rate[0], 2), round(rate[1], 2), currency)
 
 
 def _get(url: str, params: dict[str, Any] | None = None, client: httpx.Client | None = None) -> Any:
@@ -100,9 +117,7 @@ def normalize_himalayas(j: dict[str, Any]) -> JobData | None:
     if not j.get("title") or not j.get("guid") or not j.get("pubDate"):
         return None
     period = j.get("salaryPeriod")
-    usd = (j.get("currency") or "USD").upper() == "USD"
-    lo = to_hourly(j.get("minSalary"), period) if usd else None
-    hi = to_hourly(j.get("maxSalary"), period) if usd else None
+    lo, hi = hourly_usd(to_hourly(j.get("minSalary"), period), to_hourly(j.get("maxSalary"), period), j.get("currency"))
     location = j.get("locationRestrictions") or []
     return JobData(
         source="himalayas",
@@ -175,10 +190,9 @@ def normalize_jobicy(j: dict[str, Any]) -> JobData | None:
         posted = datetime.fromisoformat(str(j["pubDate"]).replace("Z", "+00:00"))
     except (KeyError, ValueError):
         return None
-    usd = (j.get("salaryCurrency") or "USD").upper() == "USD"
     period = j.get("salaryPeriod") or ("yearly" if j.get("annualSalaryMin") else None)
-    lo = to_hourly(j.get("salaryMin") or j.get("annualSalaryMin"), period) if usd else None
-    hi = to_hourly(j.get("salaryMax") or j.get("annualSalaryMax"), period) if usd else None
+    lo, hi = hourly_usd(to_hourly(j.get("salaryMin") or j.get("annualSalaryMin"), period),
+                        to_hourly(j.get("salaryMax") or j.get("annualSalaryMax"), period), j.get("salaryCurrency"))
     return JobData(
         source="jobicy",
         external_id=str(j["id"]),
