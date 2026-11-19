@@ -9,7 +9,8 @@ import type { ReactNode } from "react";
 import { Orb3D } from "../Orb3D";
 import { at, LOOKS, Person, Ring, Typed } from "./StoryParts";
 
-export type SceneDef = { title: string; caption: string; seconds: number; render: () => ReactNode };
+/** caption = subtitle on screen; voice = what the narrator says (defaults to the caption) */
+export type SceneDef = { title: string; caption: string; voice?: string; seconds: number; render: () => ReactNode };
 
 function Label({ x, y, d, children, className = "" }: { x: number; y: number; d: number; children: ReactNode; className?: string }) {
   return (
@@ -370,14 +371,17 @@ function SceneHired() {
 
 export const SCENES: SceneDef[] = [
   { title: "Meet Sara", seconds: 8, render: SceneSara,
+    voice: "Welcome to FitWork. Meet Sara, a freelancer. She tells FitWork what she is good at: her skills, her experience, her hourly rate and a short bio.",
     caption: "Sara is a freelancer. She tells FitWork what she is good at: her skills, experience, hourly rate and a short bio." },
   { title: "Jobs everywhere", seconds: 9, render: SceneSources,
     caption: "Clients post jobs on many different websites. FitWork collects them for her automatically, all day long." },
   { title: "AI reads the meaning", seconds: 9, render: SceneMeaning,
+    voice: "An AI language model reads every job, and Sara's profile, and turns their meaning into three hundred and eighty-four numbers. Similar meaning gives similar numbers, even when the words are different.",
     caption: "An AI language model reads every job and Sara's profile and turns their meaning into 384 numbers. Similar meaning gives similar numbers, even with different words." },
   { title: "Closest jobs", seconds: 8, render: SceneSearch,
     caption: "The database finds the jobs whose meaning is closest to Sara's profile out of thousands, in milliseconds." },
   { title: "Match Score", seconds: 10, render: SceneScore,
+    voice: "Each job gets a Match Score from zero to one hundred, with the reason: which skills match, which are missing, and whether the budget and timing fit.",
     caption: "Each job gets a 0-100 Match Score with the reason: which skills match, which are missing, and whether the budget and timing fit." },
   { title: "AI proposal", seconds: 10, render: SceneProposal,
     caption: "One click writes a proposal draft from Sara's real skills and the job. She edits it and sends it herself on the job's website." },
