@@ -137,6 +137,21 @@ def health(db: Session = Depends(get_db)) -> JSONResponse:
     return JSONResponse(content={"status": "ok"})
 
 
+@app.get("/api/health/deep", tags=["health"])
+def health_deep(db: Session = Depends(get_db)) -> JSONResponse:
+    """Job sources still delivering and memory below the limit (see app/services/health.py). 503 = degraded."""
+    from app.services.health import deep_health
+
+    try:
+        ok, report = deep_health(db)
+    except Exception:
+        log.exception("Deep health check failed")
+        return JSONResponse(status_code=503, content={"status": "error", "problems": ["database unavailable"]})
+    if not ok:
+        log.warning("Deep health degraded: %s", "; ".join(report["problems"]))
+    return JSONResponse(status_code=200 if ok else 503, content=report)
+
+
 # ---- Web app (production): the built React files are served by this same server ----------
 # One origin for the website and the API means no proxy and no cross-site cookie problems.
 # In development the Vite dev server serves the web app instead, so this folder does not exist.

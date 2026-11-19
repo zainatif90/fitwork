@@ -153,3 +153,35 @@ def test_zero_job_fetch_is_not_recorded_as_success(client: TestClient, db: Sessi
     ingestion.ingest_items(db, "remotive", [_job("r1", "remotive", 1)], time.perf_counter())
     assert ingestion.last_fetch_ok("remotive") is not None
 
+
+
+# ---------------------------------------------------------------- deep health check
+def test_deep_health_ok_with_fresh_jobs(client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services.health import deep_health
+
+    monkeypatch.setattr(settings, "SCHEDULER_ENABLED", True)
+    upsert_jobs(db, [_job("fresh", "freelancer", 0.1)])
+    db.commit()
+    ok, report = deep_health(db, memory_mb=300)
+    assert ok and report["status"] == "ok" and report["active_jobs"] == 1
+    assert report["sources"]["freelancer"]["stale"] is False
+
+
+def test_deep_health_reports_a_silent_source_and_high_memory(client: TestClient, db: Session,
+                                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services.health import deep_health
+
+    monkeypatch.setattr(settings, "SCHEDULER_ENABLED", True)
+    upsert_jobs(db, [_job("f1", "freelancer", 0.1)])
+    db.commit()
+    later = datetime.now(timezone.utc) + timedelta(hours=8)        # 8 h with no new Freelancer.com job
+    ok, report = deep_health(db, now=later, memory_mb=480)
+    assert not ok and report["status"] == "degraded"
+    assert any("no new freelancer job" in p for p in report["problems"])
+    assert any("memory 480" in p for p in report["problems"])
+
+
+def test_deep_health_endpoint_is_public_and_answers_503_when_degraded(client: TestClient) -> None:
+    res = client.get("/api/health/deep")                         # empty test database: no active jobs
+    assert res.status_code == 503
+    assert "no active jobs" in res.json()["problems"]

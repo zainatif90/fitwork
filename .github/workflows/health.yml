@@ -1,0 +1,25 @@
+# Every 3 hours: ask the live API whether it is healthy (job sources delivering, memory below the limit).
+# If /api/health/deep answers 503 this run fails, and GitHub emails the repository owner about the failed run.
+# Added after Skill Gap crashed the free server for days without anyone noticing (19 Nov 2026).
+name: Health check
+
+on:
+  schedule:
+    - cron: "23 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check the live API
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          # --retry covers a cold start of the free server; the report is printed in the run log either way.
+          curl --silent --show-error --fail-with-body --retry 3 --retry-delay 40 --retry-all-errors \
+               --max-time 90 "$APP_URL/api/health/deep"

@@ -18,6 +18,7 @@ PUBLIC = {
     ("POST", "/api/auth/reset-password"),   # needs the signed single-use token from the email
     ("GET", "/api/health"),
     ("HEAD", "/api/health"),         # uptime monitors send HEAD
+    ("GET", "/api/health/deep"),     # monitoring: counts and times only, no user data
 }
 
 DUMMY_UUID = "00000000-0000-0000-0000-000000000000"
