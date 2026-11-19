@@ -189,3 +189,30 @@ def test_spelling_variants_are_one_skill() -> None:
     assert canonical_skill("C#") != canonical_skill("C") and canonical_skill("C++") != canonical_skill("C")
     counts, display = skill_demand([Job(skills=["E-commerce"]), Job(skills=["eCommerce", "Shopify"])])
     assert counts[canonical_skill("ecommerce")] == 2
+
+
+def test_skill_gap_loads_lean_rows_not_full_jobs(client: TestClient, db: Session) -> None:
+    """
+    Regression test for the live crash (19 Nov 2026): Skill Gap loaded every active job as a full ORM object
+    with its whole description (~23-36 KB per job). With thousands of live jobs that went past the 512 MB of
+    the free server, which was killed (502 on /skill-gap, then 503 on every page).
+    Skill Gap must load only the columns it uses and at most 300 characters of each description.
+    """
+    from app.models.profile import Profile
+    from app.services.skill_gap import _active_jobs
+
+    long_text = "Build a React dashboard with TypeScript. " * 200          # ~8,000 characters, like job-board posts
+    upsert_jobs(db, [job("long1", "React dashboard", long_text, ["React", "TypeScript"])])
+    db.commit()
+    token = register(client)["access_token"]
+    client.put("/api/profile/me", headers=auth_header(token), json={
+        "skills": ["React"], "experience_level": "expert", "hourly_rate": 30, "bio": "React developer"})
+    profile = db.query(Profile).one()
+
+    rows = _active_jobs(db, profile)
+    assert len(rows) == 1
+    row = rows[0]
+    assert not isinstance(row, Job)                       # a light row, not a full ORM object
+    assert len(row.description) <= 300                    # only what the duplicate check needs
+    assert row.title == "React dashboard" and row.skills == ["React", "TypeScript"]
+    assert row.embedding.shape == (384,) and row.embedding.dtype == np.float32   # 1.5 KB, not a 12 KB Python list

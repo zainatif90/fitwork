@@ -19,12 +19,14 @@ Skill Gap Radar (UC-5): which missing skill, from the user's OWN field of work, 
 Results are cached in Redis for 1 hour (cleared when the profile changes).
 """
 import time
+import uuid
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -89,11 +91,39 @@ def _fixed_part(job: Job, hourly_rate: float, now: datetime) -> float:
     return settings.W_BUDGET * budget + settings.W_RECENCY * scoring.recency_score(job.source, job.posted_at, now)
 
 
-def _active_jobs(db: Session, profile: Profile) -> list[Job]:
-    return list(db.scalars(select(Job).where(
+@dataclass(slots=True)
+class JobRow:
+    """
+    The parts of a job that Skill Gap needs (same attribute names as Job, so the functions here accept both).
+
+    Why not full Job objects (fixed 19 Nov 2026, after the live server crashed on /skill-gap):
+    pgvector returns each embedding as a Python list of 384 float objects (~12 KB per job), and Job also carries
+    the full description. Measured: ~23 KB per job. With thousands of live jobs that went past the 512 MB of
+    the free server, which was killed. Here the embedding is turned into a float32 array (1.5 KB) as each row
+    arrives, and only the first 300 characters of the description are read (enough for unique_postings).
+    """
+    id: uuid.UUID
+    title: str
+    skills: list[str]
+    source: str
+    posted_at: datetime
+    budget_type: str
+    budget_min: float | None
+    budget_max: float | None
+    description: str
+    embedding: np.ndarray
+
+
+_LEAN_COLUMNS = (Job.id, Job.title, Job.skills, Job.source, Job.posted_at, Job.budget_type, Job.budget_min,
+                 Job.budget_max, func.left(Job.description, 300).label("description"), Job.embedding)
+
+
+def _active_jobs(db: Session, profile: Profile) -> list[JobRow]:
+    result = db.execute(select(*_LEAN_COLUMNS).where(
         Job.is_active.is_(True), Job.embedding.is_not(None),
         or_(Job.source != "manual", Job.created_by == profile.user_id),
-    )))
+    ).execution_options(yield_per=100))                     # read in batches: only ~100 raw rows in memory at once
+    return [JobRow(*row[:-1], embedding=np.asarray(row.embedding, dtype=np.float32)) for row in result]
 
 
 def unique_postings(jobs: list[Job]) -> list[Job]:
@@ -141,7 +171,7 @@ def compute_skill_gap(db: Session, profile: Profile) -> dict[str, Any]:
                 "analysed_skills": 0, "compute_ms": 0.0, "generated_at": now.isoformat()}
 
     # Job matrix (n x 384) and the parts of the score that do not change when a skill is added
-    J = np.asarray([j.embedding for j in jobs], dtype=np.float32)
+    J = np.stack([j.embedding for j in jobs])  # (n x 384) float32
     fixed = np.array([_fixed_part(j, profile.hourly_rate, now) for j in jobs])
     base_cos = J @ base_vec
     base_scores = scores_from_cosines(base_cos, fixed)
