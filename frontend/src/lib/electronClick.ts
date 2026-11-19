@@ -7,7 +7,7 @@
  * Visitors who ask their system for less motion get no effect.
  */
 
-const COLOURS = ["#a5b4fc", "#f0abfc", "#7dd3fc"]; // indigo, fuchsia, sky (as in the atom)
+const COLOURS = ["#fde68a", "#f9a8d4", "#d8b4fe"]; // gold, rose, lilac (as in the atom)
 const DURATION_MS = 1500;
 const PAD = 7; // gap between the button edge and the electrons' path (px)
 const BUTTONS = 'button, [role="button"], input[type="submit"], a.btn-3d, a[class*="bg-gradient"]';

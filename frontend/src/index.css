@@ -2,28 +2,28 @@
 
 /*
  * Design tokens.
- * Brand: indigo -> violet gradient. Neutrals: slate. Status colours (green / amber / red) only for scores.
+ * Brand ("Royal Sunset"): royal purple -> rose gradient, gold accents; dark parts are deep plum. Neutrals: slate. Status colours (green / amber / red) only for scores.
  * Display font (headings): Plus Jakarta Sans. Body font: Inter.
  */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-300: #a5b4fc;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-800: #3730a3;
-  --color-brand-900: #312e81;
-  --color-brand-950: #1e1b4b;
+  --color-brand-50: #faf5ff;
+  --color-brand-100: #f3e8ff;
+  --color-brand-200: #e9d5ff;
+  --color-brand-300: #d8b4fe;
+  --color-brand-400: #c084fc;
+  --color-brand-500: #a855f7;
+  --color-brand-600: #9333ea;
+  --color-brand-700: #7e22ce;
+  --color-brand-800: #6b21a8;
+  --color-brand-900: #581c87;
+  --color-brand-950: #3b0764;
 
   --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
-  --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.04), 0 16px 32px -12px rgb(79 70 229 / 0.25);
-  --shadow-glow: 0 8px 24px -6px rgb(99 102 241 / 0.55);
+  --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.04), 0 16px 32px -12px rgb(147 51 234 / 0.25);
+  --shadow-glow: 0 8px 24px -6px rgb(219 39 119 / 0.45);
 
   --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-float: float 6s ease-in-out infinite;
@@ -75,23 +75,23 @@ h1, h2, h3 {
 
 /* Brand gradient used on primary buttons, the logo and highlights */
 @utility bg-brand-gradient {
-  background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background-image: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
 }
 
 @utility text-gradient {
-  background-image: linear-gradient(90deg, #a5b4fc 0%, #c4b5fd 45%, #f0abfc 100%);
+  background-image: linear-gradient(90deg, #fde68a 0%, #f9a8d4 50%, #d8b4fe 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* Dark hero background: deep indigo with soft colour glows and a faint grid */
+/* Dark hero background: deep royal plum with rose, purple and a warm gold glow */
 @utility bg-hero {
-  background-color: #0b0a1f;
+  background-color: #1c0a24;
   background-image:
-    radial-gradient(60rem 30rem at 85% -10%, rgb(124 58 237 / 0.35), transparent 60%),
-    radial-gradient(50rem 30rem at 0% 20%, rgb(79 70 229 / 0.35), transparent 60%),
-    radial-gradient(40rem 20rem at 50% 110%, rgb(236 72 153 / 0.15), transparent 60%);
+    radial-gradient(60rem 30rem at 85% -10%, rgb(219 39 119 / 0.38), transparent 60%),
+    radial-gradient(50rem 30rem at 0% 20%, rgb(126 34 206 / 0.45), transparent 60%),
+    radial-gradient(40rem 20rem at 50% 110%, rgb(245 158 11 / 0.22), transparent 60%);
 }
 
 @utility bg-grid {
@@ -144,12 +144,12 @@ h1, h2, h3 {
 @keyframes word-in { from { opacity: 0; transform: translateY(60%) rotateX(-60deg); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes page-in { from { opacity: 0; transform: translateY(22px) scale(0.99); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes pop-in { 0% { opacity: 0; transform: scale(0.6); } 70% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
-@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgb(99 102 241 / 0.55); } 100% { box-shadow: 0 0 0 14px rgb(99 102 241 / 0); } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgb(219 39 119 / 0.55); } 100% { box-shadow: 0 0 0 14px rgb(219 39 119 / 0); } }
 
 /* Big blurred colour blobs that drift behind a section */
 .aurora { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .aurora > span { position: absolute; border-radius: 9999px; filter: blur(60px); opacity: 0.55; mix-blend-mode: screen; }
-.aurora > span:nth-child(1) { width: 45%; height: 70%; left: -5%; top: -20%; background: #6366f1; animation: aurora-1 14s ease-in-out infinite; }
+.aurora > span:nth-child(1) { width: 45%; height: 70%; left: -5%; top: -20%; background: #9333ea; animation: aurora-1 14s ease-in-out infinite; }
 .aurora > span:nth-child(2) { width: 40%; height: 65%; right: -5%; top: -10%; background: #a855f7; animation: aurora-2 17s ease-in-out infinite; }
 .aurora > span:nth-child(3) { width: 35%; height: 60%; left: 35%; bottom: -35%; background: #ec4899; opacity: 0.35; animation: aurora-3 20s ease-in-out infinite; }
 
@@ -165,7 +165,7 @@ h1, h2, h3 {
 
 /* A flowing gradient background (buttons, banners) */
 @utility bg-gradient-animated {
-  background-image: linear-gradient(120deg, #4f46e5, #7c3aed, #db2777, #4f46e5);
+  background-image: linear-gradient(120deg, #9333ea, #db2777, #f59e0b, #9333ea);
   background-size: 300% 300%;
   animation: gradient-x 8s ease infinite;
 }
@@ -197,7 +197,7 @@ h1, h2, h3 {
     inset: -2px;
     z-index: -1;
     border-radius: inherit;
-    background: conic-gradient(from var(--angle, 0deg), #6366f1, #a855f7, #ec4899, #f59e0b, #10b981, #6366f1);
+    background: conic-gradient(from var(--angle, 0deg), #9333ea, #ec4899, #f59e0b, #fde68a, #c084fc, #9333ea);
     animation: border-spin 4s linear infinite;
   }
   &::after {
@@ -235,7 +235,7 @@ h1, h2, h3 {
   background-color: #f5f3ff;
   background-image:
     radial-gradient(40rem 28rem at 100% 0%, rgb(167 139 250 / 0.35), transparent 60%),
-    radial-gradient(36rem 26rem at 0% 30%, rgb(99 102 241 / 0.22), transparent 60%),
+    radial-gradient(36rem 26rem at 0% 30%, rgb(192 132 252 / 0.22), transparent 60%),
     radial-gradient(40rem 30rem at 70% 100%, rgb(244 114 182 / 0.22), transparent 60%),
     radial-gradient(30rem 22rem at 20% 100%, rgb(56 189 248 / 0.18), transparent 60%);
   background-attachment: fixed;
@@ -246,9 +246,9 @@ h1, h2, h3 {
 
 /* 3D "key" buttons: sit on a darker edge and press down when clicked */
 @utility btn-3d {
-  box-shadow: 0 5px 0 #3730a3, 0 10px 24px -6px rgb(99 102 241 / 0.6);
-  &:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #3730a3, 0 14px 28px -6px rgb(99 102 241 / 0.65); }
-  &:active { transform: translateY(4px); box-shadow: 0 1px 0 #3730a3, 0 4px 10px -4px rgb(99 102 241 / 0.5); }
+  box-shadow: 0 5px 0 #6b21a8, 0 10px 24px -6px rgb(219 39 119 / 0.5);
+  &:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #6b21a8, 0 14px 28px -6px rgb(219 39 119 / 0.55); }
+  &:active { transform: translateY(4px); box-shadow: 0 1px 0 #6b21a8, 0 4px 10px -4px rgb(219 39 119 / 0.4); }
 }
 
 /* Light glare that follows the mouse on tilting cards (position set by the Tilt component) */
@@ -276,7 +276,7 @@ h1, h2, h3 {
 /* Pulse ring drawn with a transform on a pseudo-element instead of animating box-shadow */
 @utility animate-pulse-ring {
   position: relative;
-  &::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgb(129 140 248 / 0.45);
+  &::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgb(244 114 182 / 0.45);
     animation: pulse-scale 2s ease-out infinite; z-index: -1; will-change: transform, opacity; }
 }
 @keyframes pulse-scale { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.5); opacity: 0; } }
@@ -291,7 +291,7 @@ h1, h2, h3 {
 
 /* Glow blobs: soft radial gradients instead of 48-60 px blur filters, and no drifting. */
 .aurora > span { animation: none; filter: none; will-change: auto; opacity: 0.6; }
-.aurora > span:nth-child(1) { background: radial-gradient(closest-side, #6366f1, transparent); }
+.aurora > span:nth-child(1) { background: radial-gradient(closest-side, #9333ea, transparent); }
 .aurora > span:nth-child(2) { background: radial-gradient(closest-side, #a855f7, transparent); }
 .aurora > span:nth-child(3) { background: radial-gradient(closest-side, #ec4899, transparent); opacity: 0.4; }
 
@@ -345,9 +345,9 @@ h1, h2, h3 {
 .atom-orbit { position: absolute; inset: 0; border-radius: 9999px; transform-style: preserve-3d;
   border: 1.5px solid var(--orbit); box-shadow: 0 0 10px var(--orbit), inset 0 0 10px var(--orbit);
   transform: rotateZ(var(--tilt)) rotateX(72deg); }
-.atom-orbit-0 { --tilt: 0deg;   --orbit: rgb(129 140 248 / 0.6); --electron: #c7d2fe; --glow: rgb(129 140 248 / 0.55); --speed: 3.2s; }
-.atom-orbit-1 { --tilt: 60deg;  --orbit: rgb(232 121 249 / 0.6); --electron: #f5d0fe; --glow: rgb(232 121 249 / 0.55); --speed: 4.4s; }
-.atom-orbit-2 { --tilt: 120deg; --orbit: rgb(56 189 248 / 0.6);  --electron: #bae6fd; --glow: rgb(56 189 248 / 0.55); --speed: 5.6s; }
+.atom-orbit-0 { --tilt: 0deg;   --orbit: rgb(251 191 36 / 0.6); --electron: #fde68a; --glow: rgb(245 158 11 / 0.55); --speed: 3.2s; }
+.atom-orbit-1 { --tilt: 60deg;  --orbit: rgb(244 114 182 / 0.6); --electron: #fbcfe8; --glow: rgb(236 72 153 / 0.55); --speed: 4.4s; }
+.atom-orbit-2 { --tilt: 120deg; --orbit: rgb(192 132 252 / 0.6); --electron: #e9d5ff; --glow: rgb(168 85 247 / 0.55); --speed: 5.6s; }
 .atom-spin { position: absolute; inset: 0; transform-style: preserve-3d; animation: atom-spin var(--speed) linear infinite; }
 /* The electron turns the opposite way and tilts back, so it always faces the viewer as a round ball */
 .atom-electron { position: absolute; top: -12%; left: 38%; width: 24%; height: 24%; border-radius: 9999px;
@@ -365,12 +365,12 @@ h1, h2, h3 {
   background: radial-gradient(closest-side, rgb(236 72 153 / 0.5), rgb(168 85 247 / 0.4) 40%, transparent); }
 /* The whole atom sways gently in 3D */
 .atom-core { position: absolute; inset: 0; border-radius: 9999px;
-  background: radial-gradient(circle at 35% 30%, #fff 0 6%, #fbcfe8 14%, #c084fc 38%, #7c3aed 64%, #312e81 100%);
+  background: radial-gradient(circle at 35% 30%, #fff 0 6%, #fde68a 14%, #f472b6 38%, #a21caf 66%, #3b0764 100%);
   box-shadow: inset -5px -7px 14px rgb(30 27 75 / 0.55); }
 /* A band of colour light that turns round the ball, so it looks like it rotates */
 .atom-sheen { position: absolute; inset: 0; border-radius: 9999px; opacity: 0.6;
-  background: conic-gradient(from 0deg, transparent 0 40deg, rgb(244 114 182 / 0.7) 80deg, transparent 130deg,
-    transparent 200deg, rgb(125 211 252 / 0.6) 250deg, transparent 300deg);
+  background: conic-gradient(from 0deg, transparent 0 40deg, rgb(253 230 138 / 0.7) 80deg, transparent 130deg,
+    transparent 200deg, rgb(244 114 182 / 0.6) 250deg, transparent 300deg);
   -webkit-mask: radial-gradient(circle, #000 55%, transparent 72%); mask: radial-gradient(circle, #000 55%, transparent 72%);
   animation: atom-spin 6s linear infinite; }
 /* The sparkle: a four-pointed glint on the shiny spot that flashes now and then */
@@ -389,7 +389,7 @@ h1, h2, h3 {
 /* A clicked button glows while three electrons orbit its outline. Positions are animated with transform only. */
 .electron-click { position: absolute; pointer-events: none; z-index: 9999; }
 .electron-click-glow { position: absolute; inset: 0; opacity: 0;
-  box-shadow: 0 0 0 1.5px rgb(199 210 254 / 0.85), 0 0 18px 4px rgb(168 85 247 / 0.5), 0 0 36px 10px rgb(56 189 248 / 0.22); }
+  box-shadow: 0 0 0 1.5px rgb(253 230 138 / 0.9), 0 0 18px 4px rgb(236 72 153 / 0.45), 0 0 36px 10px rgb(168 85 247 / 0.25); }
 .electron-click-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 9999px; opacity: 0;
   background: radial-gradient(circle, #fff 0 28%, var(--c) 48%, transparent 74%); box-shadow: 0 0 10px 2px var(--c); }
 
@@ -404,7 +404,7 @@ h1, h2, h3 {
 .tab-3d:hover svg { transform: perspective(200px) rotateY(360deg) scale(1.15); }
 .tab-3d[aria-current="page"], .tab-3d[aria-selected="true"] {
   transform: perspective(520px) translateY(-2px);
-  box-shadow: 0 4px 0 #3730a3, 0 12px 24px -8px rgb(124 58 237 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.3); }
+  box-shadow: 0 4px 0 #6b21a8, 0 12px 24px -8px rgb(124 58 237 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.3); }
 .tab-3d[aria-current="page"]:hover, .tab-3d[aria-selected="true"]:hover { transform: perspective(520px) translateY(-3px) rotateX(8deg); }
 .tab-3d[aria-current="page"] svg, .tab-3d[aria-selected="true"] svg { animation: tab-icon-spin 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .tab-3d-enter { animation: tab-flip-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 60ms); }
@@ -418,12 +418,12 @@ h1, h2, h3 {
 .shooter { position: absolute; width: 0; height: 0; transform-origin: 0 0; }
 .shooter-trail { position: absolute; left: 0; top: -1px; height: 2.5px; border-radius: 9999px; opacity: 0;
   transform-origin: 100% 50%;
-  background: linear-gradient(to right, transparent, rgb(167 139 250 / 0.35) 45%, rgb(224 231 255 / 0.9) 85%, #fff);
+  background: linear-gradient(to right, transparent, rgb(244 114 182 / 0.35) 40%, rgb(253 230 138 / 0.9) 85%, #fff);
   animation: shoot linear infinite; }
 /* The bright head with its glow */
 .shooter-trail::after { content: ""; position: absolute; right: -3px; top: 50%; width: 6px; height: 6px; margin-top: -3px;
   border-radius: 9999px; background: #fff;
-  box-shadow: 0 0 6px 2px #fff, 0 0 14px 5px rgb(167 139 250 / 0.85), 0 0 26px 8px rgb(236 72 153 / 0.35); }
+  box-shadow: 0 0 6px 2px #fff, 0 0 14px 5px rgb(251 191 36 / 0.85), 0 0 26px 8px rgb(236 72 153 / 0.4); }
 @keyframes shoot {
   0%   { opacity: 0; transform: translateX(-100%) scaleX(0.05); }
   3%   { opacity: 1; }
@@ -432,31 +432,32 @@ h1, h2, h3 {
   100% { opacity: 0; transform: translateX(360px) scaleX(0.4); }
 }
 
-/* ===================== Code backdrop: dark screen, glowing green code (src/components/CodeBackdrop.tsx) ===================== */
-/* Faint columns of FitWork's own code scroll behind the app pages like a terminal. Built to stay fast:
-   the text (and its glow) is drawn ONCE, each column then only moves with a transform on the graphics card;
-   no mask, no blur and no blend mode over the moving layers (those made the first version slow). */
-.app-canvas.app-matrix { background-color: #04110d;
-  background-image: radial-gradient(48rem 32rem at 100% 0%, rgb(16 185 129 / 0.16), transparent 60%),
-    radial-gradient(40rem 30rem at 0% 100%, rgb(79 70 229 / 0.18), transparent 60%); }
+/* ===================== Code backdrop (src/components/CodeBackdrop.tsx) ===================== */
+/* Faint columns of FitWork's own code scroll behind the app pages on a warm pearl background. Built to stay fast:
+   the text is drawn ONCE, each column then only moves with a transform on the graphics card;
+   no mask, no blur and no blend mode over the moving layers. */
+.app-canvas.app-matrix { background-color: #fdf8f5;
+  background-image: radial-gradient(44rem 30rem at 100% 0%, rgb(251 191 36 / 0.16), transparent 60%),
+    radial-gradient(40rem 30rem at 0% 35%, rgb(192 132 252 / 0.2), transparent 60%),
+    radial-gradient(44rem 30rem at 75% 100%, rgb(244 114 182 / 0.18), transparent 60%); }
 .code-backdrop-anchor { position: sticky; top: 0; height: 0; z-index: 0; pointer-events: none; }
 .code-backdrop { position: absolute; left: 0; right: 0; top: 0; height: 100vh; overflow: hidden;
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2.5rem; padding: 0 2rem; }
 .cb-col { overflow: hidden; }
 .cb-text { margin: 0; white-space: pre; font: 500 12px/1.75 ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
-  color: rgb(74 222 128 / 0.42); text-shadow: 0 0 6px rgb(34 197 94 / 0.55);
+  color: rgb(112 26 117 / 0.3);
   will-change: transform; animation: cb-scroll 80s linear infinite; }
 .cb-col-1 .cb-text { animation-duration: 100s; animation-direction: reverse; }
 .cb-col-2 .cb-text { animation-duration: 70s; }
 .cb-col-3 .cb-text { animation-duration: 95s; animation-direction: reverse; }
-.cb-kw  { color: rgb(134 239 172 / 0.85); font-weight: 700; text-shadow: 0 0 8px rgb(74 222 128 / 0.9); }
-.cb-fn  { color: rgb(110 231 183 / 0.8); }
-.cb-str { color: rgb(190 242 100 / 0.7); }
-.cb-num { color: rgb(94 234 212 / 0.75); }
-.cb-com { color: rgb(34 197 94 / 0.35); font-style: italic; text-shadow: none; }
-/* A soft green scan line sweeps down the screen */
+.cb-kw  { color: rgb(190 24 93 / 0.55); font-weight: 700; }
+.cb-fn  { color: rgb(126 34 206 / 0.5); }
+.cb-str { color: rgb(180 83 9 / 0.45); }
+.cb-num { color: rgb(234 88 12 / 0.45); }
+.cb-com { color: rgb(120 113 108 / 0.32); font-style: italic; }
+/* A soft rose-gold light sweeps down the screen */
 .cb-scan { position: absolute; left: 0; right: 0; top: -160px; height: 160px; will-change: transform;
-  background: linear-gradient(to bottom, transparent, rgb(34 197 94 / 0.05) 55%, rgb(74 222 128 / 0.12) 85%, transparent);
+  background: linear-gradient(to bottom, transparent, rgb(244 114 182 / 0.06) 55%, rgb(251 191 36 / 0.14) 85%, transparent);
   animation: cb-sweep 7s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 @keyframes cb-scroll { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
 @keyframes cb-sweep { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, calc(100vh + 160px), 0); } }

@@ -159,7 +159,7 @@ export function AppLayout() {
         )}
 
         <main className="app-canvas app-matrix flex-1 overflow-y-auto">
-          {/* glowing green code scrolling behind every page (decorative) */}
+          {/* FitWork code scrolling faintly behind every page (decorative) */}
           <CodeBackdrop />
           {/* key = page address: every page fades in, its sections one after another */}
           <div key={location.pathname} className="stagger-children relative mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
