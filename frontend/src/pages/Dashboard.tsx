@@ -106,7 +106,7 @@ export default function Dashboard() {
               <UserCog className="h-4 w-4" /> Edit profile
             </Link>
             <button onClick={() => setAddOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium backdrop-blur hover:bg-white/15">
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium hover:bg-white/15">
               <ClipboardPaste className="h-4 w-4" /> Paste a job
             </button>
             <button onClick={onRefresh} disabled={refreshing}

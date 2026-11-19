@@ -56,7 +56,7 @@ function AgencyHero({ eyebrow, title, subtitle, actions, children }: {
   );
 }
 
-const heroButton = "inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium backdrop-blur transition hover:bg-white/15";
+const heroButton = "inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium transition hover:bg-white/15";
 const heroPrimary = "shine inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-900 shadow transition hover:-translate-y-0.5 hover:bg-brand-50 disabled:opacity-70";
 
 const winRate = (won: number, lost: number) => (won + lost ? Math.round((won / (won + lost)) * 100) : null);

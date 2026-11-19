@@ -94,7 +94,7 @@ export default function Landing() {
 
         <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-4 pb-24 pt-12 sm:px-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:pb-32 lg:pt-20">
           <div className="animate-fade-up min-w-0">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-brand-100 backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-brand-100">
               <Sparkles className="h-3.5 w-3.5 text-fuchsia-300" /> NLP job matching for freelancers and agencies
             </span>
             <h1 className="mt-6 text-balance text-4xl font-extrabold leading-[1.08] sm:text-5xl lg:text-6xl">

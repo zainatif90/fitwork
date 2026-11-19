@@ -7,6 +7,7 @@ import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useChatUnread } from "../lib/useChatUnread";
 import type { Role } from "../lib/types";
+import { ShootingStars } from "./ShootingStars";
 import { CodeBackdrop } from "./CodeBackdrop";
 import { Logo } from "./ui";
 
@@ -71,6 +72,7 @@ export function AppLayout() {
       <div className="pointer-events-none absolute -left-20 top-1/3 h-72 w-72 rounded-full bg-violet-600/30 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-fuchsia-600/20 blur-3xl" />
       <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" />
+      <ShootingStars />
       <div className="relative flex h-16 items-center justify-between px-5">
         <NavLink to="/" aria-label="FitWork home"><Logo light /></NavLink>
         <button className="rounded-md p-1 text-slate-300 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu">
@@ -103,7 +105,7 @@ export function AppLayout() {
         ))}
       </nav>
       <div className="relative border-t border-white/10 p-3">
-        <div className="flex items-center gap-3 rounded-xl bg-white/5 px-2 py-2 ring-1 ring-white/10 backdrop-blur">
+        <div className="flex items-center gap-3 rounded-xl bg-white/5 px-2 py-2 ring-1 ring-white/10">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-sm font-bold text-white ring-2 ring-white/30">
             {user?.full_name.slice(0, 1).toUpperCase()}
           </div>
@@ -156,8 +158,8 @@ export function AppLayout() {
           </div>
         )}
 
-        <main className="app-canvas flex-1 overflow-y-auto">
-          {/* faint scrolling FitWork code behind every page (decorative) */}
+        <main className="app-canvas app-matrix flex-1 overflow-y-auto">
+          {/* glowing green code scrolling behind every page (decorative) */}
           <CodeBackdrop />
           {/* key = page address: every page fades in, its sections one after another */}
           <div key={location.pathname} className="stagger-children relative mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
