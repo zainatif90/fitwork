@@ -106,6 +106,8 @@ class Settings(BaseSettings):
     HIMALAYAS_INTERVAL_MIN: int = 120
     REMOTIVE_INTERVAL_MIN: int = 360
     JOBICY_INTERVAL_MIN: int = 360
+    # Optional: a GitHub token raises GitHub's limit for "Import skills from GitHub" from 60 to 5,000 requests/hour
+    GITHUB_TOKEN: str = ""
     # Non-USD job-board salaries are converted with Frankfurter (ECB) rates, cached this long (app/services/fx.py)
     FX_ENABLED: bool = True
     FX_CACHE_HOURS: int = 12

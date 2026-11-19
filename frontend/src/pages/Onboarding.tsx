@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { GitHubImport } from "../components/GitHubImport";
 import { SkillInput } from "../components/SkillInput";
 import { Alert, Button, Card, Field, FullPageSpinner, Input, Logo, Textarea } from "../components/ui";
 import { api, ApiError } from "../lib/api";
@@ -183,6 +184,7 @@ export default function Onboarding() {
               <Field label="Skills" error={errors.skills} hint={`${form.skills.length} added`}>
                 <SkillInput value={form.skills} onChange={(s) => update("skills", s)} invalid={!!errors.skills} />
               </Field>
+              <GitHubImport skills={form.skills} onAdd={(add) => update("skills", [...form.skills, ...add].slice(0, 40))} />
             </div>
           )}
 
