@@ -26,21 +26,27 @@ export function at(d: number, extra: { fx?: number; fy?: number; tx?: number; ty
   return v as CSSProperties;
 }
 
-/** The 960 x 560 scene, scaled down (never up past 1.25x) to the width it is given. */
-export function Stage({ paused, k = 1, children }: { paused: boolean; k?: number; children: ReactNode }) {
+/**
+ * The 960 x 560 scene, scaled to the space it is given: to the width (never above 1.25x) normally,
+ * or as large as fits inside maxHeight in full screen.
+ */
+export function Stage({ paused, k = 1, maxHeight, children }: { paused: boolean; k?: number; maxHeight?: number; children: ReactNode }) {
   const outer = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
-    const el = outer.current;
-    if (!el) return;
-    const fit = () => setScale(Math.min(1.25, el.clientWidth / STAGE_W));
+    const box = outer.current?.parentElement;
+    if (!box) return;
+    const fit = () => {
+      const byWidth = box.clientWidth / STAGE_W;
+      setScale(maxHeight ? Math.min(byWidth, maxHeight / STAGE_H) : Math.min(1.25, byWidth));
+    };
     fit();
     const ro = new ResizeObserver(fit);
-    ro.observe(el);
+    ro.observe(box);
     return () => ro.disconnect();
-  }, []);
+  }, [maxHeight]);
   return (
-    <div ref={outer} className="st-stage-outer bg-hero shadow-2xl ring-1 ring-white/10" style={{ height: STAGE_H * scale }}>
+    <div ref={outer} className="st-stage-outer mx-auto bg-hero shadow-2xl ring-1 ring-white/10" style={{ height: STAGE_H * scale, width: maxHeight ? STAGE_W * scale : "100%" }}>
       <div className={`st-stage ${paused ? "st-paused" : ""}`} style={{ transform: `scale(${scale})`, "--k": k } as CSSProperties}>
         <div className="st-floor" />
         <StoryClock.Provider value={{ paused, k }}>{children}</StoryClock.Provider>

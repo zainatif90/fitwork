@@ -9,19 +9,22 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { Orb3D } from "../Orb3D";
 import { LogoMark } from "../ui";
-import { type Mood, SaraPortrait } from "./SaraPortrait";
+import { type Mood, Portrait, type Who } from "./Portrait";
 import { at, LOOKS, Person, Ring, Typed } from "./StoryParts";
 
 /** seconds = length of the animation (it is stretched when the narration is longer) */
 export type Visual = { seconds: number; render: () => ReactNode };
 
-/** Sara's portrait at (x, y) = top-left, on a soft spotlight */
-function Sara({ x, y, size = 230, moods, laptop, d = 0 }: { x: number; y: number; size?: number; moods: [Mood, number][]; laptop?: boolean; d?: number }) {
+/** A person's portrait at (x, y) = top-left, on a soft spotlight, with an optional name tag below */
+function Human({ who, x, y, size = 230, moods, laptop, d = 0, name, anim = "st-rise" }: {
+  who: Who; x: number; y: number; size?: number; moods: [Mood, number][]; laptop?: boolean; d?: number; name?: string; anim?: string;
+}) {
   return (
-    <div className="absolute" style={{ left: x, top: y }}>
+    <div className="absolute" style={{ left: x, top: y, width: size }}>
       <span className="st-spot st-fade" style={{ left: -size * 0.25, top: -size * 0.15, width: size * 1.5, height: size * 1.4, ...at(d) }} />
-      <div className="st-rise relative" style={at(d)}>
-        <SaraPortrait moods={moods} size={size} laptop={laptop} />
+      <div className={`${anim} relative`} style={at(d)}>
+        <div className="pt-breathe"><Portrait who={who} moods={moods} size={size} laptop={laptop} /></div>
+        {name && <span className="st-name" style={{ top: "calc(100% - 22px)" }}>{name}</span>}
       </div>
     </div>
   );
@@ -56,7 +59,7 @@ function SceneProblem() {
   ];
   return (
     <>
-      <Sara x={70} y={150} size={250} moods={[["neutral", 0], ["focused", 1.6], ["confused", 3.6], ["stressed", 6.4]]} />
+      <Human who="sara" x={70} y={150} size={250} moods={[["neutral", 0], ["focused", 1.6], ["confused", 3.6], ["stressed", 6.4]]} />
       <div className="absolute flex gap-1.5" style={{ left: 60, top: 70 }}>
         {["React", "TypeScript", "Node.js"].map((s, i) => (
           <span key={s} className="st-pop st-chip bg-white text-brand-800 shadow-lg" style={at(0.6 + i * 0.25)}><Check className="h-3 w-3 text-emerald-500" />{s}</span>
@@ -94,7 +97,7 @@ function SceneProblem() {
 function SceneDiscover() {
   return (
     <>
-      <Sara x={70} y={150} size={250} moods={[["stressed", 0], ["curious", 1.6], ["hopeful", 4]]} />
+      <Human who="sara" x={70} y={150} size={250} moods={[["stressed", 0], ["curious", 1.6], ["hopeful", 4]]} />
       <div className="st-rise st-card p-4" style={{ left: 380, top: 80, width: 300, ...at(0.6) }}>
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500"><MessageCircle className="h-4 w-4 text-brand-600" /> Message from a friend</div>
         <p className="mt-2 min-h-[66px] text-[15px] leading-relaxed text-slate-800"><Typed text="Have you tried FitWork? It shows you the jobs that fit you, and tells you why." delay={1} speed={30} /></p>
@@ -116,7 +119,7 @@ function SceneSara() {
   const skills = ["React", "TypeScript", "Node.js", "PostgreSQL"];
   return (
     <>
-      <Sara x={60} y={160} size={250} laptop moods={[["hopeful", 0], ["focused", 1.4], ["happy", 5.6]]} />
+      <Human who="sara" x={60} y={160} size={250} laptop moods={[["hopeful", 0], ["focused", 1.4], ["happy", 5.6]]} />
       <div className="st-rise st-card p-5" style={{ left: 520, top: 110, width: 360, ...at(1) }}>
         <p className="text-xs font-bold uppercase tracking-wider text-brand-600">Sara's FitWork profile</p>
         <p className="mt-3 text-xs font-semibold text-slate-500">Skills</p>
@@ -265,7 +268,7 @@ function SceneScore() {
   ];
   return (
     <>
-      <Sara x={20} y={200} size={210} moods={[["focused", 0], ["curious", 2.6], ["happy", 6.4]]} />
+      <Human who="sara" x={20} y={200} size={210} moods={[["focused", 0], ["curious", 2.6], ["happy", 6.4]]} />
       <div className="st-rise st-card p-6" style={{ left: 330, top: 50, width: 590, ...at(0.2) }}>
         <div className="flex items-start gap-5">
           <div className="min-w-0 flex-1">
@@ -308,7 +311,7 @@ const PROPOSAL = "Hi! I'm Sara, a React and TypeScript developer. I build fast d
 function SceneProposal() {
   return (
     <>
-      <Sara x={10} y={210} size={220} laptop moods={[["focused", 0], ["hopeful", 6], ["happy", 8.2]]} />
+      <Human who="sara" x={10} y={210} size={220} laptop moods={[["focused", 0], ["hopeful", 6], ["happy", 8.2]]} />
       <div className="st-rise st-card p-5" style={{ left: 290, top: 50, width: 400, ...at(0.4) }}>
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-600"><Sparkles className="h-3.5 w-3.5" /> AI proposal draft</p>
         <p className="mt-3 min-h-[150px] text-[15px] leading-relaxed text-slate-700"><Typed text={PROPOSAL} delay={1} speed={22} /></p>
@@ -317,13 +320,13 @@ function SceneProposal() {
           <span className="st-pop st-chip bg-brand-gradient text-white" style={at(7)}>Copy</span>
         </div>
       </div>
-      <div className="absolute" style={{ left: 760, top: 330 }}>
-        <div className="st-fly" style={at(7.6, { fx: -400, fy: -140 })}>
+      <div className="absolute" style={{ left: 712, top: 262 }}>
+        <div className="st-fly" style={at(7.6, { fx: -340, fy: -80 })}>
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-300 text-amber-900 shadow-lg"><Mail className="h-6 w-6" /></span>
         </div>
       </div>
-      <Person x={820} y={480} look={LOOKS.employer} size={84} tie name="Client" d={0.6} bob={0.8} />
-      <div className="st-pop st-bubble" style={{ left: 712, top: 200, maxWidth: 230, ...at(8.4) }}>Proposal received: relevant and specific.</div>
+      <Human who="client" x={760} y={250} size={170} name="Client" d={0.6} moods={[["neutral", 0], ["curious", 8], ["happy", 8.8]]} />
+      <div className="st-pop st-bubble" style={{ left: 715, top: 120, maxWidth: 225, ...at(8.4) }}>Proposal received: relevant and specific.</div>
       <Label x={300} y={490} d={2}>Only Sara's real skills are used · she sends it herself</Label>
     </>
   );
@@ -331,20 +334,21 @@ function SceneProposal() {
 
 /* ---------------- 7. Agency Mode ---------------- */
 function SceneAgency() {
-  const members = [
-    { x: 210, look: LOOKS.ayesha, name: "Ayesha · Design", job: "Logo design", fit: 88 },
-    { x: 480, look: LOOKS.sara, name: "Sara · React", job: "React web app", fit: 91 },
-    { x: 750, look: LOOKS.bilal, name: "Bilal · Python", job: "Python scraper", fit: 84 },
+  const members: { who: Who; x: number; name: string; job: string; fit: number }[] = [
+    { who: "ayesha", x: 95, name: "Ayesha · Design", job: "Logo design", fit: 88 },
+    { who: "sara", x: 395, name: "Sara · React", job: "React web app", fit: 91 },
+    { who: "bilal", x: 695, name: "Bilal · Python", job: "Python scraper", fit: 84 },
   ];
   return (
     <>
-      <Person x={480} y={190} look={LOOKS.owner} size={80} crown name="Agency owner" anim="st-drop" d={0.2} />
+      <Human who="owner" x={405} y={-6} size={150} name="Agency owner" anim="st-drop" d={0.2} moods={[["neutral", 0], ["focused", 1.4], ["proud", 6]]} />
       {members.map((m, i) => (
         <div key={m.name}>
-          <Person x={m.x} y={490} look={m.look} size={82} name={m.name} anim="st-rise" d={0.6 + i * 0.25} bob={i * 0.5} />
+          <Human who={m.who} x={m.x} y={330} size={170} name={m.name} d={0.6 + i * 0.25}
+            moods={[["neutral", 0], ["curious", 1.6 + i * 1.1], ["happy", 2.8 + i * 1.1]]} />
           {/* each job leaves the owner and lands above the teammate who fits it best */}
-          <div className="absolute" style={{ left: m.x - 80, top: 270 }}>
-            <div className="st-fly" style={at(2 + i * 1.1, { fx: 480 - m.x, fy: -110 })}>
+          <div className="absolute" style={{ left: m.x + 5, top: 262 }}>
+            <div className="st-fly" style={at(2 + i * 1.1, { fx: 400 - m.x, fy: -150 })}>
               <div className="st-card px-3 py-2" style={{ position: "relative", width: 160 }}>
                 <p className="truncate text-sm font-bold">{m.job}</p>
                 <span className="st-pop st-chip mt-1 bg-emerald-500 text-white" style={at(2.7 + i * 1.1)}><Check className="h-3 w-3" /> best fit · {m.fit}</span>
@@ -353,7 +357,7 @@ function SceneAgency() {
           </div>
         </div>
       ))}
-      <div className="st-fade absolute rounded-2xl border border-white/15 bg-white/10 px-4 py-3" style={{ left: 600, top: 30, width: 340, ...at(5.6) }}>
+      <div className="st-fade absolute rounded-2xl border border-white/15 bg-white/10 px-4 py-3" style={{ left: 620, top: 40, width: 310, ...at(5.6) }}>
         <div className="relative flex justify-between text-xs font-bold text-white">
           <span>Assigned</span><span>Applied</span><span className="text-amber-300">Won</span>
           <span className="absolute left-2 right-2 top-[calc(100%+10px)] h-0.5 rounded bg-white/25" />
@@ -361,7 +365,7 @@ function SceneAgency() {
         </div>
         <div className="h-4" />
       </div>
-      <Label x={40} y={40} d={1.2}>Every job is compared with every teammate</Label>
+      <Label x={30} y={40} d={1.2}>Every job is compared with every teammate</Label>
     </>
   );
 }
@@ -374,7 +378,7 @@ function SceneSkillGap() {
   ];
   return (
     <>
-      <Sara x={0} y={230} size={200} moods={[["curious", 0], ["focused", 2], ["proud", 5.2]]} />
+      <Human who="sara" x={0} y={230} size={200} moods={[["curious", 0], ["focused", 2], ["proud", 5.2]]} />
       <div className="st-rise st-card p-5" style={{ left: 230, top: 50, width: 440, ...at(0.3) }}>
         <p className="text-xs font-bold uppercase tracking-wider text-brand-600">Skills that jobs in Sara's field ask for</p>
         <div className="mt-4 flex h-[180px] items-end gap-4 border-b border-slate-200 px-2">
@@ -418,12 +422,12 @@ function SceneSkillGap() {
 function SceneHired() {
   return (
     <>
-      <Sara x={90} y={150} size={260} moods={[["hopeful", 0], ["happy", 1.4], ["proud", 4.5]]} />
+      <Human who="sara" x={90} y={150} size={260} moods={[["hopeful", 0], ["happy", 1.4], ["proud", 4.5]]} />
       {/* the deal: a line of light joins Sara and the client */}
       <div className="absolute" style={{ left: 380, top: 400, width: 290, height: 3 }}>
         <span className="st-grow block h-full rounded-full bg-gradient-to-r from-pink-400 via-amber-300 to-slate-300 shadow-[0_0_12px_2px_rgb(251_191_36/0.6)]" style={at(1)} />
       </div>
-      <Person x={720} y={470} look={LOOKS.employer} size={110} tie name="Client" anim="st-slide-r" d={0.2} bob={0.6} />
+      <Human who="client" x={700} y={230} size={200} name="Client" anim="st-slide-r" d={0.2} moods={[["neutral", 0], ["happy", 1.6]]} />
       <div className="absolute" style={{ left: 482, top: 170 }}>
         <div className="st-pop" style={at(1.6)}>
           <span className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-b from-amber-200 to-amber-500 text-amber-900 shadow-[0_0_40px_10px_rgb(251_191_36/0.45)]">
@@ -436,7 +440,7 @@ function SceneHired() {
         <span className="st-chip text-white/60">→</span>
         <span className="st-chip bg-amber-300 text-amber-900">Won</span>
       </div>
-      <div className="st-rise st-card px-4 py-3" style={{ left: 640, top: 150, width: 280, ...at(3.6) }}>
+      <div className="st-rise st-card px-4 py-3" style={{ left: 340, top: 462, width: 290, ...at(3.6) }}>
         <p className="text-sm font-bold">Sara marks the job “Won”</p>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">FitWork keeps this feedback to become even smarter in the future.</p>
       </div>

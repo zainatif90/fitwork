@@ -99,13 +99,7 @@
   background: radial-gradient(circle, #fff 0 25%, var(--c, #c084fc) 55%, transparent 75%); }
 .st-dot.big { width: 22px; height: 22px; margin: -11px 0 0 -11px; }
 
-/* ---------- Sara's portrait: natural blinking and breathing ---------- */
-.sara-portrait .sara-blink { animation: sara-blink 5.2s infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes sara-blink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
-.sara-portrait .sara-breathe { animation: sara-breathe 4.6s ease-in-out infinite; transform-origin: 100px 240px; }
-@keyframes sara-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012) translateY(-1px); } }
-.sara-portrait path, .sara-portrait g { transform-box: view-box; }
-/* soft spotlight behind Sara */
+/* soft spotlight behind a person */
 .st-spot { position: absolute; border-radius: 9999px; background: radial-gradient(closest-side, rgb(244 114 182 / 0.28), rgb(147 51 234 / 0.12) 55%, transparent); }
 
 /* ---------- Finale: jobs pulled into the FitWork logo, again and again ---------- */
@@ -116,3 +110,11 @@
   72%  { opacity: 1; transform: translate(calc(var(--fx) * 0.12), calc(var(--fy) * 0.12)) scale(0.7); }
   86%, 100% { opacity: 0; transform: translate(0, 0) scale(0.2); }
 }
+
+/* ---------- Realistic portraits (Portrait.tsx) ---------- */
+.pt-portrait g, .pt-portrait path, .pt-portrait ellipse { transform-box: view-box; }
+.pt-portrait .pt-blink { animation: pt-blink 5.4s infinite; }
+@keyframes pt-blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.06); } }
+/* breathing: the whole portrait rises a little (moved by the graphics card, nothing is redrawn) */
+.pt-breathe { animation: pt-breathe 4.8s ease-in-out infinite; transform-origin: 50% 100%; will-change: transform; }
+@keyframes pt-breathe { 0%, 100% { transform: none; } 50% { transform: translateY(-1.5px) scale(1.008); } }

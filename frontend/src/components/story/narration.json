@@ -9,135 +9,135 @@
       "id": "problem",
       "en": {
         "title": "Sara's problem",
-        "caption": "This is Sara. She is a talented web developer, with real skills in React, TypeScript and Node.js. But every morning, the same question: where do I even start? Upwork, Freelancer, LinkedIn, job boards. Hundreds of posts, endless scrolling, and no idea which jobs truly fit her."
+        "caption": "Meet Sara. She's a talented web developer: React, TypeScript, Node.js. She has the skills. What she doesn't have is a way through the noise. Upwork, Freelancer, LinkedIn, endless job boards. Hundreds of new posts every day, hours of scrolling, and still the same question: which of these jobs is actually right for me?"
       },
       "ur": {
         "title": "سارہ کی مشکل",
-        "caption": "یہ ہیں سارہ۔ ایک باصلاحیت ویب ڈیولپر، جو ری ایکٹ، ٹائپ اسکرپٹ اور نوڈ جے ایس میں ماہر ہیں۔ لیکن ہر صبح ایک ہی سوال: شروع کہاں سے کروں؟ اپ ورک، فری لانسر، لنکڈ اِن، جاب بورڈز۔ سینکڑوں پوسٹس، نہ ختم ہونے والی اسکرولنگ، اور یہ پتا ہی نہیں کہ کون سی نوکری واقعی ان کے لیے ہے۔"
+        "caption": "یہ ہیں سارہ۔ ایک باصلاحیت web developer، جو React، TypeScript اور Node.js میں ماہر ہیں۔ ہنر تو ہے، لیکن راستہ نظر نہیں آتا۔ Upwork، Freelancer، LinkedIn، اور بے شمار job boards۔ روزانہ سینکڑوں نئی پوسٹس، گھنٹوں کی scrolling، اور پھر بھی وہی سوال: اِن میں سے کون سی نوکری واقعی میرے لیے ہے؟"
       }
     },
     {
       "id": "discover",
       "en": {
         "title": "She finds FitWork",
-        "caption": "Then a friend tells her about FitWork: one place that finds the jobs that fit her, and explains why. No more guessing. She decides to give it a try."
+        "caption": "Then a friend sends her a message: have you tried FitWork? One place that brings the jobs to her, shows which ones truly fit, and explains exactly why. For the first time in weeks, Sara feels hopeful."
       },
       "ur": {
-        "title": "فِٹ ورک مل گیا",
-        "caption": "پھر ایک دوست انہیں فِٹ ورک کے بارے میں بتاتی ہے: ایک ایسی جگہ جو ان کے لیے موزوں نوکریاں ڈھونڈتی ہے، اور وجہ بھی بتاتی ہے۔ اب اندازوں کی ضرورت نہیں۔ سارہ اسے آزمانے کا فیصلہ کرتی ہیں۔"
+        "title": "FitWork مل گیا",
+        "caption": "پھر ایک دوست کا پیغام آتا ہے: کیا تم نے FitWork آزمایا ہے؟ ایک ایسی جگہ جو نوکریاں خود تم تک لاتی ہے، بتاتی ہے کہ کون سی واقعی تمہارے لیے ہیں، اور یہ بھی کہ کیوں۔ کئی ہفتوں بعد، سارہ کو امید کی ایک کرن نظر آتی ہے۔"
       }
     },
     {
       "id": "sara",
       "en": {
         "title": "She signs up",
-        "caption": "She signs up, and tells FitWork what she is great at: her skills, her experience, her hourly rate, and one line about her work. That's all it takes."
+        "caption": "Getting started takes two minutes. Sara tells FitWork what she's good at: her skills, her experience, her hourly rate, and one line about the work she loves. That's it. FitWork takes it from here."
       },
       "ur": {
         "title": "پروفائل بنائی",
-        "caption": "وہ اکاؤنٹ بناتی ہیں اور فِٹ ورک کو بتاتی ہیں کہ وہ کس کام میں ماہر ہیں: اپنی اسکلز، تجربہ، فی گھنٹہ ریٹ، اور اپنے کام کے بارے میں ایک جملہ۔ بس، اتنا ہی کافی ہے۔"
+        "caption": "شروع کرنے میں صرف دو منٹ لگتے ہیں۔ سارہ FitWork کو بتاتی ہیں کہ وہ کس کام میں ماہر ہیں: اپنی skills، اپنا تجربہ، فی گھنٹہ ریٹ، اور اپنے پسندیدہ کام کے بارے میں ایک لائن۔ بس۔ باقی کام FitWork کا ہے۔"
       }
     },
     {
       "id": "sources",
       "en": {
-        "title": "Jobs everywhere",
-        "caption": "Meanwhile, clients are posting jobs on Freelancer.com, Himalayas, Remotive and Jobicy. Sara can't watch all of them. FitWork can. It collects new jobs automatically, all day and all night."
+        "title": "Jobs come to her",
+        "caption": "Behind the scenes, FitWork never sleeps. Around the clock, it collects fresh jobs from Freelancer.com, Himalayas, Remotive and Jobicy, and quietly removes the ones that have expired. Sara no longer visits four websites. The jobs come to her."
       },
       "ur": {
-        "title": "ہر جگہ نوکریاں",
-        "caption": "دوسری طرف کلائنٹس فری لانسر ڈاٹ کام، ہمالیاز، ریموٹیو اور جابیسی پر نوکریاں پوسٹ کر رہے ہیں۔ سارہ ان سب پر نظر نہیں رکھ سکتیں، لیکن فِٹ ورک رکھ سکتا ہے۔ یہ دن رات خود بخود نئی نوکریاں جمع کرتا رہتا ہے۔"
+        "title": "نوکریاں خود آتی ہیں",
+        "caption": "پسِ پردہ، FitWork کبھی نہیں سوتا۔ یہ دن رات Freelancer.com، Himalayas، Remotive اور Jobicy سے نئی نوکریاں جمع کرتا ہے، اور پرانی نوکریاں خود ہٹا دیتا ہے۔ اب سارہ کو چار ویب سائٹس پر نہیں جانا پڑتا۔ نوکریاں خود اُن تک آتی ہیں۔"
       }
     },
     {
       "id": "meaning",
       "en": {
         "title": "AI reads the meaning",
-        "caption": "Now the clever part. An AI language model reads every job, and Sara's profile, and captures their meaning as 384 numbers. So “React developer” and “front-end engineer” land close together, even though the words are different.",
-        "say": "Now, the clever part. An AI language model reads every job, and Sara's profile, and captures their meaning as three hundred and eighty-four numbers. So, React developer, and front-end engineer, land close together, even though the words are different."
+        "caption": "Here's where the magic happens. An AI language model reads every job, and Sara's profile, and turns their meaning into 384 numbers. Jobs that mean the same thing get similar numbers. So a “front-end engineer” job is recognised as a match for a “React developer”, even when the words are completely different.",
+        "say": "Here's where the magic happens. An AI language model reads every job, and Sara's profile, and turns their meaning into three hundred and eighty-four numbers. Jobs that mean the same thing get similar numbers. So a front-end engineer job is recognised as a match for a React developer, even when the words are completely different."
       },
       "ur": {
-        "title": "اے آئی مطلب سمجھتا ہے",
-        "caption": "اب آتا ہے اصل کمال۔ ایک اے آئی لینگویج ماڈل ہر نوکری اور سارہ کی پروفائل کو پڑھتا ہے، اور ان کے مطلب کو تین سو چوراسی نمبروں میں بدل دیتا ہے۔ اس طرح “ری ایکٹ ڈیولپر” اور “فرنٹ اینڈ انجینئر” ایک دوسرے کے قریب آ جاتے ہیں، چاہے الفاظ مختلف ہوں۔"
+        "title": "AI مطلب سمجھتا ہے",
+        "caption": "اور اب اصل کمال۔ ایک AI language model ہر نوکری اور سارہ کی profile کو پڑھتا ہے، اور اُن کے مطلب کو 384 نمبروں میں بدل دیتا ہے۔ ایک جیسے مطلب والی نوکریوں کے نمبر بھی ملتے جلتے ہوتے ہیں۔ اس لیے front-end engineer کی نوکری بھی React developer کے لیے match سمجھی جاتی ہے، چاہے الفاظ بالکل مختلف ہوں۔"
       }
     },
     {
       "id": "search",
       "en": {
         "title": "Closest jobs",
-        "caption": "Inside the database, FitWork searches thousands of jobs in milliseconds, and pulls out the ones whose meaning sits closest to Sara."
+        "caption": "Then the database does something remarkable. Out of thousands of active jobs, it finds the fifty whose meaning is closest to Sara's profile, in just a few milliseconds."
       },
       "ur": {
         "title": "سب سے قریب نوکریاں",
-        "caption": "پھر ڈیٹا بیس چند ملی سیکنڈ میں ہزاروں نوکریوں میں سے وہ نوکریاں ڈھونڈ لیتا ہے جن کا مطلب سارہ کی پروفائل سے سب سے زیادہ ملتا ہے۔"
+        "caption": "پھر database کمال کرتا ہے۔ ہزاروں نوکریوں میں سے، صرف چند milliseconds میں، وہ پچاس نوکریاں ڈھونڈ لیتا ہے جن کا مطلب سارہ کی profile کے سب سے زیادہ قریب ہے۔"
       }
     },
     {
       "id": "score",
       "en": {
         "title": "Match Score",
-        "caption": "Every job then gets a Match Score from 0 to 100. 70% is how well her skills fit, 15% is the budget, and 15% is how fresh the job is. And FitWork tells her why: what matches, and what's missing. No guessing.",
-        "say": "Every job then gets a Match Score, from zero to one hundred. Seventy percent is how well her skills fit. Fifteen percent is the budget. And fifteen percent is how fresh the job is. And FitWork tells her why: what matches, and what's missing. No guessing."
+        "caption": "Each of those jobs gets a Match Score from 0 to 100. 70% comes from how well her skills and experience fit, 15% from whether the budget suits her rate, and 15% from how fresh the job is. And every score comes with a reason: the skills that match, and the ones that are missing. No black box. No guessing.",
+        "say": "Each of those jobs gets a Match Score, from zero to one hundred. Seventy percent comes from how well her skills and experience fit. Fifteen percent, from whether the budget suits her rate. And fifteen percent, from how fresh the job is. And every score comes with a reason: the skills that match, and the ones that are missing. No black box. No guessing."
       },
       "ur": {
-        "title": "میچ اسکور",
-        "caption": "ہر نوکری کو صفر سے سو تک ایک میچ اسکور ملتا ہے۔ ستر فیصد اس بات پر کہ اسکلز کتنی ملتی ہیں، پندرہ فیصد بجٹ پر، اور پندرہ فیصد اس پر کہ نوکری کتنی نئی ہے۔ اور فِٹ ورک وجہ بھی بتاتا ہے: کیا ملتا ہے اور کس چیز کی کمی ہے۔ کوئی اندازہ نہیں۔"
+        "title": "Match Score",
+        "caption": "اِن میں سے ہر نوکری کو صفر سے سو تک ایک Match Score ملتا ہے۔ ستر فیصد اس پر کہ skills اور تجربہ کتنا ملتا ہے، پندرہ فیصد اس پر کہ budget ریٹ کے مطابق ہے یا نہیں، اور پندرہ فیصد اس پر کہ نوکری کتنی نئی ہے۔ اور ہر score کے ساتھ وجہ بھی: کون سی skills ملتی ہیں، اور کون سی کم ہیں۔ کوئی اندازہ نہیں، سب کچھ صاف۔"
       }
     },
     {
       "id": "proposal",
       "en": {
         "title": "AI proposal",
-        "caption": "Found the one? With a single click, AI writes a first draft of her proposal, using only her real skills and the details of the job. Sara reviews it, makes it her own, and sends it."
+        "caption": "When Sara finds the right job, one click writes a first draft of her proposal. It uses only her real skills and the details of that job, nothing invented. She reads it, adds her personal touch, and sends it herself."
       },
       "ur": {
-        "title": "اے آئی پروپوزل",
-        "caption": "پسند کی نوکری مل گئی؟ صرف ایک کلک پر اے آئی پروپوزل کا پہلا ڈرافٹ لکھ دیتا ہے، سارہ کی اصل اسکلز اور نوکری کی تفصیل سے۔ سارہ اسے پڑھتی ہیں، اپنے انداز میں ڈھالتی ہیں، اور بھیج دیتی ہیں۔"
+        "title": "AI proposal",
+        "caption": "جب سارہ کو صحیح نوکری مل جاتی ہے، تو بس ایک click سے AI proposal کا پہلا draft لکھ دیتا ہے۔ اس میں صرف سارہ کی اصل skills اور اُس نوکری کی تفصیل ہوتی ہے، کچھ بھی بناوٹی نہیں۔ سارہ اسے پڑھتی ہیں، اپنا انداز شامل کرتی ہیں، اور خود بھیجتی ہیں۔"
       }
     },
     {
       "id": "agency",
       "en": {
         "title": "Agency teams",
-        "caption": "Running a team? Agency Mode compares every job with every teammate and suggests who fits best. Design goes to Ayesha, React to Sara, Python to Bilal. Then the whole team tracks each job, from assigned, to applied, to won."
+        "caption": "And FitWork isn't only for solo freelancers. In Agency Mode, an owner brings in the team, and FitWork compares every job with every member. Design goes to Ayesha, the React app to Sara, and the Python work to Bilal. Then the whole team follows each job, from assigned, to applied, to won."
       },
       "ur": {
-        "title": "ایجنسی ٹیمیں",
-        "caption": "اگر آپ کی ٹیم ہے؟ ایجنسی موڈ ہر نوکری کو ٹیم کے ہر رکن سے ملاتا ہے اور بتاتا ہے کہ کون سب سے موزوں ہے۔ ڈیزائن عائشہ کو، ری ایکٹ سارہ کو، اور پائتھن بلال کو۔ پھر پوری ٹیم ہر نوکری کو اسائنڈ سے اپلائیڈ، اور پھر وَن تک فالو کرتی ہے۔"
+        "title": "Agency teams",
+        "caption": "اور FitWork صرف اکیلے freelancers کے لیے نہیں۔ Agency Mode میں owner اپنی team بناتا ہے، اور FitWork ہر نوکری کو team کے ہر member سے ملاتا ہے۔ Design عائشہ کو، React کا کام سارہ کو، اور Python کا کام بلال کو۔ پھر پوری team ہر نوکری کو assigned سے applied، اور پھر won تک دیکھتی ہے۔"
       }
     },
     {
       "id": "skillgap",
       "en": {
         "title": "Skill Gap Radar",
-        "caption": "And what should Sara learn next? The Skill Gap Radar checks the jobs in her field and finds the one skill that would unlock the most new work. For Sara, it's AWS, with free courses to start today.",
-        "say": "And what should Sara learn next? The Skill Gap Radar checks the jobs in her field, and finds the one skill that would unlock the most new work. For Sara, it's A W S, with free courses to start today."
+        "caption": "FitWork also helps Sara grow. The Skill Gap Radar studies the jobs in her field, and finds the one skill that would unlock the most new opportunities. For Sara, it's AWS, with free courses so she can start learning today.",
+        "say": "FitWork also helps Sara grow. The Skill Gap Radar studies the jobs in her field, and finds the one skill that would unlock the most new opportunities. For Sara, it's A W S, with free courses so she can start learning today."
       },
       "ur": {
-        "title": "اسکل گیپ ریڈار",
-        "caption": "اور سارہ آگے کیا سیکھیں؟ اسکل گیپ ریڈار ان کے شعبے کی نوکریوں کو دیکھ کر وہ ایک اسکل بتاتا ہے جو سب سے زیادہ نئی نوکریوں کا دروازہ کھول دے۔ سارہ کے لیے یہ ہے اے ڈبلیو ایس، اور ساتھ میں مفت کورسز بھی۔"
+        "title": "Skill Gap Radar",
+        "caption": "FitWork سارہ کو آگے بڑھنے میں بھی مدد دیتا ہے۔ Skill Gap Radar اُن کے شعبے کی نوکریوں کا جائزہ لے کر وہ ایک skill بتاتا ہے جو سب سے زیادہ نئے مواقع کھول دے۔ سارہ کے لیے وہ ہے AWS، اور ساتھ میں مفت courses بھی، تاکہ وہ آج ہی سیکھنا شروع کر دیں۔"
       }
     },
     {
       "id": "hired",
       "en": {
         "title": "Hired!",
-        "caption": "Sara applies only to jobs that truly fit her, and she wins. When she marks a job as won, FitWork keeps that feedback, to become even smarter in the future."
+        "caption": "Sara now spends her time on jobs that genuinely fit her, and it shows. She wins the project. When she marks it as won, FitWork saves that feedback, so it can grow even smarter over time."
       },
       "ur": {
         "title": "نوکری مل گئی!",
-        "caption": "سارہ صرف ان نوکریوں پر اپلائی کرتی ہیں جو واقعی ان کے لیے موزوں ہیں، اور وہ جیت جاتی ہیں۔ جب وہ نوکری کو وَن مارک کرتی ہیں تو فِٹ ورک یہ فیڈ بیک محفوظ کر لیتا ہے، تاکہ آگے چل کر اور بھی بہتر ہو جائے۔"
+        "caption": "اب سارہ اپنا وقت صرف اُن نوکریوں پر لگاتی ہیں جو واقعی اُن کے لیے ہیں، اور نتیجہ سامنے ہے۔ project اُنہیں مل جاتا ہے۔ جب وہ اسے won mark کرتی ہیں، تو FitWork یہ feedback محفوظ کر لیتا ہے، تاکہ وقت کے ساتھ اور بھی سمجھدار ہوتا جائے۔"
       }
     },
     {
       "id": "outro",
       "en": {
         "title": "This is FitWork",
-        "caption": "This is FitWork. The place where the right jobs find you. Matches you can understand, proposals in one click, teams that work smarter, and skills that grow your career. It's free. Try it today."
+        "caption": "This is FitWork. Where the right jobs find you. Smart matches you can understand, proposals in one click, teams that work as one, and skills that move your career forward. It's free. Try it today."
       },
       "ur": {
-        "title": "یہ ہے فِٹ ورک",
-        "caption": "یہ ہے فِٹ ورک۔ وہ جگہ جہاں صحیح نوکریاں خود آپ تک پہنچتی ہیں۔ سمجھ میں آنے والے میچز، ایک کلک میں پروپوزل، سمجھداری سے کام کرنے والی ٹیمیں، اور آپ کا کیریئر بڑھانے والی اسکلز۔ بالکل مفت۔ آج ہی آزمائیں۔"
+        "title": "یہ ہے FitWork",
+        "caption": "یہ ہے FitWork۔ جہاں صحیح نوکریاں خود آپ کو ڈھونڈتی ہیں۔ سمجھ میں آنے والے matches، ایک click میں proposals، ایک ہو کر کام کرنے والی teams، اور آپ کے career کو آگے بڑھانے والی skills۔ بالکل مفت۔ آج ہی آزمائیں۔"
       }
     }
   ]
