@@ -242,24 +242,7 @@ h1, h2, h3 {
 }
 
 /* ===================== 3D effects ===================== */
-@keyframes orb-x { from { transform: rotateX(70deg) rotateZ(0deg); } to { transform: rotateX(70deg) rotateZ(360deg); } }
-@keyframes orb-y { from { transform: rotateY(70deg) rotateZ(0deg); } to { transform: rotateY(70deg) rotateZ(360deg); } }
-@keyframes orb-z { from { transform: rotateX(35deg) rotateY(-35deg) rotateZ(0deg); } to { transform: rotateX(35deg) rotateY(-35deg) rotateZ(-360deg); } }
-@keyframes orb-spin { from { transform: rotateY(0deg) rotateX(12deg); } to { transform: rotateY(360deg) rotateX(12deg); } }
-@keyframes core-pulse { 0%,100% { transform: scale(1); opacity: 0.95; } 50% { transform: scale(1.12); opacity: 1; } }
 
-/* A gyroscope: three glowing rings turning on different axes around a glowing core.
-   (No position rule here: the element is placed with Tailwind's absolute/relative classes.) */
-.orb3d { perspective: 900px; }
-.orb3d .orb-stage { position: absolute; inset: 0; transform-style: preserve-3d; animation: orb-spin 18s linear infinite; }
-.orb3d .ring { position: absolute; inset: 0; border-radius: 9999px; transform-style: preserve-3d; }
-.orb3d .ring:nth-child(1) { border: 3px solid rgb(165 180 252 / 0.95); box-shadow: 0 0 18px #818cf8, inset 0 0 18px #818cf8; animation: orb-x 7s linear infinite; }
-.orb3d .ring:nth-child(2) { inset: 10%; border: 3px solid rgb(240 171 252 / 0.95); box-shadow: 0 0 18px #e879f9, inset 0 0 18px #e879f9; animation: orb-y 9s linear infinite; }
-.orb3d .ring:nth-child(3) { inset: 20%; border: 3px solid rgb(125 211 252 / 0.95); box-shadow: 0 0 18px #38bdf8, inset 0 0 18px #38bdf8; animation: orb-z 6s linear infinite; }
-.orb3d .core { position: absolute; inset: 36%; border-radius: 9999px;
-  background: radial-gradient(circle at 35% 30%, #fff, #c4b5fd 30%, #7c3aed 65%, #312e81);
-  box-shadow: 0 0 40px 8px rgb(168 85 247 / 0.6), inset -6px -8px 16px rgb(30 27 75 / 0.5);
-  animation: core-pulse 3s ease-in-out infinite; }
 
 /* 3D "key" buttons: sit on a darker edge and press down when clicked */
 @utility btn-3d {
@@ -281,9 +264,6 @@ h1, h2, h3 {
 .deck-3d > *:nth-child(3) { transform: translateZ(0px); }
 .deck-3d:hover { transform: perspective(1200px) rotateY(-4deg) rotateX(3deg); }
 
-@media (prefers-reduced-motion: reduce) {
-  .orb3d .orb-stage, .orb3d .ring, .orb3d .core { animation: none; }
-}
 .tilt-glare { border-radius: 1rem; }
 
 /* ===================== Smoothness pass ===================== */
@@ -301,7 +281,6 @@ h1, h2, h3 {
 }
 @keyframes pulse-scale { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.5); opacity: 0; } }
 /* 3D pieces are composited layers */
-.orb3d .orb-stage, .orb3d .ring, .orb3d .core { will-change: transform; }
 .tilt-host { will-change: transform; }
 
 /* ===================== Calm motion (19 Nov 2026) ===================== */
@@ -324,9 +303,6 @@ h1, h2, h3 {
 .glow-border::before { animation: none; }
 .glow-border:hover::before { animation: border-spin 4s linear infinite; }
 
-/* 3D gyroscope: keeps its 3D pose, turns only on hover. */
-.orb3d .orb-stage, .orb3d .ring, .orb3d .core { animation-play-state: paused; will-change: auto; }
-.orb3d:hover .orb-stage, .orb3d:hover .ring, .orb3d:hover .core { animation-play-state: running; }
 
 /* "Live" pulse rings: three pulses, then rest. */
 .animate-pulse-ring::before { animation-iteration-count: 3; }
@@ -358,7 +334,49 @@ h1, h2, h3 {
 
 /* ===================== Calm motion, part 2 (19 Nov 2026) ===================== */
 /* Checked on the live site with document.getAnimations(): the glow blobs and the 3D orb were STILL animating.
-   The original rules (.aurora > span:nth-child(1), .orb3d .ring:nth-child(1)) are more specific than the overrides
    above, and their `animation:` shorthand resets animation-play-state to running. !important settles it. */
 .aurora > span { animation: none !important; }
-.orb3d .orb-stage, .orb3d .ring, .orb3d .core { animation-play-state: paused !important; }
+
+/* ===================== 3D atom (19 Nov 2026) ===================== */
+/* The decorative orb is an atom: a nucleus of protons (pink) and neutrons (blue), three electrons orbiting on paths
+   tilted 0/60/120 degrees. Only `transform` is animated (the graphics card moves the layers, nothing is repainted),
+   and the component adds .is-paused while the atom is off screen. */
+.atom3d .atom-scene { position: absolute; inset: 0; perspective: 800px; transform-style: preserve-3d; }
+.atom-orbit { position: absolute; inset: 0; border-radius: 9999px; transform-style: preserve-3d;
+  border: 1.5px solid var(--orbit); box-shadow: 0 0 10px var(--orbit), inset 0 0 10px var(--orbit);
+  transform: rotateZ(var(--tilt)) rotateX(72deg); }
+.atom-orbit-0 { --tilt: 0deg;   --orbit: rgb(129 140 248 / 0.6); --electron: #c7d2fe; --glow: rgb(129 140 248 / 0.55); --speed: 3.2s; }
+.atom-orbit-1 { --tilt: 60deg;  --orbit: rgb(232 121 249 / 0.6); --electron: #f5d0fe; --glow: rgb(232 121 249 / 0.55); --speed: 4.4s; }
+.atom-orbit-2 { --tilt: 120deg; --orbit: rgb(56 189 248 / 0.6);  --electron: #bae6fd; --glow: rgb(56 189 248 / 0.55); --speed: 5.6s; }
+.atom-spin { position: absolute; inset: 0; transform-style: preserve-3d; animation: atom-spin var(--speed) linear infinite; }
+/* The electron turns the opposite way and tilts back, so it always faces the viewer as a round ball */
+.atom-electron { position: absolute; top: -12%; left: 38%; width: 24%; height: 24%; border-radius: 9999px;
+  background: radial-gradient(circle, #fff 0 9%, var(--electron) 17%, var(--glow) 26%, transparent 62%);
+  animation: atom-face var(--speed) linear infinite; }
+/* Comet tail: a fading arc of light behind the electron (it spins with the electron) */
+.atom-trail { position: absolute; inset: -1px; border-radius: 9999px;
+  background: conic-gradient(from 250deg, transparent, var(--electron) 110deg, transparent 110deg);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+          mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
+.atom-orbit-1 .atom-trail { transform: scaleX(-1); }
+.atom-orbit-1 .atom-spin, .atom-orbit-1 .atom-electron { animation-direction: reverse; }
+.atom-nucleus { position: absolute; inset: 37%; animation: atom-breathe 2.6s ease-in-out infinite; }
+.atom-glow { position: absolute; inset: 14%; border-radius: 9999px; animation: atom-breathe 2.6s ease-in-out infinite;
+  background: radial-gradient(closest-side, rgb(236 72 153 / 0.45), rgb(168 85 247 / 0.3) 45%, transparent); }
+/* The whole atom sways gently in 3D */
+.atom3d .atom-scene { animation: atom-sway 9s ease-in-out infinite; }
+/* Glitter: four-pointed stars that pop, turn and fade, one after another */
+.atom-sparkle { position: absolute; margin: -2% 0 0 -2%; opacity: 0;
+  background: radial-gradient(circle, #fff 0 18%, #fde68a 35%, #f0abfc 60%);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  animation: atom-twinkle 3.2s ease-in-out infinite; }
+.atom-proton, .atom-neutron { position: absolute; width: 38%; height: 38%; margin: -19% 0 0 -19%; border-radius: 9999px; }
+.atom-proton  { background: radial-gradient(circle at 35% 30%, #fff, #f9a8d4 30%, #db2777 70%, #831843); }
+.atom-neutron { background: radial-gradient(circle at 35% 30%, #fff, #a5b4fc 30%, #4f46e5 70%, #1e1b4b); }
+.atom3d.is-paused * { animation-play-state: paused !important; }
+@keyframes atom-spin { from { transform: rotateZ(0deg); } to { transform: rotateZ(360deg); } }
+@keyframes atom-face { from { transform: rotateZ(0deg) rotateX(-72deg); } to { transform: rotateZ(-360deg) rotateX(-72deg); } }
+@keyframes atom-sway { 0%, 100% { transform: rotateY(-14deg) rotateX(6deg); } 50% { transform: rotateY(14deg) rotateX(-6deg); } }
+@keyframes atom-twinkle { 0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); } 15% { opacity: 1; transform: scale(1.15) rotate(45deg); }
+  30% { opacity: 0; transform: scale(0.2) rotate(90deg); } }
+@keyframes atom-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
