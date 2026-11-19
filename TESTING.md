@@ -8,16 +8,22 @@ Performance, load and end-to-end results are in [TEST_RESULTS.md](TEST_RESULTS.m
 
 | Level | What it tests | Tool | Tests | Result | Time |
 |---|---|---|---|---|---|
-| **Unit** (backend) | One function at a time, plain inputs, **no database, Redis or network** | pytest (`-m unit`) | 97 | **97 passed** | 1.8 s |
-| **Integration** (backend) | Real HTTP requests through FastAPI → services → PostgreSQL + pgvector → Redis | pytest (`-m integration`) | 177 | **177 passed** | 3 min 31 s |
-| **Unit** (frontend) | Display helpers in `src/lib/format.ts` | Vitest | 10 | **10 passed** | 0.7 s |
+| **Unit** (backend) | One function at a time, plain inputs, **no database, Redis or network** | pytest (`-m unit`) | 101 | **101 passed** | 1.8 s (3.9 s in CI) |
+| **Integration** (backend) | Real HTTP requests through FastAPI → services → PostgreSQL + pgvector → Redis | pytest (`-m integration`) | 198 | **198 passed** | 1 min 32 s in CI |
+| **Unit** (frontend) | Display helpers (`format.ts`) and the profile-strength rule | Vitest | 14 | **14 passed** | 0.5 s |
 | **TDD** | Two real bugs fixed test-first (red → green → refactor) | pytest + Vitest | 11 + 2 | both cycles completed | — |
-| **Total** | | | **284** | **284 passed, 0 failed** | |
+| **Total** | | | **313** | **313 passed, 0 failed** | |
 
 **Code coverage (backend, `pytest --cov=app`, all 274 backend tests):** 89% of all statements; **93.3%** of the
 application code when the six command-line scripts in `app/scripts/` (benchmarks, data loaders) are left out.
 Core modules: scoring 96%, matching 93%, routing 96%, skill gap 98%, agency service 96%, security 96%,
 LLM client 100%, email 100%.
+
+**Continuous integration (since 19 Nov 2026):** `.github/workflows/build-image.yml` runs all of these on every
+push to `main`, with PostgreSQL 16 + pgvector and Redis 7 as GitHub service containers. The production image is built
+only if every test passes (first run: 101 unit + 198 integration + 14 frontend, all green). The per-file table in
+section 1 is from the first split (274 backend tests); added since: test_robustness.py, test_delete_account.py and new
+cases in test_matching.py, test_skill_gap.py, test_proposals.py and test_auth.py.
 
 ## How to run
 

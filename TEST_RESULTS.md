@@ -30,8 +30,8 @@ TC-7 uses 520 jobs labelled `source = synthetic` that exist **only in the test d
 after every test). The real-data performance numbers are in sections 3 and 4.
 
 ## 2. Full automated test suite
-Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **274 passed, 0 failed** (19 Nov 2026: 97 unit + 177 integration,
-89% coverage; plus 10 frontend Vitest tests). Unit / integration split, TDD cycles and coverage: see [TESTING.md](TESTING.md).
+Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **299 passed, 0 failed** (19 Nov 2026, after the review fixes: 101 unit + 198 integration; plus 14 frontend
+Vitest tests; the same suite runs in GitHub Actions before every image build). Unit / integration split, TDD cycles and coverage: see [TESTING.md](TESTING.md).
 Earlier run: 245 passed, 0 failed (2 Nov 2026).
 The table below is the original breakdown; new files since: test_auth_sessions.py, test_review_fixes.py, test_job_boards.py,
 test_chat.py (Team Chat, 8), test_agency_audit.py (agency SQA audit fixes, 16).
@@ -149,6 +149,7 @@ Test accounts created by these checks were deleted afterwards.
 | 16 | Himalayas returned the same jobs on every page (its search ignores `offset`) | 85 fetched but only 17 new; compared pages | Paging with `page=1,2,3`; live: 92 unique Himalayas jobs |
 | 17 | Skill Gap suggested skills from other fields (a QA tester was told to learn PHP, Illustrator, Photoshop, Graphic Design) | User report with screenshot; reproduced on live data | Gaps now come only from the user's field: the 200 most similar jobs that also share one of the user's skills (tags or title); "unlocked" counts only jobs in that field; reposts counted once. Before/after table in section 5d |
 | 18 | Skill Gap stopped working on the live site (19 Nov 2026): `/skill-gap` returned 502 after 19 s and every page then returned 503, because the free server (512 MB) was killed for using too much memory. Skill Gap loaded every active job as a full object, and pgvector returns each embedding as a Python list of 384 floats (~12 KB per job). As live jobs accumulated, this passed the limit | Reproduced on the live API (temporary account); measured with tracemalloc (13.3 of 15.7 MB were embedding lists); at production scale (8,000 jobs, test database, `synthetic` rows deleted afterwards) the old code peaked at **569 MB** | Lean loader: only the needed columns, the first 300 characters of the description, embeddings turned into float32 arrays as rows arrive, read in batches of 100. Same results; 8,000 jobs: peak **315 MB** (Skill Gap itself 326 MB → 72 MB), 1.7 s → 1.3 s. Regression test `test_skill_gap_loads_lean_rows_not_full_jobs` |
+| 19 | Review of 19 Nov 2026 ("what if" questions): old jobs were never deleted; several Skill Gap requests at once could run out of memory; a job posted twice filled several of the top 5; no way to delete an account; common passwords such as "password1" accepted; no site-wide AI limit; no monitoring (the Skill Gap crash went unnoticed for days); CI built images without running tests | Code review; the duplicate-matches test failed first (3 copies of one job in the top 5) | Daily purge of jobs expired over 30 days (jobs with user history kept); one Skill Gap at a time (others wait; 503 "try again" after 90 s); Skill Gap reads at most the 12,000 newest jobs; one posting per top-5 slot; DELETE /api/auth/me; common-password list; 300 AI drafts/day site-wide; /api/health/deep + 3-hourly GitHub check; CI runs all tests before building. 25 new tests |
 
 ## 5d. Skill Gap: before and after the "your field only" fix (live data, 1 November 2026)
 Read-only run on the production database (3,074 active jobs), same 5 test profiles, top 5 suggestions:
