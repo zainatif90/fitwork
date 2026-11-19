@@ -18,6 +18,7 @@ Skill Gap Radar (UC-5): which missing skill, from the user's OWN field of work, 
    plus radar data for the 8 most requested skills in your field.
 Results are cached in Redis for 1 hour (cleared when the profile changes).
 """
+import logging
 import threading
 import time
 import uuid
@@ -37,6 +38,8 @@ from app.models.profile import Profile
 from app.services import embeddings, scoring
 from app.services.matching import ensure_profile_embedding, posting_key
 from app.services.skill_utils import NOT_SUGGESTED, _compact, canonical_set, canonical_skill, skills_in_text
+
+log = logging.getLogger(__name__)
 
 TOP_GAPS = 5
 RADAR_SKILLS = 8
@@ -258,6 +261,33 @@ def compute_skill_gap(db: Session, profile: Profile) -> dict[str, Any]:
 # users opening Skill Gap together (e.g. examiners at a demo) could push the 512 MB free server over its limit.
 # The others wait their turn (it takes seconds) and then usually find their result already cached.
 _compute_lock = threading.Lock()
+
+
+def prewarm_in_background(user_id: uuid.UUID) -> None:
+    """
+    Start this user's Skill Gap calculation in the background right after their profile is saved, so the ~25 s
+    first calculation on the free server is usually finished before they open the page. It takes its turn in the
+    same one-at-a-time queue as page requests; a page request that arrives meanwhile waits and gets the result.
+    """
+    if settings.SKILL_GAP_PREWARM:
+        threading.Thread(target=_prewarm, args=(user_id,), daemon=True, name=f"skillgap-prewarm-{user_id}").start()
+
+
+def _prewarm(user_id: uuid.UUID) -> None:
+    from app.core.database import SessionLocal
+    from app.services.profiles import get_profile
+
+    db = SessionLocal()
+    try:
+        profile = get_profile(db, user_id)
+        if profile is not None and profile.embedding is not None:
+            get_skill_gap(db, profile, use_cache=True, wait_sec=300)
+    except SkillGapBusy:
+        log.info("Skill Gap pre-calculation skipped for %s: the queue stayed busy", user_id)
+    except Exception:
+        log.exception("Skill Gap pre-calculation failed for %s", user_id)
+    finally:
+        db.close()
 
 
 class SkillGapBusy(Exception):

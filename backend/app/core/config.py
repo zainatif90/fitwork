@@ -136,6 +136,8 @@ class Settings(BaseSettings):
     # Memory guard: analyse at most this many active jobs (the newest). 8,000 jobs measured at 315 MB peak for the
     # whole server (19 Nov 2026), so 12,000 stays under the 512 MB free plan; more jobs never raise the memory.
     SKILL_GAP_MAX_JOBS: int = 12000
+    # Calculate Skill Gap in the background right after a profile is saved (off in tests)
+    SKILL_GAP_PREWARM: bool = True
 
     # --- LLM (proposals only) ---
     LLM_PROVIDER: str = "gemini"  # gemini | openai

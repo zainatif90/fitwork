@@ -25,7 +25,7 @@ import { Aurora } from "../components/Motion";
 import { Orb3D } from "../components/Orb3D";
 import { Alert, Button, Card, CountUp, EmptyState, SkeletonList } from "../components/ui";
 import { WinRateChart } from "../components/WinRateChart";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, peek } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatBudget, timeAgo } from "../lib/format";
 import type { Agency as AgencyData, Assignment, RoutingRecommendation, TeamStats } from "../lib/types";
@@ -223,10 +223,11 @@ function PerformanceTab({ stats }: { stats: TeamStats }) {
 function OwnerAgency({ initial }: { initial: AgencyData }) {
   const { user, reloadUser } = useAuth();
   const [agency, setAgency] = useState(initial);
-  const [recs, setRecs] = useState<RoutingRecommendation[] | null>(null);
-  const [stats, setStats] = useState<TeamStats | null>(null);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [myQueue, setMyQueue] = useState<Assignment[]>([]);
+  // Remembered answers show at once; load() below refreshes them
+  const [recs, setRecs] = useState<RoutingRecommendation[] | null>(() => peek<RoutingRecommendation[]>("/agency/routing?limit=200") ?? null);
+  const [stats, setStats] = useState<TeamStats | null>(() => peek<TeamStats>(`/agency/members/stats?tz=${TZ_MINUTES}`) ?? null);
+  const [assignments, setAssignments] = useState<Assignment[]>(() => peek<Assignment[]>("/agency/assignments") ?? []);
+  const [myQueue, setMyQueue] = useState<Assignment[]>(() => peek<Assignment[]>("/agency/queue") ?? []);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -678,7 +679,7 @@ function StartAgency() {
 
 export default function Agency() {
   const { user, reloadUser } = useAuth();
-  const [agency, setAgency] = useState<AgencyData | null>(null);
+  const [agency, setAgency] = useState<AgencyData | null>(() => peek<AgencyData>("/agency/me") ?? null);
   const [error, setError] = useState<string | null>(null);
   const isAgencyUser = user?.role === "agency_owner" || user?.role === "agency_member";
 

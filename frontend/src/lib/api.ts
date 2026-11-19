@@ -12,6 +12,7 @@ import type { TokenResponse, User } from "./types";
 const API_BASE: string = import.meta.env.VITE_API_BASE ?? "/api";
 
 let accessToken: string | null = null;
+let currentUserId: string | null = null;
 let refreshInFlight: Promise<TokenResponse | null> | null = null;
 // True after the user clicked "Log out": the login page then must not send the next person
 // back to the page the previous user was on.
@@ -29,6 +30,8 @@ export function registerAuthListener(fn: (user: User | null) => void): void {
 }
 
 export function setSession(data: TokenResponse | null): void {
+  if (!data || data.user.id !== currentUserId) clearRemembered(); // never show one user's data to another
+  currentUserId = data?.user.id ?? null;
   accessToken = data?.access_token ?? null;
   if (data) loggedOutByUser = false;
   onUserChanged?.(data?.user ?? null);
@@ -80,8 +83,7 @@ interface RequestOptions {
   retry?: boolean; // internal: false after one refresh attempt
 }
 
-export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, query, retry = true } = opts;
+function buildUrl(path: string, query?: RequestOptions["query"]): string {
   let url = `${API_BASE}${path}`;
   if (query) {
     const params = new URLSearchParams();
@@ -89,6 +91,28 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     const qs = params.toString();
     if (qs) url += `?${qs}`;
   }
+  return url;
+}
+
+/*
+ * Remembered GET answers, so a page you already visited opens at once with its last data while it quietly
+ * reloads (the free server is ~0.3 s away, and every page used to start from an empty skeleton).
+ * Any change (POST/PUT/PATCH/DELETE) or a different user clears everything, so nothing stale is shown after an edit.
+ */
+const remembered = new Map<string, unknown>();
+
+export function clearRemembered(): void {
+  remembered.clear();
+}
+
+/** The last answer for this GET, or undefined if there is none yet (null is a real answer, e.g. "no profile"). */
+export function peek<T>(path: string, query?: RequestOptions["query"]): T | undefined {
+  return remembered.get(buildUrl(path, query)) as T | undefined;
+}
+
+export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const { method = "GET", body, query, retry = true } = opts;
+  const url = buildUrl(path, query);
 
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -122,6 +146,8 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     throw new ApiError(res.status, "The server had a problem. Please try again.");
   }
   if (!res.ok) throw new ApiError(res.status, errorMessage(data, res.status));
+  if (method === "GET") remembered.set(url, data ?? null);
+  else clearRemembered(); // something changed on the server: forget remembered answers
   return data as T;
 }
 

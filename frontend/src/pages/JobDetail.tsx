@@ -7,7 +7,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { PlatformBadge, ScoreRing, SkillChips } from "../components/MatchParts";
 import { ProposalPanel } from "../components/ProposalPanel";
 import { Alert, Card, Spinner } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, peek } from "../lib/api";
 import { formatBudget, scoreTone, timeAgo } from "../lib/format";
 import type { JobDetail as JobDetailData, Outcome } from "../lib/types";
 
@@ -39,7 +39,7 @@ const OUTCOMES: { value: Outcome; label: string; icon: ReactNode }[] = [
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<JobDetailData | null>(null);
+  const [data, setData] = useState<JobDetailData | null>(() => peek<JobDetailData>(`/jobs/${id}`) ?? null);
   const [error, setError] = useState<string | null>(null);
   const [savingOutcome, setSavingOutcome] = useState<Outcome | null>(null);
 

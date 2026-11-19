@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { AgencySettings } from "../components/AgencySettings";
 import { DeleteAccount } from "../components/DeleteAccount";
 import { Badge, Card, PageHeader, SkeletonList } from "../components/ui";
-import { api } from "../lib/api";
+import { api, peek } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { Profile } from "../lib/types";
 
@@ -20,7 +20,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 export default function Settings({ extra }: { extra?: ReactNode }) {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
+  const [profile, setProfile] = useState<Profile | null | undefined>(() => peek<Profile | null>("/profile/me"));
 
   useEffect(() => {
     api<Profile | null>("/profile/me").then(setProfile).catch(() => setProfile(null));

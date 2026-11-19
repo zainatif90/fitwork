@@ -8,7 +8,7 @@ import { Aurora, Tilt } from "../components/Motion";
 import { Orb3D } from "../components/Orb3D";
 import { JobCard } from "../components/MatchParts";
 import { Alert, Card, CountUp, EmptyState, PageHeader, SkeletonList } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, peek } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { sourceName, timeAgo } from "../lib/format";
 import type { MatchesResponse } from "../lib/types";
@@ -27,7 +27,11 @@ function greeting(): string {
 export default function Dashboard() {
   const { user } = useAuth();
   const location = useLocation();
-  const [state, setState] = useState<State>({ kind: "loading" });
+  // A remembered answer shows at once (no skeleton) while load() below refreshes it.
+  const [state, setState] = useState<State>(() => {
+    const seen = peek<MatchesResponse>("/matches");
+    return seen ? { kind: "ready", data: seen } : { kind: "loading" };
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const justSaved = (location.state as { profileSaved?: boolean } | null)?.profileSaved;

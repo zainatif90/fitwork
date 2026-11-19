@@ -20,7 +20,8 @@ os.environ["DATABASE_URL"] = _env.get(
 os.environ["REDIS_URL"] = "redis://localhost:6379/15"
 os.environ["ENV"] = "test"
 os.environ["SCHEDULER_ENABLED"] = "false"
-os.environ["FX_ENABLED"] = "false"   # tests never call the exchange-rate API; test_fx.py injects fixed rates
+os.environ["FX_ENABLED"] = "false"
+os.environ["SKILL_GAP_PREWARM"] = "false"   # no background threads during tests (tested directly)   # tests never call the exchange-rate API; test_fx.py injects fixed rates
 assert "fitwork_test" in os.environ["DATABASE_URL"], "Refusing to run tests against a non-test database"
 
 import pytest  # noqa: E402

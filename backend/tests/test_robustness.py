@@ -185,3 +185,27 @@ def test_deep_health_endpoint_is_public_and_answers_503_when_degraded(client: Te
     res = client.get("/api/health/deep")                         # empty test database: no active jobs
     assert res.status_code == 503
     assert "no active jobs" in res.json()["problems"]
+
+
+# ---------------------------------------------------------------- Skill Gap pre-calculation after a profile save
+def test_saving_a_profile_starts_the_skill_gap_precalculation(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    started: list[object] = []
+    monkeypatch.setattr(skill_gap, "prewarm_in_background", lambda user_id: started.append(user_id))
+    token = register(client)["access_token"]
+    client.put("/api/profile/me", headers=auth_header(token), json={
+        "skills": ["React"], "experience_level": "expert", "hourly_rate": 30, "bio": "React developer"})
+    assert len(started) == 1
+
+
+def test_precalculation_fills_the_cache_so_the_page_opens_at_once(client: TestClient, db: Session) -> None:
+    from app.models.profile import Profile
+
+    upsert_jobs(db, [_job(f"p{i}", "freelancer", 0.1) for i in range(3)])
+    db.commit()
+    token = register(client)["access_token"]
+    client.put("/api/profile/me", headers=auth_header(token), json={
+        "skills": ["React"], "experience_level": "expert", "hourly_rate": 30, "bio": "React developer"})
+    user_id = db.scalar(select(Profile.user_id))
+    skill_gap._prewarm(user_id)                                  # what the background thread runs
+    res = client.get("/api/skill-gap", headers=auth_header(token))
+    assert res.status_code == 200 and res.json()["cached"] is True

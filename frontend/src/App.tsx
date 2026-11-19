@@ -19,9 +19,20 @@ import Settings from "./pages/Settings";
 import TeamChat from "./pages/TeamChat";
 import VerifyEmail from "./pages/VerifyEmail";
 
-// The chart pages pull in Recharts (large), so they are loaded only when opened.
-const Agency = lazy(() => import("./pages/Agency"));
-const SkillGap = lazy(() => import("./pages/SkillGap"));
+// The chart pages pull in Recharts (large), so they are not in the first download...
+const loadAgency = () => import("./pages/Agency");
+const loadSkillGap = () => import("./pages/SkillGap");
+const Agency = lazy(loadAgency);
+const SkillGap = lazy(loadSkillGap);
+
+// ...but they are fetched quietly once the browser is idle after the first page, so the first click on
+// Agency or Skill Gap opens at once instead of waiting for a ~120 kB download.
+function preloadChartPages(): void {
+  const idle = (cb: () => void) =>
+    typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 2500);
+  idle(() => { void loadSkillGap(); void loadAgency(); });
+}
+if (typeof window !== "undefined") window.addEventListener("load", preloadChartPages, { once: true });
 
 export default function App() {
   useFreshVersion();

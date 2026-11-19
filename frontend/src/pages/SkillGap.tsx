@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { Tilt } from "../components/Motion";
 import { Radar3D } from "../components/Radar3D";
 import { Alert, Button, Card, EmptyState, PageHeader } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, peek } from "../lib/api";
 import { timeAgo } from "../lib/format";
 
 interface Gap {
@@ -136,8 +136,8 @@ function AnalysisInProgress() {
 }
 
 export default function SkillGap() {
-  const [data, setData] = useState<SkillGapData | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "no-profile" | "error">("loading");
+  const [data, setData] = useState<SkillGapData | null>(() => peek<SkillGapData>("/skill-gap") ?? null);
+  const [state, setState] = useState<"loading" | "ready" | "no-profile" | "error">(() => (peek("/skill-gap") ? "ready" : "loading"));
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 

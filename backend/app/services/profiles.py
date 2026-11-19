@@ -56,4 +56,8 @@ def save_profile(db: Session, user_id: uuid.UUID, data: ProfileIn) -> Profile:
 
     # The profile changed, so old match / skill-gap results are no longer valid.
     cache_delete(*user_cache_keys(user_id))
+    # ...and the new Skill Gap is calculated in the background, so the page is ready when the user opens it.
+    from app.services.skill_gap import prewarm_in_background
+
+    prewarm_in_background(user_id)
     return profile
