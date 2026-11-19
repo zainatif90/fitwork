@@ -1,16 +1,31 @@
 /*
- * The nine scenes of the "How FitWork works" story. Each scene is a timeline: every element has a delay (at(d))
- * and an animation class from story.css. Positions are in the 960 x 560 stage.
+ * The pictures of the "How FitWork works" story (the words are in narration.json). Each scene is a timeline:
+ * every element has a delay (at(d), in seconds, stretched to the narration by the story clock) and an animation
+ * class from story.css. Positions are in the 960 x 560 stage.
  * Illustrative story: the people, jobs and numbers are examples; the steps are exactly what FitWork does.
  */
-import { Check, Clock, Database, Lock, Mail, Sparkles, Trophy } from "lucide-react";
-import type { ReactNode } from "react";
+import { Briefcase, Check, Clock, Database, Lock, Mail, MessageCircle, Sparkles, Trophy } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { Orb3D } from "../Orb3D";
+import { LogoMark } from "../ui";
+import { type Mood, SaraPortrait } from "./SaraPortrait";
 import { at, LOOKS, Person, Ring, Typed } from "./StoryParts";
 
-/** caption = subtitle on screen; voice = what the narrator says (defaults to the caption) */
-export type SceneDef = { title: string; caption: string; voice?: string; seconds: number; render: () => ReactNode };
+/** seconds = length of the animation (it is stretched when the narration is longer) */
+export type Visual = { seconds: number; render: () => ReactNode };
+
+/** Sara's portrait at (x, y) = top-left, on a soft spotlight */
+function Sara({ x, y, size = 230, moods, laptop, d = 0 }: { x: number; y: number; size?: number; moods: [Mood, number][]; laptop?: boolean; d?: number }) {
+  return (
+    <div className="absolute" style={{ left: x, top: y }}>
+      <span className="st-spot st-fade" style={{ left: -size * 0.25, top: -size * 0.15, width: size * 1.5, height: size * 1.4, ...at(d) }} />
+      <div className="st-rise relative" style={at(d)}>
+        <SaraPortrait moods={moods} size={size} laptop={laptop} />
+      </div>
+    </div>
+  );
+}
 
 function Label({ x, y, d, children, className = "" }: { x: number; y: number; d: number; children: ReactNode; className?: string }) {
   return (
@@ -33,29 +48,89 @@ function Hub({ x, y, size, d, label }: { x: number; y: number; size: number; d: 
   );
 }
 
-/* ---------------- 1. Meet Sara ---------------- */
+/* ---------------- Sara's problem ---------------- */
+function SceneProblem() {
+  const platforms: [string, number, number, number][] = [
+    ["Upwork", 470, 70, -6], ["Freelancer.com", 640, 120, 4], ["LinkedIn", 800, 70, -3], ["Fiverr", 520, 190, 5],
+    ["Indeed", 760, 200, -5], ["Remotive", 600, 270, -2], ["Himalayas", 820, 300, 6], ["Jobicy", 470, 300, 3],
+  ];
+  return (
+    <>
+      <Sara x={70} y={150} size={250} moods={[["neutral", 0], ["focused", 1.6], ["confused", 3.6], ["stressed", 6.4]]} />
+      <div className="absolute flex gap-1.5" style={{ left: 60, top: 70 }}>
+        {["React", "TypeScript", "Node.js"].map((s, i) => (
+          <span key={s} className="st-pop st-chip bg-white text-brand-800 shadow-lg" style={at(0.6 + i * 0.25)}><Check className="h-3 w-3 text-emerald-500" />{s}</span>
+        ))}
+      </div>
+      {platforms.map(([name, x, y, r], i) => (
+        <div key={name} className="absolute" style={{ left: x, top: y, transform: `rotate(${r}deg)` }}>
+          <div className="st-pop" style={at(2.2 + i * 0.3)}>
+            <span className="st-chip bg-white/10 text-white ring-1 ring-white/25" style={{ fontSize: 14, padding: "8px 14px" }}>{name}</span>
+          </div>
+        </div>
+      ))}
+      {[[590, 175], [745, 160], [735, 285]].map(([x, y], i) => (
+        <span key={i} className="st-pop absolute flex h-8 w-8 items-center justify-center rounded-full bg-amber-300 font-display text-lg font-extrabold text-amber-900"
+          style={{ left: x, top: y, ...at(4 + i * 0.5) }}>?</span>
+      ))}
+      {/* job posts pile up */}
+      {Array.from({ length: 7 }, (_, i) => (
+        <div key={i} className="absolute" style={{ left: 500 + (i % 4) * 95, top: 370 + Math.floor(i / 4) * 40, transform: `rotate(${((i * 7) % 11) - 5}deg)` }}>
+          <div className="st-drop st-card px-3 py-2" style={{ position: "relative", width: 150, ...at(5 + i * 0.25) }}>
+            <span className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5 text-slate-400" /><span className="block h-2 w-20 rounded bg-slate-300" /></span>
+            <span className="mt-1.5 block h-2 w-16 rounded bg-slate-200" />
+          </div>
+        </div>
+      ))}
+      <div className="absolute flex gap-2" style={{ left: 500, top: 490 }}>
+        <span className="st-pop st-chip bg-rose-500 text-white" style={at(7.2)}>248 new posts today</span>
+        <span className="st-pop st-chip bg-white/15 text-white" style={at(7.8)}><Clock className="h-3.5 w-3.5" /> 3 hours of scrolling</span>
+      </div>
+    </>
+  );
+}
+
+/* ---------------- She finds FitWork ---------------- */
+function SceneDiscover() {
+  return (
+    <>
+      <Sara x={70} y={150} size={250} moods={[["stressed", 0], ["curious", 1.6], ["hopeful", 4]]} />
+      <div className="st-rise st-card p-4" style={{ left: 380, top: 80, width: 300, ...at(0.6) }}>
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500"><MessageCircle className="h-4 w-4 text-brand-600" /> Message from a friend</div>
+        <p className="mt-2 min-h-[66px] text-[15px] leading-relaxed text-slate-800"><Typed text="Have you tried FitWork? It shows you the jobs that fit you, and tells you why." delay={1} speed={30} /></p>
+      </div>
+      <div className="absolute" style={{ left: 700, top: 190, width: 180, height: 180 }}>
+        <span className="st-ring absolute rounded-full border-2 border-amber-200/60" style={{ left: 90, top: 90, width: 360, height: 360, ...at(3.6) }} />
+        <div className="st-pop" style={at(3.2)}><LogoMark className="h-[180px] w-[180px]" /></div>
+      </div>
+      <div className="st-rise absolute text-center" style={{ left: 650, top: 395, width: 280, ...at(3.9) }}>
+        <p className="font-display text-4xl font-extrabold text-white">Fit<span className="bg-[linear-gradient(90deg,#fde68a,#f9a8d4)] bg-clip-text text-transparent">Work</span></p>
+        <p className="mt-1 text-sm font-semibold text-amber-100">The right jobs, explained.</p>
+      </div>
+    </>
+  );
+}
+
+/* ---------------- She signs up ---------------- */
 function SceneSara() {
   const skills = ["React", "TypeScript", "Node.js", "PostgreSQL"];
   return (
     <>
-      <Person x={290} y={440} look={LOOKS.sara} size={120} laptop name="Sara · freelancer" d={0.2} />
-      <div className="st-pop st-bubble" style={{ left: 120, top: 170, ...at(0.9) }}>
-        “I'm good at React and Node.js. Which of the thousands of jobs out there really fit me?”
-      </div>
-      <div className="st-rise st-card p-5" style={{ left: 560, top: 110, width: 340, ...at(2) }}>
+      <Sara x={60} y={160} size={250} laptop moods={[["hopeful", 0], ["focused", 1.4], ["happy", 5.6]]} />
+      <div className="st-rise st-card p-5" style={{ left: 520, top: 110, width: 360, ...at(1) }}>
         <p className="text-xs font-bold uppercase tracking-wider text-brand-600">Sara's FitWork profile</p>
         <p className="mt-3 text-xs font-semibold text-slate-500">Skills</p>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
           {skills.map((s, i) => (
-            <span key={s} className="st-pop st-chip bg-brand-100 text-brand-800" style={at(2.6 + i * 0.3)}>{s}</span>
+            <span key={s} className="st-pop st-chip bg-brand-100 text-brand-800" style={at(1.8 + i * 0.35)}>{s}</span>
           ))}
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-          <div className="st-rise" style={at(4)}><p className="text-xs font-semibold text-slate-500">Experience</p><p className="font-bold">Intermediate</p></div>
-          <div className="st-rise" style={at(4.4)}><p className="text-xs font-semibold text-slate-500">Hourly rate</p><p className="font-bold">$30 / hour</p></div>
+          <div className="st-rise" style={at(3.4)}><p className="text-xs font-semibold text-slate-500">Experience</p><p className="font-bold">Intermediate</p></div>
+          <div className="st-rise" style={at(3.9)}><p className="text-xs font-semibold text-slate-500">Hourly rate</p><p className="font-bold">$30 / hour</p></div>
         </div>
-        <p className="st-rise mt-3 text-xs leading-relaxed text-slate-600" style={at(4.8)}>“I build fast dashboards with React, TypeScript and Node.js APIs.”</p>
-        <span className="st-pop absolute -right-3 -top-3 st-chip bg-emerald-500 text-white shadow-lg" style={at(5.6)}><Check className="h-3.5 w-3.5" /> Saved</span>
+        <p className="st-rise mt-3 text-xs leading-relaxed text-slate-600" style={at(4.5)}>“I build fast dashboards with React, TypeScript and Node.js APIs.”</p>
+        <span className="st-pop absolute -right-3 -top-3 st-chip bg-emerald-500 text-white shadow-lg" style={at(5.4)}><Check className="h-3.5 w-3.5" /> Saved</span>
       </div>
     </>
   );
@@ -158,7 +233,7 @@ function SceneSearch() {
           <svg className="absolute inset-0 h-full w-full overflow-visible">
             {NEAREST.map(([x, y], i) => (
               <line key={i} x1={350} y1={190} x2={x} y2={y} stroke="#fde68a" strokeWidth="2.5" strokeLinecap="round"
-                strokeDasharray="200" strokeDashoffset="200" style={{ animation: `st-draw 0.6s ease-out ${2.8 + i * 0.25}s forwards` }} />
+                strokeDasharray="200" strokeDashoffset="200" style={{ animation: `st-draw 0.6s ease-out calc(var(--k, 1) * ${2.8 + i * 0.25}s) forwards` }} />
             ))}
             <style>{"@keyframes st-draw { to { stroke-dashoffset: 0; } }"}</style>
           </svg>
@@ -190,7 +265,8 @@ function SceneScore() {
   ];
   return (
     <>
-      <div className="st-rise st-card p-6" style={{ left: 190, top: 50, width: 580, ...at(0.2) }}>
+      <Sara x={20} y={200} size={210} moods={[["focused", 0], ["curious", 2.6], ["happy", 6.4]]} />
+      <div className="st-rise st-card p-6" style={{ left: 330, top: 50, width: 590, ...at(0.2) }}>
         <div className="flex items-start gap-5">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-wider text-brand-600">#1 match for Sara</p>
@@ -220,8 +296,7 @@ function SceneScore() {
           <Typed text="Matches your React and TypeScript skills; budget fits your rate; posted 3 hours ago." delay={4.6} speed={30} />
         </p>
       </div>
-      <Person x={110} y={500} look={LOOKS.sara} size={74} name="Sara" anim="st-slide-l" d={6.8} />
-      <div className="st-pop st-bubble" style={{ left: 150, top: 380, ...at(7.4) }}>Clear reasons, not a black box.</div>
+      <div className="st-pop st-bubble" style={{ left: 40, top: 70, maxWidth: 240, ...at(7) }}>Clear reasons, not a black box.</div>
     </>
   );
 }
@@ -233,7 +308,7 @@ const PROPOSAL = "Hi! I'm Sara, a React and TypeScript developer. I build fast d
 function SceneProposal() {
   return (
     <>
-      <Person x={150} y={480} look={LOOKS.sara} size={104} laptop name="Sara" d={0.1} />
+      <Sara x={10} y={210} size={220} laptop moods={[["focused", 0], ["hopeful", 6], ["happy", 8.2]]} />
       <div className="st-rise st-card p-5" style={{ left: 290, top: 50, width: 400, ...at(0.4) }}>
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-600"><Sparkles className="h-3.5 w-3.5" /> AI proposal draft</p>
         <p className="mt-3 min-h-[150px] text-[15px] leading-relaxed text-slate-700"><Typed text={PROPOSAL} delay={1} speed={22} /></p>
@@ -299,7 +374,7 @@ function SceneSkillGap() {
   ];
   return (
     <>
-      <Person x={120} y={490} look={LOOKS.sara} size={90} name="Sara" d={0.1} />
+      <Sara x={0} y={230} size={200} moods={[["curious", 0], ["focused", 2], ["proud", 5.2]]} />
       <div className="st-rise st-card p-5" style={{ left: 230, top: 50, width: 440, ...at(0.3) }}>
         <p className="text-xs font-bold uppercase tracking-wider text-brand-600">Skills that jobs in Sara's field ask for</p>
         <div className="mt-4 flex h-[180px] items-end gap-4 border-b border-slate-200 px-2">
@@ -339,56 +414,93 @@ function SceneSkillGap() {
   );
 }
 
-/* ---------------- 9. Hired ---------------- */
+/* ---------------- Hired ---------------- */
 function SceneHired() {
   return (
     <>
-      <Person x={360} y={470} look={LOOKS.sara} size={110} name="Sara" anim="st-slide-l" d={0.2} />
-      <Person x={600} y={470} look={LOOKS.employer} size={110} tie name="Client" anim="st-slide-r" d={0.2} bob={0.6} />
+      <Sara x={90} y={150} size={260} moods={[["hopeful", 0], ["happy", 1.4], ["proud", 4.5]]} />
       {/* the deal: a line of light joins Sara and the client */}
-      <div className="absolute" style={{ left: 410, top: 400, width: 140, height: 3 }}>
+      <div className="absolute" style={{ left: 380, top: 400, width: 290, height: 3 }}>
         <span className="st-grow block h-full rounded-full bg-gradient-to-r from-pink-400 via-amber-300 to-slate-300 shadow-[0_0_12px_2px_rgb(251_191_36/0.6)]" style={at(1)} />
       </div>
-      <div className="absolute" style={{ left: 432, top: 150 }}>
-        <div className="st-pop" style={at(1.4)}>
+      <Person x={720} y={470} look={LOOKS.employer} size={110} tie name="Client" anim="st-slide-r" d={0.2} bob={0.6} />
+      <div className="absolute" style={{ left: 482, top: 170 }}>
+        <div className="st-pop" style={at(1.6)}>
           <span className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-b from-amber-200 to-amber-500 text-amber-900 shadow-[0_0_40px_10px_rgb(251_191_36/0.45)]">
             <Trophy className="h-12 w-12" />
           </span>
         </div>
       </div>
-      <div className="st-rise absolute left-1/2 top-[40px] flex -translate-x-1/2 gap-2" style={at(2.2)}>
+      <div className="st-rise absolute flex gap-2" style={{ left: 440, top: 60, ...at(2.4) }}>
         <span className="st-chip bg-white/15 text-white">Applied</span>
         <span className="st-chip text-white/60">→</span>
         <span className="st-chip bg-amber-300 text-amber-900">Won</span>
       </div>
-      <div className="st-rise st-card px-4 py-3" style={{ left: 660, top: 170, width: 260, ...at(3.4) }}>
+      <div className="st-rise st-card px-4 py-3" style={{ left: 640, top: 150, width: 280, ...at(3.6) }}>
         <p className="text-sm font-bold">Sara marks the job “Won”</p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">FitWork keeps this feedback to train an even smarter model in the future.</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">FitWork keeps this feedback to become even smarter in the future.</p>
       </div>
     </>
   );
 }
 
-export const SCENES: SceneDef[] = [
-  { title: "Meet Sara", seconds: 8, render: SceneSara,
-    voice: "Welcome to FitWork. Meet Sara, a freelancer. She tells FitWork what she is good at: her skills, her experience, her hourly rate and a short bio.",
-    caption: "Sara is a freelancer. She tells FitWork what she is good at: her skills, experience, hourly rate and a short bio." },
-  { title: "Jobs everywhere", seconds: 9, render: SceneSources,
-    caption: "Clients post jobs on many different websites. FitWork collects them for her automatically, all day long." },
-  { title: "AI reads the meaning", seconds: 9, render: SceneMeaning,
-    voice: "An AI language model reads every job, and Sara's profile, and turns their meaning into three hundred and eighty-four numbers. Similar meaning gives similar numbers, even when the words are different.",
-    caption: "An AI language model reads every job and Sara's profile and turns their meaning into 384 numbers. Similar meaning gives similar numbers, even with different words." },
-  { title: "Closest jobs", seconds: 8, render: SceneSearch,
-    caption: "The database finds the jobs whose meaning is closest to Sara's profile out of thousands, in milliseconds." },
-  { title: "Match Score", seconds: 10, render: SceneScore,
-    voice: "Each job gets a Match Score from zero to one hundred, with the reason: which skills match, which are missing, and whether the budget and timing fit.",
-    caption: "Each job gets a 0-100 Match Score with the reason: which skills match, which are missing, and whether the budget and timing fit." },
-  { title: "AI proposal", seconds: 10, render: SceneProposal,
-    caption: "One click writes a proposal draft from Sara's real skills and the job. She edits it and sends it herself on the job's website." },
-  { title: "Agency teams", seconds: 10, render: SceneAgency,
-    caption: "Running a team? FitWork compares every job with every teammate and suggests who fits best. Then everyone follows the job from Assigned to Applied to Won." },
-  { title: "Skill Gap Radar", seconds: 9, render: SceneSkillGap,
-    caption: "FitWork checks which missing skill would unlock the most new jobs in Sara's field, and shows free places to learn it." },
-  { title: "Hired!", seconds: 8, render: SceneHired,
-    caption: "Sara applies to the jobs that really fit her, and wins them. That is FitWork: the right jobs, explained, for every freelancer and team." },
+/* ---------------- Finale: the job magnet ---------------- */
+const MAGNET_JOBS: [string, number, number][] = [
+  ["React app", -520, -260], ["Logo design", 0, -340], ["Node.js API", 520, -250], ["Data analysis", 560, 40],
+  ["SEO audit", 500, 300], ["Mobile app", 0, 340], ["Python script", -520, 300], ["UI/UX design", -560, 30],
+  ["WordPress site", -300, -330], ["Video editing", 320, 330], ["Copywriting", 330, -330], ["Shopify store", -320, 330],
+  ["Data entry", -600, -120], ["Flutter app", 600, -140], ["3D modelling", 600, 200], ["Translation", -600, 180],
 ];
+
+function SceneOutro() {
+  return (
+    <>
+      {/* glow and pulses behind the logo */}
+      <span className="st-spot st-fade" style={{ left: 260, top: -10, width: 440, height: 440, ...at(0) }} />
+      {[0, 0.7, 1.4].map((d) => (
+        <span key={d} className="st-ring absolute rounded-full border-2 border-amber-200/50" style={{ left: 480, top: 190, width: 460, height: 460, ...at(d) }} />
+      ))}
+      {/* jobs pulled in from every side, again and again */}
+      {MAGNET_JOBS.map(([job, fx, fy], i) => (
+        <div key={job} className="absolute" style={{ left: 420, top: 172 }}>
+          <span className="st-magnet st-chip bg-white text-slate-800 shadow-lg" style={{ "--fx": `${fx}px`, "--fy": `${fy}px`, animationDelay: `${0.2 + i * 0.26}s` } as CSSProperties}>
+            <Briefcase className="h-3.5 w-3.5 text-brand-600" />{job}
+          </span>
+        </div>
+      ))}
+      <div className="absolute" style={{ left: 390, top: 100, width: 180, height: 180 }}>
+        <div className="st-pop" style={at(0.2)}><LogoMark className="h-[180px] w-[180px]" /></div>
+      </div>
+      <div className="st-rise absolute text-center" style={{ left: 180, top: 300, width: 600, ...at(1.2) }}>
+        <p className="font-display text-6xl font-extrabold tracking-tight text-white">Fit<span className="bg-[linear-gradient(90deg,#fde68a,#f9a8d4)] bg-clip-text text-transparent">Work</span></p>
+        <p className="mt-2 text-lg font-semibold text-amber-100">Where the right jobs find you.</p>
+      </div>
+      <div className="absolute flex w-full justify-center gap-2" style={{ left: 0, top: 440 }}>
+        {["Top 5 matches, explained", "AI proposals", "Agency Mode", "Skill Gap Radar"].map((f, i) => (
+          <span key={f} className="st-pop st-chip bg-white/12 text-white ring-1 ring-white/25" style={{ fontSize: 13, padding: "7px 12px", ...at(2.6 + i * 0.35) }}>
+            <Check className="h-3.5 w-3.5 text-amber-300" />{f}
+          </span>
+        ))}
+      </div>
+      <div className="st-fade absolute w-full text-center text-sm font-semibold text-white/70" style={{ left: 0, top: 500, ...at(4.4) }}>
+        Free · fitwork-zain2026.web.app
+      </div>
+    </>
+  );
+}
+
+/** Pictures for each scene id of narration.json */
+export const VISUALS: Record<string, Visual> = {
+  problem: { seconds: 10, render: SceneProblem },
+  discover: { seconds: 7, render: SceneDiscover },
+  sara: { seconds: 7.5, render: SceneSara },
+  sources: { seconds: 9, render: SceneSources },
+  meaning: { seconds: 9, render: SceneMeaning },
+  search: { seconds: 8, render: SceneSearch },
+  score: { seconds: 10, render: SceneScore },
+  proposal: { seconds: 10, render: SceneProposal },
+  agency: { seconds: 10, render: SceneAgency },
+  skillgap: { seconds: 9, render: SceneSkillGap },
+  hired: { seconds: 7, render: SceneHired },
+  outro: { seconds: 9, render: SceneOutro },
+};

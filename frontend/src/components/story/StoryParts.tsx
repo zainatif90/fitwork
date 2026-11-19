@@ -10,12 +10,15 @@ import "./story.css";
 export const STAGE_W = 960;
 export const STAGE_H = 560;
 
-/** Is the story paused? (typing and counting wait while it is) */
-export const PausedContext = createContext(false);
+/**
+ * The scene clock: paused = the story is paused (timers wait), k = time stretch. With the narration on, a scene
+ * lasts as long as its voice, so every delay in the scene is multiplied by k (also in CSS, via --k).
+ */
+export const StoryClock = createContext({ paused: false, k: 1 });
 
 /** CSS variables for timeline animations: d = delay in seconds, plus optional from/to offsets in px. */
 export function at(d: number, extra: { fx?: number; fy?: number; tx?: number; ty?: number } = {}): CSSProperties {
-  const v: Record<string, string> = { "--d": `${d}s` };
+  const v: Record<string, string> = { "--d": `calc(var(--k, 1) * ${d}s)` };
   if (extra.fx !== undefined) v["--fx"] = `${extra.fx}px`;
   if (extra.fy !== undefined) v["--fy"] = `${extra.fy}px`;
   if (extra.tx !== undefined) v["--tx"] = `${extra.tx}px`;
@@ -24,7 +27,7 @@ export function at(d: number, extra: { fx?: number; fy?: number; tx?: number; ty
 }
 
 /** The 960 x 560 scene, scaled down (never up past 1.25x) to the width it is given. */
-export function Stage({ paused, children }: { paused: boolean; children: ReactNode }) {
+export function Stage({ paused, k = 1, children }: { paused: boolean; k?: number; children: ReactNode }) {
   const outer = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
@@ -38,9 +41,9 @@ export function Stage({ paused, children }: { paused: boolean; children: ReactNo
   }, []);
   return (
     <div ref={outer} className="st-stage-outer bg-hero shadow-2xl ring-1 ring-white/10" style={{ height: STAGE_H * scale }}>
-      <div className={`st-stage ${paused ? "st-paused" : ""}`} style={{ transform: `scale(${scale})` }}>
+      <div className={`st-stage ${paused ? "st-paused" : ""}`} style={{ transform: `scale(${scale})`, "--k": k } as CSSProperties}>
         <div className="st-floor" />
-        <PausedContext.Provider value={paused}>{children}</PausedContext.Provider>
+        <StoryClock.Provider value={{ paused, k }}>{children}</StoryClock.Provider>
       </div>
     </div>
   );
@@ -88,7 +91,7 @@ export function Person({ x, y, look, size = 70, name, laptop, tie, crown, anim =
 
 /** Text that types itself out, starting after `delay` seconds (waits while paused). */
 export function Typed({ text, delay = 0, speed = 28, className }: { text: string; delay?: number; speed?: number; className?: string }) {
-  const paused = useContext(PausedContext);
+  const { paused, k } = useContext(StoryClock);
   const [n, setN] = useState(0);
   const elapsed = useRef(0);
   useEffect(() => {
@@ -98,18 +101,18 @@ export function Typed({ text, delay = 0, speed = 28, className }: { text: string
       const now = performance.now();
       elapsed.current += now - last;
       last = now;
-      const chars = Math.floor(Math.max(0, elapsed.current - delay * 1000) / speed);
+      const chars = Math.floor(Math.max(0, elapsed.current - delay * k * 1000) / speed);
       setN(Math.min(text.length, chars));
       if (chars >= text.length) window.clearInterval(id);
     }, 30);
     return () => window.clearInterval(id);
-  }, [paused, text, delay, speed]);
+  }, [paused, k, text, delay, speed]);
   return <span className={className}>{text.slice(0, n)}{n < text.length && <span className="st-caret" />}</span>;
 }
 
 /** A number that counts up to `to` over `duration` seconds, after `delay` seconds (waits while paused). */
 export function CountUp({ to, delay = 0, duration = 1.4 }: { to: number; delay?: number; duration?: number }) {
-  const paused = useContext(PausedContext);
+  const { paused, k } = useContext(StoryClock);
   const [v, setV] = useState(0);
   const elapsed = useRef(0);
   useEffect(() => {
@@ -119,12 +122,12 @@ export function CountUp({ to, delay = 0, duration = 1.4 }: { to: number; delay?:
       const now = performance.now();
       elapsed.current += now - last;
       last = now;
-      const k = Math.min(1, Math.max(0, (elapsed.current / 1000 - delay) / duration));
-      setV(Math.round(to * (1 - (1 - k) ** 3)));
-      if (k >= 1) window.clearInterval(id);
+      const done = Math.min(1, Math.max(0, (elapsed.current / 1000 - delay * k) / duration));
+      setV(Math.round(to * (1 - (1 - done) ** 3)));
+      if (done >= 1) window.clearInterval(id);
     }, 40);
     return () => window.clearInterval(id);
-  }, [paused, to, delay, duration]);
+  }, [paused, k, to, delay, duration]);
   return <>{v}</>;
 }
 
@@ -138,7 +141,7 @@ export function Ring({ score, delay = 0, size = 92 }: { score: number; delay?: n
       <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
         <circle cx="50" cy="50" r={r} fill="none" stroke="#f3e8ff" strokeWidth="9" />
         <circle cx="50" cy="50" r={r} fill="none" stroke={colour} strokeWidth="9" strokeLinecap="round"
-          strokeDasharray={c} strokeDashoffset={c} style={{ animation: `st-ring-fill-${score} 1.4s cubic-bezier(0.2,0.8,0.2,1) ${delay}s forwards` }} />
+          strokeDasharray={c} strokeDashoffset={c} style={{ animation: `st-ring-fill-${score} 1.4s cubic-bezier(0.2,0.8,0.2,1) calc(var(--k, 1) * ${delay}s) forwards` }} />
         <style>{`@keyframes st-ring-fill-${score} { to { stroke-dashoffset: ${c * (1 - score / 100)}; } }`}</style>
       </svg>
       <div className="absolute inset-0 flex items-center justify-center font-display text-2xl font-extrabold text-slate-900">

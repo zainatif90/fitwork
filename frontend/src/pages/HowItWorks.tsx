@@ -9,7 +9,7 @@ import { useAuth } from "../lib/auth";
 export default function HowItWorks() {
   return (
     <>
-      <PageHeader icon={<Clapperboard />} title="How FitWork works" subtitle="A 90-second animated story, step by step." />
+      <PageHeader icon={<Clapperboard />} title="How FitWork works" subtitle="A 3-minute animated story with a narrator, in English or Urdu." />
       <div className="rounded-3xl bg-white/90 p-4 shadow-soft ring-1 ring-brand-100/60 sm:p-6">
         <StoryPlayer />
       </div>
@@ -32,7 +32,7 @@ export function PublicHowItWorks() {
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
         <h1 className="font-display text-3xl font-extrabold text-slate-900 sm:text-4xl">How FitWork works</h1>
-        <p className="mt-2 text-slate-600">A 90-second animated story, step by step.</p>
+        <p className="mt-2 text-slate-600">A 3-minute animated story with a narrator, in English or Urdu.</p>
         <div className="mt-6 rounded-3xl bg-white p-4 shadow-soft ring-1 ring-brand-100/60 sm:p-6">
           <StoryPlayer />
         </div>
