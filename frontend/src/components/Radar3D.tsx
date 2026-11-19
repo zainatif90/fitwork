@@ -48,11 +48,11 @@ function Tower({ h, x, y, have, active }: { h: number; x: number; y: number; hav
   );
 }
 
-export function Radar3D({ data }: { data: RadarPoint[] }) {
+export function Radar3D({ data, instant = false }: { data: RadarPoint[]; instant?: boolean }) {
   const stage = useRef<HTMLDivElement>(null);
   const tops = useRef<(HTMLDivElement | null)[]>([]);
   const badges = useRef<(HTMLSpanElement | null)[]>([]);
-  const [grown, setGrown] = useState(false);
+  const [grown, setGrown] = useState(instant);
   const [hover, setHover] = useState<number | null>(null);
 
   // Have first, then missing; tallest first in each zone. Numbers follow this order.
@@ -81,7 +81,7 @@ export function Radar3D({ data }: { data: RadarPoint[] }) {
     const el = stage.current;
     if (!el) return;
     let rz = -28, rx = 58, tz = -28, tx = 58, frame = 0, running = false;
-    let busyUntil = performance.now() + 2500;           // towers grow in for ~2 s after the chart appears
+    let busyUntil = performance.now() + (instant ? 300 : 2500);  // towers grow in for ~2 s (not on a return visit)
     const tick = (now: number) => {
       rz += (tz - rz) * 0.1;
       rx += (tx - rx) * 0.1;

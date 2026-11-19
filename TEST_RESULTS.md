@@ -136,6 +136,26 @@ With the CPU slowed 4x (close to a budget laptop or phone) every page now idles 
 still has some short busy moments at 4x (Skill Gap: 1.6 s in total, worst 0.5 s; at normal speed: one task of 60-120 ms):
 that is React building the page, not animation.
 
+**Round 2 (same day): waiting, not frame rate.** Timed from the developer's laptop, every API request to the free server
+takes ~0.3 s, and every page reloaded all its data from an empty skeleton on every visit, then slid its sections in
+over ~1 s. Changes: pages open at once with remembered data and refresh in the background (cleared after any change or
+user switch); Agency/Skill Gap code preloaded when the browser is idle; entrances 0.25 s; Skill Gap calculated in the
+background right after a profile is saved; a page is not drawn twice when the refreshed data is the same; the 3D chart
+does not replay its growth animation on a return visit. A check with `document.getAnimations()` also showed that two
+overrides of the first round had not applied (more specific original CSS rules won), so the glow blobs and the 3D orb
+were still moving; fixed with `!important`, and a spinning radar icon now turns only on hover.
+
+| Live, normal CPU | Before round 2 | After round 2 |
+|---|---|---|
+| Skill Gap, first open (22 s after saving the profile) | ~26 s (calculation) | **0.9 s** (pre-calculated) |
+| Return to Skill Gap / Settings / dashboard | 0.9 / 0.9 / 0.26 s | **0.22 / 0.15 / 0.18 s** |
+| Animations still running on an idle page | 6-8 (infinite) | **0-2** (short, finite) |
+| Frames per second, every page, idle and scrolling | 54-60 | **60** |
+
+Honest limits: with the CPU slowed 4x, Skill Gap still needs ~3-4 s to open (its 3D chart is a large number of
+elements) and logging in ~6 s (server round trips plus building the dashboard); scrolling stays smooth afterwards.
+The numbers vary from run to run by roughly +-30% because the laptop running the browser was also running Docker.
+
 ## 6. Security checklist
 | Check | Status | Evidence |
 |---|---|---|

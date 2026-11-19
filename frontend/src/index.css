@@ -355,3 +355,10 @@ h1, h2, h3 {
 .stagger-children > *:nth-child(n + 5) { animation-delay: 110ms; }
 .animate-page-in, .animate-fade-up { animation-duration: 0.25s !important; }
 .reveal { transition-duration: 0.35s; transform: translateY(12px); }
+
+/* ===================== Calm motion, part 2 (19 Nov 2026) ===================== */
+/* Checked on the live site with document.getAnimations(): the glow blobs and the 3D orb were STILL animating.
+   The original rules (.aurora > span:nth-child(1), .orb3d .ring:nth-child(1)) are more specific than the overrides
+   above, and their `animation:` shorthand resets animation-play-state to running. !important settles it. */
+.aurora > span { animation: none !important; }
+.orb3d .orb-stage, .orb3d .ring, .orb3d .core { animation-play-state: paused !important; }

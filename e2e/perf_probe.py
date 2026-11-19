@@ -1,4 +1,4 @@
-﻿r"""
+r"""
 Smoothness probe for the website (Playwright). Measures, per page: time until the content is visible, "long tasks"
 (main thread busy > 50 ms = the page cannot react to clicks), frames per second while idle and while scrolling,
 and how many CSS/JS animations run at the same time. Runs at normal CPU speed and with the CPU slowed 4x
@@ -54,6 +54,7 @@ def measure(page, name: str, ready_selector: str, action=None) -> dict:
         action()
     page.locator(ready_selector).first.wait_for(timeout=90000)
     ready = time.perf_counter() - t0
+    page.mouse.move(2, 2)                                        # no hover effects while measuring
     page.wait_for_timeout(1500)                                  # let entrance animations finish
     idle_fps = page.evaluate("window.__fps(2000)")
     scroll_fps = page.evaluate("window.__scrollFps()")
@@ -86,6 +87,10 @@ def run(cpu_slowdown: int, browser) -> list[dict]:
     rows.append(measure(page, "agency", "h1", lambda: page.get_by_role("link", name="Agency", exact=True).first.click()))
     rows.append(measure(page, "settings", "text=Freelancer profile",
                         lambda: page.get_by_role("link", name="Settings", exact=True).click()))
+    rows.append(measure(page, "skill gap again (revisit)", "text=Skills that unlock the most jobs",
+                        lambda: page.get_by_role("link", name="Skill Gap", exact=True).click()))
+    rows.append(measure(page, "settings again (revisit)", "text=Freelancer profile",
+                        lambda: page.get_by_role("link", name="Settings", exact=True).click()))
     rows.append(measure(page, "back to dashboard", "text=Your top matches",
                         lambda: page.get_by_role("link", name="Matches", exact=True).first.click()))
     ctx.close()
@@ -110,6 +115,14 @@ try:
           box.fill(s)
           page.get_by_role("option").first.wait_for()
           box.press("Enter")
+      # new: Import skills from GitHub (public test account)
+      page.get_by_label("GitHub username").fill("octocat")
+      page.get_by_role("button", name="Find my skills").click()
+      done = page.get_by_text("public repositories of").or_(page.get_by_role("alert"))
+      done.first.wait_for(timeout=30000)
+      print("github import:", done.first.inner_text()[:100])
+      if page.get_by_role("button", name="Add all").count():
+          page.get_by_role("button", name="Add all").click()
       page.get_by_role("button", name="Continue").click()
       page.get_by_role("radio", name="Expert").click()
       page.fill("#rate", "25")
@@ -117,11 +130,14 @@ try:
       page.fill("#bio", "Full-stack JavaScript developer building dashboards and web apps with React, Next.js and Node.js.")
       page.get_by_role("button", name="Continue").click()
       page.get_by_role("button", name="Finish setup").click()
+      saved = time.perf_counter()
       page.wait_for_url("**/app", timeout=60000)
       page.get_by_text("Your top matches").wait_for(timeout=90000)
-      # warm the Skill Gap cache so its 25 s first calculation does not distort the page timings
+      page.wait_for_timeout(20000)        # a user reading their matches for 20 s while Skill Gap pre-calculates
+      t0 = time.perf_counter()
       page.get_by_role("link", name="Skill Gap", exact=True).click()
       page.get_by_text("Skills that unlock the most jobs").wait_for(timeout=120000)
+      print(f"skill gap first open: {time.perf_counter() - t0:.1f}s (opened {t0 - saved:.0f}s after saving the profile)")
       page.get_by_role("button", name="Log out").first.click() if page.get_by_role("button", name="Log out").count() else None
       ctx.close()
 

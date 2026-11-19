@@ -140,10 +140,14 @@ export default function SkillGap() {
   const [state, setState] = useState<"loading" | "ready" | "no-profile" | "error">(() => (peek("/skill-gap") ? "ready" : "loading"));
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  // Opened with remembered data (a return visit): show the chart already grown instead of replaying the animation.
+  const [openedFromMemory] = useState(() => peek("/skill-gap") !== undefined);
 
   const load = useCallback(async (refresh = false) => {
     try {
-      setData(await api<SkillGapData>("/skill-gap", { query: refresh ? { refresh: "true" } : undefined }));
+      const fresh = await api<SkillGapData>("/skill-gap", { query: refresh ? { refresh: "true" } : undefined });
+      // Same calculation as the one already on screen (only the "cached" flag differs): keep it, no second render.
+      setData((prev) => (prev && prev.generated_at === fresh.generated_at ? prev : fresh));
       setState("ready");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) setState("no-profile");
@@ -207,7 +211,7 @@ export default function SkillGap() {
           <div className="relative mt-2 overflow-hidden rounded-2xl bg-hero">
             <div className="bg-grid pointer-events-none absolute inset-0 opacity-70" />
             {data.radar.length >= 3 ? (
-              <Radar3D data={data.radar} />
+              <Radar3D data={data.radar} instant={openedFromMemory} />
             ) : (
               <p className="relative px-6 py-16 text-center text-sm text-slate-300">Not enough skills in your field to draw the radar yet.</p>
             )}

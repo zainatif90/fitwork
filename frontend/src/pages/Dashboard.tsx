@@ -39,7 +39,8 @@ export default function Dashboard() {
   const load = useCallback(async (refresh = false) => {
     try {
       const data = await api<MatchesResponse>("/matches", { query: refresh ? { refresh: "true" } : undefined });
-      setState({ kind: "ready", data });
+      // Same result as on screen (only the "cached" flag differs): keep it, no second render.
+      setState((prev) => (prev.kind === "ready" && prev.data.generated_at === data.generated_at ? prev : { kind: "ready", data }));
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) setState({ kind: "no-profile" });
       else setState({ kind: "error", message: err instanceof ApiError ? err.message : "Could not load matches." });
@@ -164,7 +165,7 @@ export default function Dashboard() {
           </Card>
           <Link to="/app/skill-gap" className="group block">
             <div className="shine relative overflow-hidden rounded-2xl bg-gradient-animated p-5 text-white shadow-lift transition group-hover:-translate-y-1">
-              <Radar className="absolute -right-4 -top-4 h-24 w-24 animate-[spin-slow_12s_linear_infinite] text-white/15" />
+              <Radar className="absolute -right-4 -top-4 h-24 w-24 text-white/15 transition-transform duration-700 group-hover:rotate-45" />
               <p className="font-display font-bold">Skill Gap Radar</p>
               <p className="mt-1 text-sm text-brand-100">Find the one skill from your field that unlocks the most new jobs.</p>
               <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold">Open radar <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
