@@ -11,6 +11,7 @@ import { SkillInput } from "../components/SkillInput";
 import { Alert, Button, Card, Field, FullPageSpinner, Input, Logo, Textarea } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { profileStrength } from "../lib/profileStrength";
 import { PLATFORMS, type ExperienceLevel, type Platform, type Profile, type ProfileInput } from "../lib/types";
 
 const STEPS = ["Skills", "Experience & rate", "About you", "Platforms"];
@@ -48,6 +49,31 @@ function validateStep(step: number, p: ProfileInput, rate: string): Errors {
     if (bad) e.portfolio_urls = `"${bad}" is not a valid link (it must start with http:// or https://).`;
   }
   return e;
+}
+
+/** Last step: tells the user if the profile is too thin to match well, with a link back to the right step. */
+function ProfileStrengthHint({ skills, bio, onFix }: { skills: string[]; bio: string; onFix: (step: number) => void }) {
+  const { level, tips } = profileStrength(skills, bio);
+  const tone = { weak: "border-amber-200 bg-amber-50 text-amber-800", good: "border-sky-200 bg-sky-50 text-sky-800",
+                 strong: "border-emerald-200 bg-emerald-50 text-emerald-800" }[level];
+  const label = { weak: "Weak: matches will be vague", good: "Good", strong: "Strong: ready for accurate matches" }[level];
+  return (
+    <div className={clsx("rounded-xl border p-4 text-sm", tone)} role="status">
+      <p className="font-semibold">Profile strength: {label}</p>
+      {tips.length > 0 && (
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          {tips.map((t) => (
+            <li key={t}>
+              {t}{" "}
+              <button type="button" className="font-medium underline" onClick={() => onFix(t.includes("bio") ? 2 : 0)}>
+                Fix it
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export default function Onboarding() {
@@ -253,6 +279,7 @@ export default function Onboarding() {
                   );
                 })}
               </div>
+              <ProfileStrengthHint skills={form.skills} bio={form.bio} onFix={(s) => setStep(s)} />
             </div>
           )}
 

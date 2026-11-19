@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { AgencySettings } from "../components/AgencySettings";
+import { DeleteAccount } from "../components/DeleteAccount";
 import { Badge, Card, PageHeader, SkeletonList } from "../components/ui";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -92,6 +93,7 @@ export default function Settings({ extra }: { extra?: ReactNode }) {
         </Card>
         {user?.role === "agency_owner" && <AgencySettings />}
         {extra}
+        <DeleteAccount isOwner={user?.role === "agency_owner"} />
       </div>
     </>
   );

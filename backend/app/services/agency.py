@@ -145,6 +145,27 @@ def close_agency(db: Session, owner: User, confirm_name: str) -> None:
     db.commit()
 
 
+def detach_before_account_deletion(db: Session, user: User) -> None:
+    """
+    Called just before a user deletes their account, so the team they leave behind stays consistent:
+    - an owner's agency is closed (members become solo freelancers, as with "Close agency");
+    - a member leaves (their open jobs go back to routing, as with "Leave agency").
+    The database cascade then removes everything that belonged to the user.
+    """
+    own = db.scalar(select(Agency).where(Agency.owner_id == user.id))
+    if own is not None:
+        member_ids = list(db.scalars(select(AgencyMember.user_id).where(
+            AgencyMember.agency_id == own.id, AgencyMember.user_id.is_not(None))))
+        for member in db.scalars(select(User).where(User.id.in_(member_ids))):
+            member.role = "freelancer"
+        db.delete(own)
+    row = db.execute(select(Agency, AgencyMember).join(AgencyMember, AgencyMember.agency_id == Agency.id)
+                     .where(AgencyMember.user_id == user.id, AgencyMember.status == "active")).first()
+    if row is not None:
+        _drop_member(db, row[0], row[1])
+    db.flush()
+
+
 def _drop_member(db: Session, agency: Agency, member: AgencyMember) -> None:
     if member.user_id:
         user = db.get(User, member.user_id)

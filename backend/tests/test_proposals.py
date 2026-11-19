@@ -162,3 +162,20 @@ def test_fix_links_repairs_miscopied_portfolio_link() -> None:
     # A link that has nothing to do with the user's links is removed, not invented
     assert fix_links("Portfolio: https://made-up-site.io/me, thanks", real) == "Portfolio: , thanks"
     assert fix_links("Visit www.example.org now", []) == "Visit  now"
+
+
+def test_site_wide_ai_limit_switches_everyone_to_the_free_template(client: TestClient, job_id: str, token: str,
+                                                                  captured: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """All users together get PROPOSALS_GLOBAL_PER_DAY AI drafts; after that the template is used at once,
+    without calling the LLM (protects the free key's quota). Template drafts never use the user's own limit."""
+    monkeypatch.setattr(settings, "PROPOSALS_GLOBAL_PER_DAY", 2)
+    other = register(client, email="other@example.com")["access_token"]
+    client.put("/api/profile/me", headers=auth_header(other), json={
+        "skills": ["React"], "experience_level": "expert", "hourly_rate": 30, "bio": "React developer"})
+    first = client.post("/api/proposals/generate", headers=auth_header(token), json={"job_id": job_id}).json()
+    second = client.post("/api/proposals/generate", headers=auth_header(other), json={"job_id": job_id}).json()
+    captured.clear()
+    third = client.post("/api/proposals/generate", headers=auth_header(token), json={"job_id": job_id}).json()
+    assert [first["is_fallback"], second["is_fallback"], third["is_fallback"]] == [False, False, True]
+    assert "prompt" not in captured                           # the LLM was not called for the third draft
+    assert third["remaining_today"] == settings.PROPOSALS_PER_DAY - 1   # the template did not use the user's quota

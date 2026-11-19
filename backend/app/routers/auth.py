@@ -40,6 +40,7 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.schemas.auth import (
+    DeleteAccountIn,
     ForgotPasswordIn,
     LoginIn,
     MessageOut,
@@ -164,6 +165,32 @@ def refresh(
         _write_refresh_cookie(response, "", 0)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please log in again")
     return _tokens_out(response, user, tokens)
+
+
+@router.delete("/me", response_model=MessageOut)
+def delete_account(data: DeleteAccountIn, request: Request, response: Response,
+                   user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> MessageOut:
+    """
+    Delete my account and everything that belongs to it: profile, sessions, proposals, feedback, pasted jobs
+    and chat read markers (database cascade). An agency I own is closed; if I am a member, I leave first.
+    Asks for the password again. Wrong passwords count towards the failed-login limit.
+    """
+    key = f"rl:delete:{user.id}"
+    if is_rate_limited(key, settings.LOGIN_RATE_LIMIT_PER_MIN):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many attempts. Try again later.")
+    if not verify_password(data.password, user.password_hash):
+        hit_rate_limit(key, settings.LOGIN_RATE_LIMIT_PER_MIN, 60)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong password")
+    from app.services.agency import detach_before_account_deletion
+
+    detach_before_account_deletion(db, user)
+    user_id = user.id
+    db.delete(user)
+    db.commit()
+    cache_delete(f"matches:{user_id}", f"skillgap:{user_id}")
+    _write_refresh_cookie(response, "", 0)
+    log.info("Account %s deleted by its owner", user_id)
+    return MessageOut(message="Your account and all its data have been deleted.")
 
 
 @router.post("/logout", response_model=MessageOut)

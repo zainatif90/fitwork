@@ -169,14 +169,30 @@ def remaining_today(user_id: object) -> int:
     return max(0, settings.PROPOSALS_PER_DAY - used)
 
 
-def record_use(user_id: object) -> None:
-    """Count one AI draft towards today's limit."""
-    key = _rate_limit_key(user_id)
+GLOBAL_USER = "all"  # the counter for all users together
+
+
+def global_ai_available() -> bool:
+    """
+    False once all users together used PROPOSALS_GLOBAL_PER_DAY AI drafts today. The free LLM key has its own
+    daily quota; without this, a busy day used it up and every later draft failed (slowly) before falling back.
+    """
     try:
-        if redis_client.incr(key) == 1:
-            redis_client.expire(key, 26 * 3600)
-    except Exception as exc:  # Redis down -> do not block the user
-        log.warning("Proposal rate limit skipped: %s", exc)
+        used = int(redis_client.get(_rate_limit_key(GLOBAL_USER)) or 0)
+    except Exception:
+        return True
+    return used < settings.PROPOSALS_GLOBAL_PER_DAY
+
+
+def record_use(user_id: object) -> None:
+    """Count one AI draft towards today's limit (the user's and the site-wide one)."""
+    for who in (user_id, GLOBAL_USER):
+        key = _rate_limit_key(who)
+        try:
+            if redis_client.incr(key) == 1:
+                redis_client.expire(key, 26 * 3600)
+        except Exception as exc:  # Redis down -> do not block the user
+            log.warning("Proposal rate limit skipped: %s", exc)
 
 
 def draft_proposal(job: Job, profile: Profile, user: User, tone: str, length: str,
@@ -195,7 +211,12 @@ def draft_proposal(job: Job, profile: Profile, user: User, tone: str, length: st
 def generate_and_save(db: Session, user: User, profile: Profile, job: Job, tone: str, length: str) -> Proposal:
     if remaining_today(user.id) <= 0:
         raise RateLimitExceeded()
-    draft = draft_proposal(job, profile, user, tone, length)
+    if global_ai_available():
+        draft = draft_proposal(job, profile, user, tone, length)
+    else:  # site-wide AI budget used up today: the free template, straight away (no slow failing AI call)
+        log.warning("Site-wide AI proposal limit (%d/day) reached: using the template", settings.PROPOSALS_GLOBAL_PER_DAY)
+        draft = Draft(content=fallback_proposal(job, profile, user, length), is_fallback=True,
+                      provider="template", model=None)
     if not draft.is_fallback:
         record_use(user.id)  # only real AI drafts count: a template after an AI failure is free
     proposal = Proposal(user_id=user.id, job_id=job.id, tone=tone, length=length, content=draft.content,

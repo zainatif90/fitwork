@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.core.common_passwords import is_common_password
+
 
 def check_password_strength(v: str) -> str:
     if not any(c.isalpha() for c in v) or not any(c.isdigit() for c in v):
@@ -12,6 +14,8 @@ def check_password_strength(v: str) -> str:
     # so a 42-character Urdu password (82 bytes) passed the 72-character check and crashed sign-up.
     if len(v.encode("utf-8")) > 72:
         raise ValueError("Password is too long. Use a shorter one (Urdu letters and emoji count as 2-4 characters each).")
+    if is_common_password(v):
+        raise ValueError("This password is too common and easy to guess. Please choose a different one.")
     return v
 
 
@@ -35,6 +39,11 @@ class RegisterIn(BaseModel):
     @classmethod
     def password_strength(cls, v: str) -> str:
         return check_password_strength(v)
+
+
+class DeleteAccountIn(BaseModel):
+    """The current password, so a stolen or forgotten-open session cannot delete the account."""
+    password: str = Field(min_length=1, max_length=128)
 
 
 class LoginIn(BaseModel):

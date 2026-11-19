@@ -105,6 +105,36 @@ function GapRow({ gap, rank, maxUnlocked }: { gap: Gap; rank: number; maxUnlocke
   );
 }
 
+/** What the server is doing, shown while the first (uncached) analysis runs (~25 s on the free server). */
+const ANALYSIS_STEPS: [number, string][] = [
+  [0, "Reading the live jobs…"],
+  [4, "Finding the jobs in your field…"],
+  [9, "Testing each missing skill against every job…"],
+  [18, "Almost done: ranking the skills that unlock the most jobs…"],
+];
+
+function AnalysisInProgress() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const step = [...ANALYSIS_STEPS].reverse().find(([from]) => seconds >= from)?.[1];
+  return (
+    <div className="flex h-72 flex-col items-center justify-center gap-4 text-center text-sm text-slate-500" role="status" aria-live="polite">
+      <span className="relative flex h-16 w-16 items-center justify-center">
+        <span className="absolute inset-0 animate-ping rounded-full bg-brand-400/30" />
+        <span className="relative rounded-full bg-brand-gradient p-4 text-white shadow-glow"><RadarIcon className="h-7 w-7" /></span>
+      </span>
+      <span className="font-medium text-slate-700">{step}</span>
+      <span>
+        The first analysis compares your profile with every live job and can take up to 30 seconds
+        ({seconds}s so far). After that it opens instantly for an hour.
+      </span>
+    </div>
+  );
+}
+
 export default function SkillGap() {
   const [data, setData] = useState<SkillGapData | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "no-profile" | "error">("loading");
@@ -128,17 +158,7 @@ export default function SkillGap() {
     void load();
   }, [load]);
 
-  if (state === "loading") {
-    return (
-      <div className="flex h-72 flex-col items-center justify-center gap-4 text-sm text-slate-500">
-        <span className="relative flex h-16 w-16 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-brand-400/30" />
-          <span className="relative rounded-full bg-brand-gradient p-4 text-white shadow-glow"><RadarIcon className="h-7 w-7" /></span>
-        </span>
-        Analysing jobs in your field…
-      </div>
-    );
-  }
+  if (state === "loading") return <AnalysisInProgress />;
   if (state === "no-profile") {
     return (
       <>
@@ -149,7 +169,14 @@ export default function SkillGap() {
       </>
     );
   }
-  if (state === "error" || !data) return <Alert tone="error">{error}</Alert>;
+  if (state === "error" || !data) {
+    return (
+      <div className="space-y-3">
+        <Alert tone="error">{error}</Alert>
+        <Button variant="secondary" onClick={() => { setState("loading"); void load(); }}>Try again</Button>
+      </div>
+    );
+  }
 
   const maxUnlocked = Math.max(1, ...data.gaps.map((g) => g.jobs_unlocked));
 

@@ -1,4 +1,5 @@
 """Authentication tests (SRS TC-1 registration, TC-2 duplicate email, TC-8 SQL injection on login)."""
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -155,3 +156,21 @@ def test_partitioned_cross_site_cookie(client: TestClient, monkeypatch) -> None:
         assert part in cookie
     out = client.post("/api/auth/logout")
     assert "Max-Age=0" in out.headers["set-cookie"] and "Partitioned" in out.headers["set-cookie"]
+
+
+@pytest.mark.parametrize("pw", ["password1", "Password123", "ABC12345", "Pakistan123", " qwerty123 "])
+def test_common_passwords_are_refused_at_signup(client: TestClient, pw: str) -> None:
+    res = client.post("/api/auth/register", json={"email": "common@example.com", "password": pw,
+                                                  "full_name": "Common Pass", "role": "freelancer"})
+    assert res.status_code == 422
+    assert "too common" in res.text
+
+
+def test_common_password_refused_on_reset_too() -> None:
+    from pydantic import ValidationError
+
+    from app.schemas.auth import ResetPasswordIn
+
+    with pytest.raises(ValidationError, match="too common"):
+        ResetPasswordIn(token="x" * 30, password="welcome123")
+    assert ResetPasswordIn(token="x" * 30, password="Garden42Lamp").password == "Garden42Lamp"
