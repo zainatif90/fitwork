@@ -88,7 +88,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 );
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={clsx("rounded-2xl border border-white/70 bg-white/90 shadow-soft ring-1 ring-brand-100/60", className)}>{children}</div>;
+  return <div className={clsx("rounded-2xl border border-white/70 bg-white/[0.97] shadow-soft ring-1 ring-brand-100/60", className)}>{children}</div>;
 }
 
 export function Spinner({ className }: { className?: string }) {

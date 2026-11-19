@@ -1,17 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
 /*
- * Decorative 3D atom: a nucleus of protons (pink) and neutrons (blue) with three electrons
+ * Decorative 3D atom: one shiny, glowing nucleus with three electrons
  * orbiting on tilted paths. Only CSS `transform` is animated (done by the graphics card, no repaints),
  * and the animation pauses while the atom is off screen, so it costs almost nothing.
  * Styles: `.atom3d` in index.css.
  */
 
-// Nucleus particles: [x %, y %, proton?] inside the nucleus box
-const NUCLEONS: [number, number, boolean][] = [
-  [50, 50, true], [28, 38, false], [70, 34, true], [36, 70, true],
-  [66, 68, false], [50, 22, false], [22, 58, true], [78, 54, false],
-];
 
 export function Orb3D({ size = 160, className }: { size?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -44,14 +39,11 @@ export function Orb3D({ size = 160, className }: { size?: number; className?: st
             </div>
           </div>
         ))}
+        {/* Nucleus: one shiny ball; its colour sheen turns and a small glint sparkles on it */}
         <div className="atom-nucleus">
-          {NUCLEONS.map(([x, y, proton], i) => (
-            <span
-              key={i}
-              className={proton ? "atom-proton" : "atom-neutron"}
-              style={{ left: `${x}%`, top: `${y}%` }}
-            />
-          ))}
+          <span className="atom-core" />
+          <span className="atom-sheen" />
+          <span className="atom-glint" />
         </div>
       </div>
     </div>

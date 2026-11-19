@@ -7,6 +7,7 @@ import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useChatUnread } from "../lib/useChatUnread";
 import type { Role } from "../lib/types";
+import { CodeBackdrop } from "./CodeBackdrop";
 import { Logo } from "./ui";
 
 const roleLabel: Record<Role, string> = {
@@ -78,16 +79,17 @@ export function AppLayout() {
       </div>
       <nav className="relative flex-1 space-y-1.5 px-3 py-6">
         <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Menu</p>
-        {nav.map(({ to, label, icon: Icon, end, badge }) => (
+        {nav.map(({ to, label, icon: Icon, end, badge }, i) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             onClick={() => setMobileOpen(false)}
+            style={{ "--i": i } as React.CSSProperties}
             className={({ isActive }) =>
               clsx(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                isActive ? "bg-brand-gradient shine text-white shadow-glow ring-1 ring-white/20" : "text-slate-300 hover:translate-x-1 hover:bg-white/10 hover:text-white",
+                "tab-3d tab-3d-enter flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
+                isActive ? "bg-brand-gradient shine text-white ring-1 ring-white/20" : "text-slate-300 hover:bg-white/10 hover:text-white",
               )
             }
           >
@@ -155,8 +157,10 @@ export function AppLayout() {
         )}
 
         <main className="app-canvas flex-1 overflow-y-auto">
+          {/* faint scrolling FitWork code behind every page (decorative) */}
+          <CodeBackdrop />
           {/* key = page address: every page fades in, its sections one after another */}
-          <div key={location.pathname} className="stagger-children mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
+          <div key={location.pathname} className="stagger-children relative mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
             <Outlet />
           </div>
         </main>

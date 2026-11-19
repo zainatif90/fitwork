@@ -136,7 +136,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, idPrefix, label 
     <div className="-mx-1 mb-5 overflow-x-auto px-1 pb-1">
       <div role="tablist" aria-label={label} onKeyDown={onKeyDown}
         className="inline-flex min-w-max gap-1 rounded-2xl border border-white/70 bg-white/80 p-1 shadow-soft ring-1 ring-brand-100/60 backdrop-blur">
-        {tabs.map((t) => (
+        {tabs.map((t, i) => (
           <button
             key={t.id}
             id={`${idPrefix}-tab-${t.id}`}
@@ -145,9 +145,10 @@ export function Tabs<T extends string>({ tabs, value, onChange, idPrefix, label 
             aria-controls={`${idPrefix}-panel`}
             tabIndex={value === t.id ? 0 : -1}
             onClick={() => onChange(t.id)}
+            style={{ "--i": i } as React.CSSProperties}
             className={clsx(
-              "inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition [&>svg]:h-4 [&>svg]:w-4",
-              value === t.id ? "bg-brand-gradient text-white shadow-glow" : "text-slate-600 hover:bg-brand-50 hover:text-brand-700",
+              "tab-3d tab-3d-enter inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium [&>svg]:h-4 [&>svg]:w-4",
+              value === t.id ? "bg-brand-gradient text-white" : "text-slate-600 hover:bg-brand-50 hover:text-brand-700",
             )}
           >
             {t.icon} {t.label}

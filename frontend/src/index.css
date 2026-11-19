@@ -338,7 +338,7 @@ h1, h2, h3 {
 .aurora > span { animation: none !important; }
 
 /* ===================== 3D atom (19 Nov 2026) ===================== */
-/* The decorative orb is an atom: a nucleus of protons (pink) and neutrons (blue), three electrons orbiting on paths
+/* The decorative orb is an atom: one shiny glowing nucleus, three electrons orbiting on paths
    tilted 0/60/120 degrees. Only `transform` is animated (the graphics card moves the layers, nothing is repainted),
    and the component adds .is-paused while the atom is off screen. */
 .atom3d .atom-scene { position: absolute; inset: 0; perspective: 800px; transform-style: preserve-3d; }
@@ -360,14 +360,27 @@ h1, h2, h3 {
           mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
 .atom-orbit-1 .atom-trail { transform: scaleX(-1); }
 .atom-orbit-1 .atom-spin, .atom-orbit-1 .atom-electron { animation-direction: reverse; }
-.atom-nucleus { position: absolute; inset: 37%; animation: atom-breathe 2.6s ease-in-out infinite; }
+.atom-nucleus { position: absolute; inset: 35%; animation: atom-breathe 2.6s ease-in-out infinite; }
 .atom-glow { position: absolute; inset: 14%; border-radius: 9999px; animation: atom-breathe 2.6s ease-in-out infinite;
-  background: radial-gradient(closest-side, rgb(236 72 153 / 0.45), rgb(168 85 247 / 0.3) 45%, transparent); }
+  background: radial-gradient(closest-side, rgb(236 72 153 / 0.5), rgb(168 85 247 / 0.4) 40%, transparent); }
 /* The whole atom sways gently in 3D */
 .atom3d .atom-scene { animation: atom-sway 9s ease-in-out infinite; }
-.atom-proton, .atom-neutron { position: absolute; width: 38%; height: 38%; margin: -19% 0 0 -19%; border-radius: 9999px; }
-.atom-proton  { background: radial-gradient(circle at 35% 30%, #fff, #f9a8d4 30%, #db2777 70%, #831843); }
-.atom-neutron { background: radial-gradient(circle at 35% 30%, #fff, #a5b4fc 30%, #4f46e5 70%, #1e1b4b); }
+.atom-core { position: absolute; inset: 0; border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #fff 0 6%, #fbcfe8 14%, #c084fc 38%, #7c3aed 64%, #312e81 100%);
+  box-shadow: inset -5px -7px 14px rgb(30 27 75 / 0.55); }
+/* A band of colour light that turns round the ball, so it looks like it rotates */
+.atom-sheen { position: absolute; inset: 0; border-radius: 9999px; mix-blend-mode: screen; opacity: 0.75;
+  background: conic-gradient(from 0deg, transparent 0 40deg, rgb(244 114 182 / 0.7) 80deg, transparent 130deg,
+    transparent 200deg, rgb(125 211 252 / 0.6) 250deg, transparent 300deg);
+  -webkit-mask: radial-gradient(circle, #000 55%, transparent 72%); mask: radial-gradient(circle, #000 55%, transparent 72%);
+  animation: atom-spin 6s linear infinite; }
+/* The sparkle: a four-pointed glint on the shiny spot that flashes now and then */
+.atom-glint { position: absolute; left: 14%; top: 10%; width: 46%; height: 46%;
+  background: radial-gradient(circle, #fff 0 14%, rgb(255 255 255 / 0.6) 30%, transparent 62%);
+  clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
+  animation: atom-glint 2.8s ease-in-out infinite; }
+@keyframes atom-glint { 0%, 55%, 100% { transform: scale(0.35) rotate(0deg); opacity: 0.5; }
+  70% { transform: scale(1.1) rotate(45deg); opacity: 1; } 85% { transform: scale(0.35) rotate(90deg); opacity: 0.5; } }
 .atom3d.is-paused * { animation-play-state: paused !important; }
 @keyframes atom-spin { from { transform: rotateZ(0deg); } to { transform: rotateZ(360deg); } }
 @keyframes atom-face { from { transform: rotateZ(0deg) rotateX(-72deg); } to { transform: rotateZ(-360deg) rotateX(-72deg); } }
@@ -381,3 +394,47 @@ h1, h2, h3 {
   box-shadow: 0 0 0 1.5px rgb(199 210 254 / 0.85), 0 0 18px 4px rgb(168 85 247 / 0.5), 0 0 36px 10px rgb(56 189 248 / 0.22); }
 .electron-click-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 9999px; opacity: 0;
   background: radial-gradient(circle, #fff 0 28%, var(--c) 48%, transparent 74%); box-shadow: 0 0 10px 2px var(--c); }
+
+/* ===================== Code backdrop (src/components/CodeBackdrop.tsx) ===================== */
+/* Faint columns of FitWork's own code scroll behind the app pages. The text is drawn once; each column only
+   moves with a transform (graphics card), and a soft "scan" band sweeps down the screen. */
+.code-backdrop-anchor { position: sticky; top: 0; height: 0; z-index: 0; pointer-events: none; }
+.code-backdrop { position: absolute; left: 0; right: 0; top: 0; height: 100vh; overflow: hidden;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2.5rem; padding: 0 2rem;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 80%, transparent);
+          mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 80%, transparent); }
+.cb-col { overflow: hidden; }
+.cb-text { margin: 0; white-space: pre; font: 500 12px/1.75 ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
+  color: rgb(67 56 202 / 0.2); animation: cb-scroll 80s linear infinite; }
+.cb-col-1 .cb-text { animation-duration: 100s; animation-direction: reverse; }
+.cb-col-2 .cb-text { animation-duration: 70s; }
+.cb-col-3 .cb-text { animation-duration: 95s; animation-direction: reverse; }
+.cb-kw  { color: rgb(124 58 237 / 0.42); font-weight: 700; }
+.cb-fn  { color: rgb(219 39 119 / 0.38); }
+.cb-str { color: rgb(2 132 199 / 0.42); }
+.cb-num { color: rgb(234 88 12 / 0.4); }
+.cb-com { color: rgb(100 116 139 / 0.32); font-style: italic; }
+.cb-scan { position: absolute; left: 0; right: 0; top: -160px; height: 160px;
+  background: linear-gradient(to bottom, transparent, rgb(129 140 248 / 0.12) 70%, rgb(168 85 247 / 0.22) 98%, transparent);
+  animation: cb-sweep 7s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@keyframes cb-scroll { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
+@keyframes cb-sweep { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, calc(100vh + 160px), 0); } }
+@media (max-width: 1023px) { .code-backdrop { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cb-col-2, .cb-col-3 { display: none; } }
+
+/* ===================== 3D tabs (sidebar menu + Agency tabs) ===================== */
+/* Tabs flip in one after another, tilt towards you on hover, press in on click; the selected tab stands raised
+   like a key on a darker edge and its icon spins round once. Transform/opacity only. */
+.tab-3d { position: relative; transform-origin: 50% 100%;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s, background-color 0.2s, color 0.2s; }
+.tab-3d:hover { transform: perspective(520px) translateY(-2px) rotateX(14deg); }
+.tab-3d:active { transform: perspective(520px) translateY(1px) scale(0.97); transition-duration: 0.08s; }
+.tab-3d svg { transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.tab-3d:hover svg { transform: perspective(200px) rotateY(360deg) scale(1.15); }
+.tab-3d[aria-current="page"], .tab-3d[aria-selected="true"] {
+  transform: perspective(520px) translateY(-2px);
+  box-shadow: 0 4px 0 #3730a3, 0 12px 24px -8px rgb(124 58 237 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.3); }
+.tab-3d[aria-current="page"]:hover, .tab-3d[aria-selected="true"]:hover { transform: perspective(520px) translateY(-3px) rotateX(8deg); }
+.tab-3d[aria-current="page"] svg, .tab-3d[aria-selected="true"] svg { animation: tab-icon-spin 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.tab-3d-enter { animation: tab-flip-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 60ms); }
+@keyframes tab-flip-in { from { opacity: 0; transform: perspective(520px) rotateX(-75deg) translateY(-6px); } }
+@keyframes tab-icon-spin { from { transform: perspective(200px) rotateY(-360deg) scale(0.6); } to { transform: none; } }
