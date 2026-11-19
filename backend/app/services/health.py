@@ -21,8 +21,10 @@ from app.models.job import Job
 # How long each live source may go without a NEW job before we call it stale.
 EXPECTED_NEW_JOB_WITHIN = {
     "freelancer": timedelta(hours=6),     # fetched every 30 min, new projects every hour
-    "himalayas": timedelta(hours=72),     # boards post less often (and Remotive only a few contract roles a week)
-    "remotive": timedelta(days=7),
+    "himalayas": timedelta(hours=72),     # boards post less often
+    # Remotive lists only a few contract roles: live on 19 Nov 2026 its newest one was 166 h old while the feed
+    # worked fine, so a 7-day limit would have sent a false alarm. 21 days = how long its jobs stay listed.
+    "remotive": timedelta(days=21),
     "jobicy": timedelta(hours=72),
 }
 MEMORY_LIMIT_MB = 512
