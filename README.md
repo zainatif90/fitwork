@@ -66,10 +66,13 @@ While the API runs, the scheduler fetches new Freelancer.com jobs every 30 minut
 
 ## Tests
 ```powershell
-cd backend; .\.venv\Scripts\python.exe -m pytest -v
+cd backend; .\.venv\Scripts\python.exe -m pytest -v          # all 274 backend tests
+cd backend; .\.venv\Scripts\python.exe -m pytest -m unit     # 97 unit tests, no Docker needed
+cd backend; .\.venv\Scripts\python.exe -m pytest --cov=app   # with coverage (pip install -r requirements-dev.txt)
+cd frontend; npm test                                        # 10 frontend unit tests (Vitest)
 ```
 Tests use the separate `fitwork_test` database and Redis DB 15, so your dev data is never touched.
-Results and measured numbers are in [TEST_RESULTS.md](TEST_RESULTS.md).
+Unit / integration / TDD testing: [TESTING.md](TESTING.md). Performance and load results: [TEST_RESULTS.md](TEST_RESULTS.md).
 
 ## Useful scripts (run from /backend)
 | Command | Purpose |

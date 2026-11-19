@@ -45,6 +45,7 @@ def test_route_inventory_is_not_empty() -> None:
     assert len(protected) >= 25  # guards against the parametrized test silently testing nothing
 
 
+@pytest.mark.integration  # builds its own TestClient (to keep the 500 response)
 def test_unhandled_errors_do_not_leak_stack_traces(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.routers import profile as profile_router
 

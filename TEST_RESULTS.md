@@ -30,7 +30,9 @@ TC-7 uses 520 jobs labelled `source = synthetic` that exist **only in the test d
 after every test). The real-data performance numbers are in sections 3 and 4.
 
 ## 2. Full automated test suite
-Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **245 passed, 0 failed (89 s)** (2 Nov 2026).
+Command: `cd backend; .\.venv\Scripts\python.exe -m pytest -q` → **274 passed, 0 failed** (19 Nov 2026: 97 unit + 177 integration,
+89% coverage; plus 10 frontend Vitest tests). Unit / integration split, TDD cycles and coverage: see [TESTING.md](TESTING.md).
+Earlier run: 245 passed, 0 failed (2 Nov 2026).
 The table below is the original breakdown; new files since: test_auth_sessions.py, test_review_fixes.py, test_job_boards.py,
 test_chat.py (Team Chat, 8), test_agency_audit.py (agency SQA audit fixes, 16).
 

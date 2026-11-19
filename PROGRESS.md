@@ -47,3 +47,4 @@ Deadline: 19 November 2026
 - 18 Nov 2026: Code report for submission: CODE_REPORT.md (+ FitWork_Code_Report.docx / .pdf, 8 pages). Test suite re-run: 245 passed.
 - 18 Nov 2026: Final SRS v2.0 (IEEE 830 structure): SRS.md + FitWork_SRS.docx / .pdf (14 pages): 10 use cases, 66 FRs, NFRs with measured results, TC-1..TC-8, traceability matrix. Repo made public for evaluators.
 - 18 Nov 2026: A1 project poster: poster/poster.html -> FitWork_Poster.png (4490x6358) + FitWork_Poster.pdf (A1); QR code to the live site.
+- 19 Nov 2026: Unit / integration / TDD testing (TESTING.md): tests auto-marked unit (97, run without Docker in 1.8 s) or integration (177); 2 TDD cycles fixed real bugs ('1 minutes ago' in scoring.py, '$1000'/'$1.0k' in format.ts); 18 LLM/email unit tests (65% -> 100%); Vitest added (10 frontend tests); 274 backend + 10 frontend pass, 89% coverage.

@@ -1,3 +1,5 @@
 -r requirements.txt
 # Load testing (Prompt 8)
 locust>=2.32
+# Test coverage report (pytest --cov=app)
+pytest-cov==7.1.0

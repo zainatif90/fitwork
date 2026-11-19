@@ -37,8 +37,27 @@ from app.main import app  # noqa: E402
 KEEP_TABLES = {"alembic_version", "skills"}
 
 
-@pytest.fixture(scope="session", autouse=True)
+# --- Unit vs integration tests -------------------------------------------------------------
+# A test is an INTEGRATION test when it uses the real database or the HTTP API (the `db` or
+# `client` fixture, directly or through another fixture). Every other test is a UNIT test: it
+# calls one function with plain inputs and needs no database, Redis or network.
+#   pytest -m unit          -> fast unit tests only (Docker not needed)
+#   pytest -m integration   -> tests that go through PostgreSQL / Redis / the API
+INTEGRATION_FIXTURES = {"client", "db"}
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    for item in items:
+        uses_io = INTEGRATION_FIXTURES & set(getattr(item, "fixturenames", ()))
+        if uses_io or item.get_closest_marker("integration"):
+            item.add_marker(pytest.mark.integration)
+        else:
+            item.add_marker(pytest.mark.unit)
+
+
+@pytest.fixture(scope="session")
 def migrated_database() -> Iterator[None]:
+    """Rebuild the test schema from the Alembic migrations (once, and only if an integration test runs)."""
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
@@ -49,7 +68,12 @@ def migrated_database() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
-def clean_state() -> Iterator[None]:
+def clean_state(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Integration tests start and end with an empty database and an empty Redis DB 15."""
+    if not request.node.get_closest_marker("integration"):
+        yield  # unit test: nothing to set up
+        return
+    request.getfixturevalue("migrated_database")
     redis_client.flushdb()
     yield
     with engine.begin() as conn:

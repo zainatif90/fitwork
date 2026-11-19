@@ -1,6 +1,15 @@
 import type { JobSource, JobSummary } from "./types";
 
-const money = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${Math.round(n)}`);
+/**
+ * "$750", "$1k", "$2.5k". Round to whole dollars FIRST, then pick the unit, so 999.6 becomes "$1k"
+ * (not "$1000") and 1000.4 becomes "$1k" (not "$1.0k"). Covered by format.test.ts (TDD cycle 2).
+ */
+const money = (n: number): string => {
+  const dollars = Math.round(n);
+  if (dollars < 1000) return `$${dollars}`;
+  const thousands = Math.round(dollars / 100) / 10; // one decimal place at most
+  return `$${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}k`;
+};
 
 export function formatBudget(job: Pick<JobSummary, "budget_min" | "budget_max" | "budget_type">): string {
   const { budget_min: lo, budget_max: hi, budget_type } = job;

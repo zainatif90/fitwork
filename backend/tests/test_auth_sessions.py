@@ -120,6 +120,7 @@ def test_bug10_long_urdu_password_gets_a_clear_message(client: TestClient) -> No
     assert "too long" in res.text
 
 
+@pytest.mark.integration  # builds its own TestClient (to keep the 500 response)
 def test_bug10_server_errors_keep_cors_headers(monkeypatch: pytest.MonkeyPatch) -> None:
     """Without CORS headers the browser hides a 500 and the app wrongly says 'Cannot reach the server'."""
     from app.routers import profile as profile_router

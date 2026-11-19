@@ -115,15 +115,21 @@ def _join(names: list[str]) -> str:
     return ", ".join(names[:-1]) + " and " + names[-1]
 
 
+def _plural(n: int, unit: str) -> str:
+    """'1 minute', '2 minutes' — one place for the singular/plural rule (see test_tdd_humanize_age.py)."""
+    return f"{n} {unit}{'' if n == 1 else 's'}"
+
+
 def humanize_age(posted_at: datetime, now: datetime | None = None) -> str:
+    """'5 minutes ago' / '3 hours ago' / '2 days ago'. Under a minute (or a future date) counts as 1 minute."""
     now = now or datetime.now(timezone.utc)
     minutes = int(max(0, (now - posted_at).total_seconds()) // 60)
     if minutes < 60:
-        return f"{max(minutes, 1)} minute{'s' if minutes != 1 else ''} ago"
+        return f"{_plural(max(minutes, 1), 'minute')} ago"
     hours = minutes // 60
     if hours < 48:
-        return f"{hours} hour{'s' if hours != 1 else ''} ago"
-    return f"{hours // 24} days ago"
+        return f"{_plural(hours, 'hour')} ago"
+    return f"{_plural(hours // 24, 'day')} ago"
 
 
 @dataclass
