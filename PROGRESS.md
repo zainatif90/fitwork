@@ -69,3 +69,4 @@ Deadline: 19 November 2026
 - 20 Nov 2026: Production database moved to Supabase free (Frankfurt) via its Management API; Render DATABASE_URL updated and redeployed; live check OK (register, profile, matches 1.9 s, Skill Gap 2.2 s, temp account deleted). Old Neon accounts not copied (Neon locked).
 - 20 Nov 2026: Removed the electron click effect on buttons/tabs at the user's request (normal press/hover feedback only). 14 frontend tests pass.
 - 20 Nov 2026: A user saw 'invite link is invalid' (invite from the old Neon database / a replaced link). Message now explains why and asks to request a new invite; the invite page offers 'Go to my FitWork'. New test; 35 agency tests pass.
+- 20 Nov 2026: Dead invite links no longer trap visitors: clear reason + 'Go to my FitWork' + automatic move into the app after 5 s (an evaluator was stuck on that page). Checked in a browser.

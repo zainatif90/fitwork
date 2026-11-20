@@ -16,12 +16,23 @@ export default function AcceptInvite() {
   const [info, setInfo] = useState<{ agency_name: string; invited_email: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [leaveIn, setLeaveIn] = useState(5);
+  // A link that no longer works (used, replaced, or from before the 20 Nov database move) must not trap the
+  // visitor on this page: explain why, then take them into FitWork after a few seconds.
+  const deadLink = !!error && !info;
 
   useEffect(() => {
     api<{ agency_name: string; invited_email: string }>(`/agency/invite/${token}`)
       .then(setInfo)
       .catch((err) => setError(err instanceof ApiError ? err.message : "Invalid invite link."));
   }, [token]);
+
+  useEffect(() => {
+    if (!deadLink) return;
+    if (leaveIn <= 0) { navigate("/app", { replace: true }); return; }
+    const id = window.setTimeout(() => setLeaveIn((s) => s - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [deadLink, leaveIn, navigate]);
 
   async function accept() {
     setBusy(true);
@@ -43,8 +54,11 @@ export default function AcceptInvite() {
   return (
     <AuthLayout title="Join an agency" subtitle="You've been invited to a team on FitWork.">
       {error && <Alert tone="error" className="mb-4">{error}</Alert>}
-      {error && !info && (
-        <Button variant="secondary" className="w-full" onClick={() => navigate("/app")}>Go to my FitWork</Button>
+      {deadLink && (
+        <div className="space-y-3">
+          <Button className="w-full" size="lg" onClick={() => navigate("/app", { replace: true })}>Go to my FitWork</Button>
+          <p className="text-center text-sm text-slate-500">Taking you there in {leaveIn} s…</p>
+        </div>
       )}
       {!info && !error && <Spinner />}
       {info && (
