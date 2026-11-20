@@ -84,7 +84,9 @@ def find_invite(db: Session, token: str) -> tuple[AgencyMember, Agency]:
         .where(AgencyMember.invite_token_hash == hash_token(token), AgencyMember.status == "invited")
     ).first()
     if row is None:
-        raise HTTPException(status_code=404, detail="This invite link is invalid or has already been used")
+        raise HTTPException(status_code=404, detail=(
+            "This invite link is no longer valid. It may have been used already, replaced by a newer invite, "
+            "or the team was closed. Please ask the agency owner to send you a new invite."))
     if invite_expired(row[0]):
         raise HTTPException(status_code=404, detail="This invite link has expired. Ask the agency owner to send a new one.")
     return row[0], row[1]

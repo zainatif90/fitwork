@@ -83,6 +83,17 @@ def test_invite_token_is_single_use_and_email_bound(client: TestClient) -> None:
     assert client.post("/api/agency/invite/accept", json={"token": token}, headers=auth_header(right)).status_code == 404
 
 
+def test_resent_invite_replaces_old_link_with_a_clear_message(client: TestClient) -> None:
+    """20 Nov 2026: a user opened an old invite link. The page must say why it fails and what to do."""
+    owner = register(client, email="o3@example.com", role="agency_owner")["access_token"]
+    first = client.post("/api/agency/invite", json={"email": "late@example.com"}, headers=auth_header(owner)).json()["invite_link"]
+    client.post("/api/agency/invite", json={"email": "late@example.com"}, headers=auth_header(owner))  # sent again
+    user = register(client, email="late@example.com")["access_token"]
+    res = client.get(f"/api/agency/invite/{first.rsplit('/', 1)[1]}", headers=auth_header(user))
+    assert res.status_code == 404
+    assert "ask the agency owner to send you a new invite" in res.json()["detail"]
+
+
 def test_python_job_routes_to_python_member(client: TestClient, team: dict, jobs: dict) -> None:
     recs = client.get("/api/agency/routing", headers=auth_header(team["owner"])).json()
     py_rec = rec_for(recs, jobs["py"])

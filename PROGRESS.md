@@ -68,3 +68,4 @@ Deadline: 19 November 2026
 - 20 Nov 2026: Root cause of the outage: Neon free plan compute quota exceeded (Render log: 'Your account or project has exceeded the quota'). Moving production DB to Supabase free (no compute-hour limit); pool capped at 10 connections.
 - 20 Nov 2026: Production database moved to Supabase free (Frankfurt) via its Management API; Render DATABASE_URL updated and redeployed; live check OK (register, profile, matches 1.9 s, Skill Gap 2.2 s, temp account deleted). Old Neon accounts not copied (Neon locked).
 - 20 Nov 2026: Removed the electron click effect on buttons/tabs at the user's request (normal press/hover feedback only). 14 frontend tests pass.
+- 20 Nov 2026: A user saw 'invite link is invalid' (invite from the old Neon database / a replaced link). Message now explains why and asks to request a new invite; the invite page offers 'Go to my FitWork'. New test; 35 agency tests pass.

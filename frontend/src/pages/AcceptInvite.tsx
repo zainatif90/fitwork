@@ -43,6 +43,9 @@ export default function AcceptInvite() {
   return (
     <AuthLayout title="Join an agency" subtitle="You've been invited to a team on FitWork.">
       {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+      {error && !info && (
+        <Button variant="secondary" className="w-full" onClick={() => navigate("/app")}>Go to my FitWork</Button>
+      )}
       {!info && !error && <Spinner />}
       {info && (
         <div className="space-y-4">
