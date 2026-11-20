@@ -24,7 +24,8 @@ def engine_options(url: str) -> dict:
     timed out"). With them: connecting gives up after 10 s, dead connections are noticed within about a minute
     (TCP keepalive), and a request waits at most 10 s for a free connection from the pool.
     """
-    opts: dict = {"pool_pre_ping": True, "pool_timeout": 10, "pool_recycle": 280}
+    # at most 10 connections: fits the free connection limits of hosted Postgres (Supabase/Neon poolers)
+    opts: dict = {"pool_pre_ping": True, "pool_timeout": 10, "pool_recycle": 280, "pool_size": 5, "max_overflow": 5}
     if url.startswith("postgresql"):
         opts["connect_args"] = {"connect_timeout": 10, "keepalives": 1, "keepalives_idle": 30,
                                 "keepalives_interval": 10, "keepalives_count": 3}
