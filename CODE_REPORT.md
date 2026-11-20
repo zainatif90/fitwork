@@ -46,7 +46,7 @@ Main features (each maps to a use case in the SRS):
 | LLM | Gemini or OpenAI, chosen by `LLM_PROVIDER` | Used only for proposal drafts |
 | Auth | JWT (access 24 h, refresh 7 d), bcrypt cost 12 | Standard, stateless access tokens + server-side sessions |
 | Testing | pytest, Playwright (E2E), Locust (load) | Unit/integration, browser walk-through, concurrency |
-| Deployment | Firebase Hosting, Render (Docker image from GitHub Actions), Neon Postgres | Runs 24/7 on free tiers |
+| Deployment | Firebase Hosting, Render (Docker image from GitHub Actions), Supabase Postgres | Runs 24/7 on free tiers |
 
 ---
 
@@ -290,7 +290,7 @@ Full details and all measured numbers: `TEST_RESULTS.md`.
 |---|---|
 | Website | Firebase Hosting — https://fitwork-zain2026.web.app |
 | API | Render free web service, running a Docker image built by GitHub Actions |
-| Database | Neon PostgreSQL 16 with pgvector |
+| Database | Supabase PostgreSQL 17 with pgvector |
 | Cache | In-memory store (`REDIS_URL=memory`) |
 | Email | Verification, reset and invite emails sent through a mailer (console output in development) |
 

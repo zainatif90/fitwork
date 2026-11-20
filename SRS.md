@@ -130,7 +130,7 @@ FitWork is a new, self-contained web application. It consists of:
 - **Server:** Python 3.11, FastAPI, single uvicorn worker, Linux container (Docker).
 - **Database:** PostgreSQL 16 with the pgvector extension.
 - **Cache:** Redis 7, or an in-memory store on the free production plan.
-- **Production hosting:** Firebase Hosting (website), Render free web service (API), Neon (PostgreSQL).
+- **Production hosting:** Firebase Hosting (website), Render free web service (API), Supabase (PostgreSQL).
 
 ### 2.5 Design and implementation constraints
 - C-1: The technology stack is fixed: React + Vite + TypeScript + Tailwind CSS (frontend); Python 3.11,

@@ -20,7 +20,7 @@ FitWork is a web platform that collects freelance job listings and matches them 
 - Auth: JWT access token (24h) + refresh token (7d), bcrypt password hashing with cost 12
 - Local dev: docker-compose for Postgres (pgvector/pgvector:pg16 image) and Redis 7
 - Production (free tiers): website on Firebase Hosting (fitwork-zain2026.web.app), API on Render free web service
-  from the private image ghcr.io/zainatif90/fitwork (built by GitHub Actions), Neon Postgres 16 + pgvector.
+  from the private image ghcr.io/zainatif90/fitwork (built by GitHub Actions), Supabase Postgres + pgvector (moved from Neon on 20 Nov 2026: Neon's free compute quota ran out).
   REDIS_URL=memory, KEEPALIVE_URL keeps the free server awake. See DEPLOYMENT.md.
 
 ## Auth and token storage (decided)

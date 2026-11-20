@@ -4,7 +4,7 @@
 |---|---|---|
 | Website | **Firebase Hosting** (Spark, free) | **https://fitwork-zain2026.web.app** |
 | Backend (API, AI model, scheduler) | **Render** free web service (Docker image, Frankfurt) | https://fitwork-api-zain2026.onrender.com (API docs: `/api/docs`) |
-| Database | **Neon** Postgres 16 + pgvector (free, Frankfurt) | real Freelancer.com jobs |
+| Database | **Supabase** Postgres 17 + pgvector (free, Frankfurt, session pooler port 5432) | real Freelancer.com jobs |
 | Container image | **GitHub Container Registry** (private) | `ghcr.io/zainatif90/fitwork:latest`, built by GitHub Actions on every push |
 | Cache / rate limits | built-in in-memory store (`REDIS_URL=memory`) | the free plan runs exactly one instance |
 
@@ -35,7 +35,7 @@ The website's Content-Security-Policy only allows connections to its own API (`f
 Migrations run automatically on every backend start (`alembic upgrade head`).
 
 ## Production settings (Render environment; secrets are never in git)
-`ENV=production`, `DATABASE_URL` (Neon), `JWT_SECRET`, `CRON_SECRET`, `REDIS_URL=memory`, `SCHEDULER_ENABLED=true`,
+`ENV=production`, `DATABASE_URL` (Supabase session pooler), `JWT_SECRET`, `CRON_SECRET`, `REDIS_URL=memory`, `SCHEDULER_ENABLED=true`,
 `KEEPALIVE_URL`, `BOOTSTRAP_DATA=true`, `FRONTEND_URL=https://fitwork-zain2026.web.app`, `CORS_ORIGINS`,
 `COOKIE_SAMESITE=none`, `COOKIE_PARTITIONED=true`, `LLM_PROVIDER=gemini`, `LLM_MODEL`, `LLM_API_KEY`
 (`none` until a Gemini key is added), optional `SMTP_*` for real emails.
@@ -53,3 +53,16 @@ Migrations run automatically on every backend start (`alembic upgrade head`).
 docker build -f backend/Dockerfile -t fitwork:prod .
 docker run -m 512m -p 8001:8000 -e ENV=production -e JWT_SECRET=<random> -e DATABASE_URL=postgresql://... -e REDIS_URL=memory fitwork:prod
 ```
+
+## Incident 20 Nov 2026: database moved from Neon to Supabase
+- Symptom: the API froze; Render emailed "HTTP health check failed (timed out after 5 seconds)"; redeploys failed with
+  "Your account or project has exceeded the quota" (Neon free plan: monthly compute hours used up, because Render's
+  frequent health checks queried the database and kept it awake 24/7).
+- Fix: free Supabase project `fitwork` (Frankfurt, organization FitWork on the free plan, no compute-hour limit).
+  `DATABASE_URL` uses the **session pooler** (`aws-0-eu-central-1.pooler.supabase.com:5432`); the transaction pooler
+  (6543) is not used because psycopg uses prepared statements. Password and URL are only in
+  `C:\Users\PSBA\FitWork\` (never in git). The tables were created by the migrations on start and the seed jobs were
+  loaded by `BOOTSTRAP_DATA`; user accounts from Neon were not copied (Neon is locked until its quota resets).
+- Code changes so it cannot happen again: `/api/health` no longer touches the database and answers 503 "busy" when
+  worker threads are stuck (Render then restarts the server); database connections have connect/keepalive/pool
+  timeouts and at most 10 connections. See TEST_RESULTS bug #20.
