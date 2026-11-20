@@ -4,6 +4,7 @@ FitWork FastAPI application.
 Run (from /backend):  .venv\\Scripts\\uvicorn app.main:app --reload --port 8000
 API docs:             http://localhost:8000/api/docs
 """
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -12,8 +13,8 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.concurrency import run_in_threadpool
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -126,14 +127,28 @@ app.include_router(admin.router, prefix=API_PREFIX)
 app.include_router(admin.internal_router, prefix=API_PREFIX)
 
 
+HEALTH_TIMEOUT_SEC = 3.0
+
+
+def _worker_ready() -> bool:
+    return True
+
+
 @app.api_route("/api/health", methods=["GET", "HEAD"], tags=["health"])
-def health(db: Session = Depends(get_db)) -> JSONResponse:
-    """Uptime check (uptime monitors often send HEAD). Also checks that the database answers."""
+async def health() -> JSONResponse:
+    """
+    Liveness check for Render, the keep-awake ping and uptime monitors (which often send HEAD).
+    It proves that a worker thread is free to answer within 3 s, WITHOUT touching the database:
+      - if every worker thread is stuck, it answers 503 "busy", Render's health check fails and Render
+        restarts the server instead of leaving it frozen;
+      - the frequent checks no longer keep the free Neon database awake all day (it can sleep when idle).
+    The database and job sources are checked by /api/health/deep (every 3 hours, see health.yml).
+    """
     try:
-        db.execute(text("SELECT 1"))
-    except Exception:
-        log.exception("Health check: database unreachable")
-        return JSONResponse(status_code=503, content={"status": "database unavailable"})
+        await asyncio.wait_for(run_in_threadpool(_worker_ready), timeout=HEALTH_TIMEOUT_SEC)
+    except asyncio.TimeoutError:
+        log.error("Health check: no worker thread answered within %.0f s (server is stuck)", HEALTH_TIMEOUT_SEC)
+        return JSONResponse(status_code=503, content={"status": "busy"})
     return JSONResponse(content={"status": "ok"})
 
 

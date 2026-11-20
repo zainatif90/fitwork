@@ -16,7 +16,22 @@ class Base(DeclarativeBase):
     """Parent class for all ORM models."""
 
 
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+def engine_options(url: str) -> dict:
+    """
+    Connection settings that stop a dead database connection from freezing the server.
+    Without them, a connection that dies silently (e.g. the free Neon database suspends, or the network drops)
+    can make a request wait forever; enough of those and every worker thread is stuck (Render: "health check
+    timed out"). With them: connecting gives up after 10 s, dead connections are noticed within about a minute
+    (TCP keepalive), and a request waits at most 10 s for a free connection from the pool.
+    """
+    opts: dict = {"pool_pre_ping": True, "pool_timeout": 10, "pool_recycle": 280}
+    if url.startswith("postgresql"):
+        opts["connect_args"] = {"connect_timeout": 10, "keepalives": 1, "keepalives_idle": 30,
+                                "keepalives_interval": 10, "keepalives_count": 3}
+    return opts
+
+
+engine = create_engine(settings.DATABASE_URL, **engine_options(settings.DATABASE_URL))
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
