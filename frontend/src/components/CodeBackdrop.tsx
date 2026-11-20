@@ -70,12 +70,16 @@ for job in candidate_jobs:
     best = max(members, key=lambda m: fit[m.id][job.id])
     assign(job, best, status="assigned")`,
 
-  `// electronClick.ts - electrons orbit a button
-const p = pointOnRoundedRect(w, h, r, i / 3 + 1.3 * k);
-frames.push({
-  transform: \`translate(\${p.x}px, \${p.y}px)\`,
-  opacity: k > 0.8 ? (1 - k) / 0.2 : 1,
-});
+  `// format.ts - how a score is labelled
+export function scoreTone(score: number) {
+  if (score >= 75) return { label: "Strong fit" };
+  if (score >= 50) return { label: "Possible fit" };
+  return { label: "Weak fit" };
+}
+
+# proposals.py - protect the free AI quota
+used = int(redis_client.get(_rate_limit_key(GLOBAL_USER)) or 0)
+return used < settings.PROPOSALS_GLOBAL_PER_DAY
 
 // api.ts - remembered pages open at once
 export function peek<T>(path: string): T | undefined {

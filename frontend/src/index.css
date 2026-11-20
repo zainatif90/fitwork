@@ -385,14 +385,6 @@ h1, h2, h3 {
 @keyframes atom-face { from { transform: rotateZ(0deg) rotateX(-72deg); } to { transform: rotateZ(-360deg) rotateX(-72deg); } }
 @keyframes atom-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
 
-/* ===================== Electron click effect (src/lib/electronClick.ts) ===================== */
-/* A clicked button glows while three electrons orbit its outline. Positions are animated with transform only. */
-.electron-click { position: absolute; pointer-events: none; z-index: 9999; }
-.electron-click-glow { position: absolute; inset: 0; opacity: 0;
-  box-shadow: 0 0 0 1.5px rgb(253 230 138 / 0.9), 0 0 18px 4px rgb(236 72 153 / 0.45), 0 0 36px 10px rgb(168 85 247 / 0.25); }
-.electron-click-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 9999px; opacity: 0;
-  background: radial-gradient(circle, #fff 0 28%, var(--c) 48%, transparent 74%); box-shadow: 0 0 10px 2px var(--c); }
-
 /* ===================== 3D tabs (sidebar menu + Agency tabs) ===================== */
 /* Tabs flip in one after another, tilt towards you on hover, press in on click; the selected tab stands raised
    like a key on a darker edge and its icon spins round once. Transform/opacity only. */
