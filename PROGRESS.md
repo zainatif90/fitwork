@@ -70,3 +70,4 @@ Deadline: 19 November 2026
 - 20 Nov 2026: Removed the electron click effect on buttons/tabs at the user's request (normal press/hover feedback only). 14 frontend tests pass.
 - 20 Nov 2026: A user saw 'invite link is invalid' (invite from the old Neon database / a replaced link). Message now explains why and asks to request a new invite; the invite page offers 'Go to my FitWork'. New test; 35 agency tests pass.
 - 20 Nov 2026: Dead invite links no longer trap visitors: clear reason + 'Go to my FitWork' + automatic move into the app after 5 s (an evaluator was stuck on that page). Checked in a browser.
+- 21 Nov 2026: Skill Gap loading message now sits in a solid white card (bigger heading, progress bar, '30 seconds' highlighted) so the moving code background no longer shows through the text.

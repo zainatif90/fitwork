@@ -120,17 +120,27 @@ function AnalysisInProgress() {
     return () => window.clearInterval(t);
   }, []);
   const step = [...ANALYSIS_STEPS].reverse().find(([from]) => seconds >= from)?.[1];
+  // Progress bar fills over ~30 s, then waits at 95% until the answer arrives (never claims 100% early).
+  const pct = Math.min(95, Math.round((seconds / 30) * 100));
   return (
-    <div className="flex h-72 flex-col items-center justify-center gap-4 text-center text-sm text-slate-500" role="status" aria-live="polite">
-      <span className="relative flex h-16 w-16 items-center justify-center">
-        <span className="absolute inset-0 animate-ping rounded-full bg-brand-400/30" />
-        <span className="relative rounded-full bg-brand-gradient p-4 text-white shadow-glow"><RadarIcon className="h-7 w-7" /></span>
-      </span>
-      <span className="font-medium text-slate-700">{step}</span>
-      <span>
-        The first analysis compares your profile with every live job and can take up to 30 seconds
-        ({seconds}s so far). After that it opens instantly for an hour.
-      </span>
+    // Solid card (no see-through) so the moving code background never shows through the text.
+    <div className="flex min-h-72 items-center justify-center py-6" role="status" aria-live="polite">
+      <div className="relative z-10 flex w-full max-w-lg flex-col items-center gap-4 rounded-2xl border border-brand-200 bg-white px-6 py-8 text-center shadow-xl ring-1 ring-black/5">
+        <span className="relative flex h-16 w-16 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-brand-400/30" />
+          <span className="relative rounded-full bg-brand-gradient p-4 text-white shadow-glow"><RadarIcon className="h-7 w-7" /></span>
+        </span>
+        <span className="text-lg font-semibold text-slate-900">{step}</span>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-brand-100">
+          <div className="h-full rounded-full bg-brand-gradient transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
+        </div>
+        <p className="text-sm leading-relaxed text-slate-700">
+          The first analysis compares your profile with every live job and can take up to
+          <strong className="text-brand-700"> 30 seconds</strong>{" "}
+          <span className="whitespace-nowrap text-slate-500">({seconds}s so far)</span>.
+          After that it opens instantly for an hour.
+        </p>
+      </div>
     </div>
   );
 }
